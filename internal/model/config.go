@@ -45,6 +45,9 @@ type Config struct {
 	// 自定义 User-Agent（可选，空字符串表示使用客户端透传的 UA）
 	CustomUserAgent string `json:"custom_user_agent"`
 
+	// 自定义端点（可选，空字符串表示使用渠道类型的默认端点）
+	CustomEndpoint string `json:"custom_endpoint"`
+
 	// 模型配置（统一管理模型和重定向）
 	ModelEntries []ModelEntry `json:"models"`
 

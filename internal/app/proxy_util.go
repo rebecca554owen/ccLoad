@@ -166,8 +166,16 @@ func isStreamingRequest(path string, body []byte) bool {
 // ============================================================================
 
 // buildUpstreamURL 构建上游完整URL（KISS）
-func buildUpstreamURL(baseURL string, requestPath, rawQuery string) string {
-	upstreamURL := strings.TrimRight(baseURL, "/") + requestPath
+// 如果 customEndpoint 不为空，则使用自定义端点替换 requestPath
+func buildUpstreamURL(baseURL string, requestPath, rawQuery, customEndpoint string) string {
+	// 如果配置了自定义端点，使用自定义端点替换请求路径
+	// 否则使用原始请求路径
+	path := requestPath
+	if customEndpoint != "" {
+		path = customEndpoint
+	}
+
+	upstreamURL := strings.TrimRight(baseURL, "/") + path
 
 	// 移除 key 参数（Gemini API 认证格式），避免泄露到上游
 	if rawQuery != "" {

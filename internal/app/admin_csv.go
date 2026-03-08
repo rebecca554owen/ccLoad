@@ -44,7 +44,7 @@ func (s *Server) HandleExportChannelsCSV(c *gin.Context) {
 	writer := csv.NewWriter(buf)
 	defer writer.Flush()
 
-	header := []string{"id", "name", "api_key", "url", "priority", "models", "model_redirects", "channel_type", "key_strategy", "enabled"}
+	header := []string{"id", "name", "api_key", "url", "priority", "models", "model_redirects", "channel_type", "key_strategy", "enabled", "custom_endpoint"}
 	if err := writer.Write(header); err != nil {
 		RespondError(c, http.StatusInternalServerError, err)
 		return
@@ -96,6 +96,7 @@ func (s *Server) HandleExportChannelsCSV(c *gin.Context) {
 			cfg.GetChannelType(), // 使用GetChannelType确保默认值
 			keyStrategy,
 			strconv.FormatBool(cfg.Enabled),
+			cfg.CustomEndpoint,
 		}
 		if err := writer.Write(record); err != nil {
 			RespondError(c, http.StatusInternalServerError, err)
@@ -232,6 +233,9 @@ func (s *Server) HandleImportChannelsCSV(c *gin.Context) {
 			continue
 		}
 
+		// 解析 custom_endpoint (可选字段)
+		customEndpoint := fetch("custom_endpoint")
+
 		// 解析模型重定向(可选字段)
 		var modelRedirects map[string]string
 		if modelRedirectsRaw != "" && modelRedirectsRaw != "{}" {
@@ -276,12 +280,13 @@ func (s *Server) HandleImportChannelsCSV(c *gin.Context) {
 
 		// 构建渠道配置
 		cfg := &model.Config{
-			Name:         name,
-			URL:          url,
-			Priority:     priority,
-			ModelEntries: modelEntries,
-			ChannelType:  channelType,
-			Enabled:      enabled,
+			Name:           name,
+			URL:            url,
+			Priority:       priority,
+			ModelEntries:   modelEntries,
+			ChannelType:    channelType,
+			Enabled:        enabled,
+			CustomEndpoint: customEndpoint,
 		}
 
 		// 解析并构建API Keys
@@ -314,20 +319,13 @@ func (s *Server) HandleImportChannelsCSV(c *gin.Context) {
 		summary.Updated = updated
 
 		// 导入会更新渠道URL，立即清理 URLSelector 中失效URL状态，避免旧状态长期残留。
+		// 使用 validChannels 中的配置数据，避免额外的数据库查询（N+1问题）
 		if s.urlSelector != nil {
-			seenIDs := make(map[int64]struct{}, len(validChannels))
 			for _, channel := range validChannels {
 				if channel == nil || channel.Config == nil || channel.Config.ID <= 0 {
 					continue
 				}
-				seenIDs[channel.Config.ID] = struct{}{}
-			}
-			for channelID := range seenIDs {
-				cfg, getErr := s.store.GetConfig(c.Request.Context(), channelID)
-				if getErr != nil || cfg == nil {
-					continue
-				}
-				s.urlSelector.PruneChannel(channelID, cfg.GetURLs())
+				s.urlSelector.PruneChannel(channel.Config.ID, channel.Config.GetURLs())
 			}
 		}
 	}
