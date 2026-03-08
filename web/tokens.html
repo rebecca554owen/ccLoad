@@ -16,20 +16,21 @@
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/template-engine.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/tokens.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-         <header class="mb-2">
-        </header>
-        <header class="mb-4">
+        <header class="mt-6 mb-6">
           <div class="glass-card" style="padding: var(--space-6);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-              <div>
-                <h1 class="page-title mb-2" data-i18n="tokens.pageTitle">API访问令牌</h1>
-                <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
-              </div>
+              <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
               <button onclick="showCreateModal()" class="btn btn-primary" style="padding: 8px 16px;" data-i18n="tokens.createToken">
                 + 创建令牌
               </button>
@@ -38,7 +39,7 @@
         </header>
 
         <!-- 时间范围选择器 -->
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="time-range-container">
             <div class="time-range-selector">
               <button class="time-range-btn active" data-range="today" data-i18n="index.timeRange.today">本日</button>
@@ -52,7 +53,7 @@
           </div>
         </section>
 
-        <section>
+        <section class="mb-6">
           <!-- 令牌表格 -->
           <div id="tokens-container" class="token-table"></div>
 
@@ -64,8 +65,8 @@
                 <path d="M12.8 12H21V14.6H19.2V16.4H17.4V14.6H15.6V13H12.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <h3 style="color: var(--neutral-900); margin-bottom: 8px; font-weight: 600;" data-i18n="tokens.emptyTitle">暂无API令牌</h3>
-            <p style="color: var(--neutral-700); margin-bottom: 24px; font-size: 15px;" data-i18n="tokens.emptyDesc">点击"创建令牌"按钮,生成第一个API访问令牌</p>
+            <h3 class="mb-2 font-semibold" data-i18n="tokens.emptyTitle">暂无API令牌</h3>
+            <p class="mb-6 opacity-80" data-i18n="tokens.emptyDesc">点击"创建令牌"按钮,生成第一个API访问令牌</p>
             <button onclick="showCreateModal()" class="btn btn-primary" data-i18n="tokens.createTokenBtn">创建令牌</button>
           </div>
         </section>
@@ -228,7 +229,7 @@
           <div class="inline-table-container" style="flex: 1; overflow-y: auto; border: 1px solid var(--neutral-200); border-radius: 6px;">
             <table class="inline-table" style="width: 100%; border-collapse: collapse;">
               <thead>
-                <tr style="background: var(--neutral-100);">
+                <tr class="glass-card">
                   <th style="width: 40px; padding: 8px; text-align: center;">
                     <input type="checkbox" id="selectAllAllowedModels" onchange="toggleSelectAllAllowedModels(this.checked)">
                   </th>
@@ -261,7 +262,7 @@
         <div class="form-group">
           <input type="text" id="modelSearchInput" class="form-input" data-i18n-placeholder="tokens.searchModelPlaceholder" placeholder="搜索模型..." oninput="filterAvailableModels(this.value)">
         </div>
-        <div id="selectAllContainer" style="display: none; padding: 8px 12px; border: 1px solid var(--neutral-200); border-bottom: none; border-radius: 6px 6px 0 0; background: var(--neutral-50);">
+        <div id="selectAllContainer" class="glass-card" style="display: none; border-bottom: none; border-radius: 6px 6px 0 0;">
           <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
             <input type="checkbox" id="selectAllModelsCheckbox" style="margin-right: 8px;" onchange="toggleSelectAllModels(this.checked)">
             <span data-i18n="tokens.selectAllCurrent">全选当前列表</span>
@@ -301,8 +302,8 @@
             oninput="updateModelImportPreview()"
           ></textarea>
         </div>
-        <div style="padding: 10px 12px; background: var(--info-50); border: 1px solid var(--info-200); border-radius: 6px; color: var(--neutral-700); font-size: 12px; margin-bottom: 12px;">
-          <strong data-i18n="tokens.importTipTitle">提示：</strong><span data-i18n="tokens.importTipDesc">支持逗号分隔 <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px;">model1,model2</code> 或每行一个模型，自动去重</span>
+        <div class="glass-card rounded mb-3">
+          <strong data-i18n="tokens.importTipTitle">提示：</strong><span data-i18n="tokens.importTipDesc">支持逗号分隔 <code style="background: rgba(128,128,128,0.15); padding: 2px 4px; border-radius: 3px;">model1,model2</code> 或每行一个模型，自动去重</span>
         </div>
         <div id="tokenModelImportPreview" style="display: none; padding: 10px 12px; background: var(--success-50); border: 1px solid var(--success-200); border-radius: 6px; color: var(--success-700); font-size: 13px;">
           <span data-i18n="tokens.willAddPrefix">将添加</span> <span id="tokenModelImportCount">0</span> <span data-i18n="tokens.willAddSuffix">个模型</span>

@@ -303,9 +303,25 @@
     // 语言切换器
     const langSwitcher = window.i18n ? window.i18n.createLanguageSwitcher() : null;
 
+    // 主题切换开关
+    const themeSwitchInput = h('input', {
+      type: 'checkbox',
+      id: 'theme-switch',
+      onchange: toggleTheme,
+      'aria-label': t('common.darkMode') || '深色模式'
+    });
+    const themeToggle = h('div', { class: 'theme-toggle-wrapper' }, [
+      h('span', { class: 'theme-toggle-label' }, t('common.darkMode') || '深色模式'),
+      h('label', { class: 'theme-switch' }, [
+        themeSwitchInput,
+        h('span', { class: 'slider' })
+      ])
+    ]);
+
     const right = h('div', { class: 'topbar-right' }, [
       versionGroup,
       langSwitcher,
+      themeToggle,
       h('button', {
         id: 'auth-btn',
         class: 'btn btn-secondary btn-sm',
@@ -315,6 +331,44 @@
     ].filter(Boolean));
     bar.appendChild(left); bar.appendChild(nav); bar.appendChild(right);
     return bar;
+  }
+
+  // 主题切换功能
+  function initTheme() {
+    const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+    document.documentElement.dataset.theme = savedTheme;
+    // 同步开关状态
+    const switchEl = document.getElementById('theme-switch');
+    if (switchEl) {
+      switchEl.checked = savedTheme === 'dark';
+    }
+  }
+
+  function toggleTheme(e) {
+    const html = document.documentElement;
+    const switchEl = document.getElementById('theme-switch');
+
+    // 如果有事件对象，从开关状态获取；否则从当前主题状态获取
+    let isDark;
+    if (e && e.target && e.target.type === 'checkbox') {
+      isDark = e.target.checked;
+    } else {
+      isDark = html.dataset.theme === 'dark';
+    }
+
+    // 设置主题
+    if (isDark) {
+      html.dataset.theme = 'dark';
+      localStorage.setItem('ccload_theme', 'dark');
+    } else {
+      html.dataset.theme = 'light';
+      localStorage.setItem('ccload_theme', 'light');
+    }
+
+    // 同步开关状态
+    if (switchEl) {
+      switchEl.checked = html.dataset.theme === 'dark';
+    }
   }
 
   async function onLogout() {
@@ -375,6 +429,12 @@
     const topbar = buildTopbar(activeKey);
     document.body.appendChild(topbar);
 
+    // 同步主题开关状态
+    const themeSwitch = document.getElementById('theme-switch');
+    if (themeSwitch) {
+      themeSwitch.checked = document.documentElement.dataset.theme === 'dark';
+    }
+
     // 背景动效
     injectBackground();
 
@@ -397,40 +457,48 @@
   window.showNotification = function (message, type = 'info') {
     const el = document.createElement('div');
     el.className = `notification notification-${type}`;
+    // 液态玻璃 Toast 样式
     el.style.cssText = `
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4) var(--space-6);
-      color: var(--neutral-900);
-      font-weight: var(--font-medium);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-weight: 500;
       opacity: 0;
-      transform: translateX(20px);
-      transition: all var(--duration-normal) var(--timing-function);
-      max-width: 360px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      transform: translateX(100%);
+      transition: all 0.2s ease;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       overflow: hidden;
       isolation: isolate;
       pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     `;
+    // 根据主题设置颜色
+    const isDark = document.body.classList.contains('dark-mode');
     if (type === 'success') {
-      // 高可读：浅底深字
-      el.style.background = 'var(--success-50)';
-      el.style.color = 'var(--success-600)';
-      el.style.borderColor = 'var(--success-500)';
-      el.style.boxShadow = '0 6px 28px rgba(16,185,129,0.18)';
+      el.style.background = isDark ? 'rgba(24, 160, 88, 0.2)' : 'rgba(24, 160, 88, 0.15)';
+      el.style.color = isDark ? '#4ade80' : '#16a34a';
+      el.style.border = `1px solid ${isDark ? 'rgba(24, 160, 88, 0.4)' : 'rgba(24, 160, 88, 0.3)'}`;
     } else if (type === 'error') {
-      el.style.background = 'var(--error-50)';
-      el.style.color = 'var(--error-600)';
-      el.style.borderColor = 'var(--error-500)';
-      el.style.boxShadow = '0 6px 28px rgba(239,68,68,0.18)';
+      el.style.background = isDark ? 'rgba(208, 48, 80, 0.2)' : 'rgba(208, 48, 80, 0.15)';
+      el.style.color = isDark ? '#f87171' : '#dc2626';
+      el.style.border = `1px solid ${isDark ? 'rgba(208, 48, 80, 0.4)' : 'rgba(208, 48, 80, 0.3)'}`;
     } else if (type === 'info') {
-      el.style.background = 'var(--info-50)';
-      el.style.color = 'var(--neutral-800)';
-      el.style.borderColor = 'rgba(0,0,0,0.08)';
+      el.style.background = isDark ? 'rgba(32, 128, 240, 0.2)' : 'rgba(32, 128, 240, 0.15)';
+      el.style.color = isDark ? '#60a5fa' : '#2563eb';
+      el.style.border = `1px solid ${isDark ? 'rgba(32, 128, 240, 0.4)' : 'rgba(32, 128, 240, 0.3)'}`;
     }
-    el.textContent = message;
+    // 添加图标
+    const icons = {
+      success: '✓',
+      error: '✗',
+      info: 'ⓘ'
+    };
+    el.innerHTML = `<span style="font-size: 18px; flex-shrink: 0;">${icons[type] || icons.info}</span><span>${message}</span>`;
     const host = ensureNotifyHost();
     host.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; });
@@ -441,6 +509,8 @@
   }
   window.showSuccess = (msg) => window.showNotification(msg, 'success');
   window.showError = (msg) => window.showNotification(msg, 'error');
+  window.initTheme = initTheme;
+  window.toggleTheme = toggleTheme;
 })();
 
 // ============================================================
@@ -825,7 +895,7 @@
         <div class="filter-combobox-wrapper" style="min-width: ${minWidth}px;">
           <input
             id="${inputId}"
-            class="filter-select filter-combobox"
+            class="filter-input"
             type="text"
             autocomplete="off"
             spellcheck="false"
@@ -1207,5 +1277,52 @@
   window.copyToClipboard = copyToClipboard;
   window.initChannelTypeFilter = initChannelTypeFilter;
   window.loadAuthTokensIntoSelect = loadAuthTokensIntoSelect;
+
+  /**
+   * 填充 select 下拉选项（使用 DocumentFragment 优化性能）
+   * @param {string|HTMLSelectElement} select - select 元素或 ID
+   * @param {Array<{value: string, label: string}>} options - 选项数组
+   * @param {Object} [opts] - 可选配置
+   * @param {string} [opts.defaultLabel] - 默认选项文本（value=''），如不提供则不添加默认选项
+   * @param {string} [opts.defaultValue] - 默认选项值，默认为 ''
+   * @param {string} [opts.restoreValue] - 填充后恢复选中的值
+   * @returns {boolean} - 是否成功填充
+   */
+  function populateSelect(select, options, opts) {
+    const o = opts || {};
+    const el = typeof select === 'string' ? document.getElementById(select) : select;
+    if (!el || !Array.isArray(options)) return false;
+
+    const fragment = document.createDocumentFragment();
+
+    if (o.defaultLabel !== undefined) {
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = o.defaultValue || '';
+      defaultOpt.textContent = o.defaultLabel;
+      fragment.appendChild(defaultOpt);
+    }
+
+    options.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = String(opt.value);
+      option.textContent = opt.label !== undefined ? opt.label : String(opt.value);
+      fragment.appendChild(option);
+    });
+
+    el.innerHTML = '';
+    el.appendChild(fragment);
+
+    if (o.restoreValue !== undefined && options.some(opt => opt.value === o.restoreValue)) {
+      el.value = o.restoreValue;
+    }
+
+    return true;
+  }
+
+  window.populateSelect = populateSelect;
   window.initTimeRangeSelector = initTimeRangeSelector;
+
+  // 初始化主题
+  window.initTheme();
+  window.initTheme = window.initTheme;
 })();

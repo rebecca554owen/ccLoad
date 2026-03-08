@@ -56,7 +56,7 @@
           }
         }
       } catch (error) {
-        console.error('加载模型列表失败:', error);
+        // 静默处理模型加载错误
       }
     }
 
@@ -133,40 +133,26 @@
         // 默认不显示任何渠道，只显示总数
         if (window.visibleChannels.size === 0) {
           // 首次访问：不默认显示任何渠道
-          console.log('初始化渠道显示状态（首次访问）- 默认仅显示总数');
           // 不添加任何渠道到 visibleChannels，保持为空集合
         } else {
-          // 修复：验证并清理localStorage中过时的渠道选择
-          console.log('验证现有渠道选择状态...', Array.from(window.visibleChannels));
+          // 验证并清理 localStorage 中过时的渠道选择
           const validChannels = new Set();
 
           // 检查每个已保存渠道是否在当前数据中存在
           window.visibleChannels.forEach(channelName => {
             if (hasChannelData(channelName, window.trendData)) {
               validChannels.add(channelName);
-            } else {
-              console.log(`清理过时渠道: ${channelName}（数据中不存在）`);
             }
+            // 过时渠道自动清理，无需日志
           });
 
-          // 更新visibleChannels为验证后的集合
+          // 更新 visibleChannels 为验证后的集合
           window.visibleChannels = validChannels;
           persistChannelState();
-          console.log('更新后的可见渠道:', Array.from(window.visibleChannels));
         }
-        
-        // 添加调试信息显示
-        const debugSince = metrics.res.headers.get('X-Debug-Since');
-        const debugPoints = metrics.res.headers.get('X-Debug-Points');
-        const debugTotal = metrics.res.headers.get('X-Debug-Total');
 
-        console.log('趋势数据调试信息:', {
-          since: debugSince,
-          points: debugPoints,
-          total: debugTotal,
-          dataLength: trendData.length,
-          channelsCount: window.channels.length
-        });
+        // 获取调试头信息用于显示
+        const debugTotal = metrics.res.headers.get('X-Debug-Total');
 
         updateChannelFilter();
         renderChart();
@@ -182,7 +168,6 @@
         }
 
       } catch (error) {
-        console.error('加载趋势数据失败:', error);
         try { if (window.showError) window.showError(t('trend.loadDataFailed')); } catch(_){}
         renderTrendError();
       }

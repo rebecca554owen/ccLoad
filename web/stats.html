@@ -18,6 +18,12 @@
   <script defer src="/web/assets/js/date-range-selector.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/stats.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -27,7 +33,7 @@
     <main class="main-content">
       <div class="content-area">
         <!-- 页面标题 -->
-        <header class="mb-2">
+        <header class="mt-6 mb-6">
         </header>
 
         <!-- Filter Bar -->
@@ -97,7 +103,7 @@
         </div>
 
         <!-- 统计详情表格 -->
-        <section class="mb-8">
+        <section class="mb-6">
 	          <div class="glass-card stats-detail-card" style="animation-delay: 0.3s;">
             <h3 class="section-title mb-6" style="display: flex; align-items: center; justify-content: space-between;">
               <span style="display: flex; align-items: center;">
@@ -105,7 +111,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
                 <span data-i18n="stats.detailTitle">详细统计数据</span>
-                <small style="color: var(--neutral-600); font-weight: var(--font-normal); margin-left: var(--space-2);" data-i18n="stats.sortByPriority">
+                <small class="opacity-75" style="font-weight: var(--font-normal); margin-left: var(--space-2);" data-i18n="stats.sortByPriority">
                   按渠道优先级排序
                 </small>
               </span>
@@ -271,10 +277,10 @@
   <template id="tpl-stats-empty">
     <tr>
       <td colspan="{{colspan}}" class="empty-state">
-        <svg class="w-12 h-12 mx-auto mb-4" style="color: var(--neutral-400);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
-        <div style="font-weight: var(--font-medium); margin-bottom: var(--space-1); color: var(--neutral-700);" data-i18n="stats.noData">暂无统计数据</div>
+        <div class="opacity-75" style="font-weight: var(--font-medium); margin-bottom: var(--space-1);" data-i18n="stats.noData">暂无统计数据</div>
         <div data-i18n="stats.adjustFilter">请调整筛选条件或检查时间范围</div>
       </td>
     </tr>
@@ -303,8 +309,8 @@
 
   <!-- 合计行模板 -->
   <template id="tpl-stats-total">
-    <tr style="background-color: var(--primary-50); font-weight: bold; border-top: 2px solid var(--primary-200);">
-      <td colspan="2" style="text-align: center; font-size: 15px; color: var(--primary-700);" data-i18n="stats.total">合计</td>
+    <tr class="glass-card" style="font-weight: bold;">
+      <td colspan="2" class="text-primary" style="text-align: center; font-size: 15px;" data-i18n="stats.total">合计</td>
       <td><span class="success-count">{{successCount}}</span></td>
       <td><span class="error-count">{{errorCount}}</span></td>
       <td style="text-align: center;"></td>

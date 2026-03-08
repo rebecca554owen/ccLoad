@@ -154,6 +154,14 @@
       background: rgba(248, 250, 252, 0.96);
     }
 
+    [data-theme="dark"] .logs-table tbody td:nth-child(odd) {
+      background: rgba(30, 30, 35, 0.92);
+    }
+
+    [data-theme="dark"] .logs-table tbody td:nth-child(even) {
+      background: rgba(40, 40, 45, 0.96);
+    }
+
     /* 固定宽度列 */
     .logs-table th:nth-child(1),
     .logs-table td:nth-child(1) {

@@ -14,6 +14,12 @@
   <script defer src="/web/assets/js/i18n.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/login.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 <body>
   <!-- 动画背景 -->
@@ -28,7 +34,7 @@
   </div>
 
   <div class="login-page">
-    <div class="login-container animate-slide-up">
+    <div class="login-container glass-panel animate-slide-up">
       <!-- Logo和品牌 -->
       <div class="login-brand">
         <div class="brand-logo">
@@ -39,7 +45,7 @@
       </div>
 
       <!-- 登录表单 -->
-      <div class="login-form-container">
+      <div class="login-form-container glass-panel">
         <div class="login-header">
           <h2 data-i18n="login.adminLogin">管理员登录</h2>
           <p data-i18n="login.passwordHint">请输入您的管理密码以访问系统</p>
@@ -66,7 +72,7 @@
             </div>
           </div>
 
-          <button type="submit" class="login-button" id="login-button">
+          <button type="submit" class="login-button btn-glass" id="login-button">
             <span class="button-content">
               <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>

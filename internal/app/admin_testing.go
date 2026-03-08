@@ -165,7 +165,7 @@ func (s *Server) handleChannelTestRequest(c *gin.Context, requireBaseURL bool) {
 func (s *Server) testChannelAPI(reqCtx context.Context, cfg *model.Config, apiKey string, testReq *testutil.TestChannelRequest) map[string]any {
 	// 设置默认测试内容（从配置读取）
 	if strings.TrimSpace(testReq.Content) == "" {
-		testReq.Content = s.configService.GetString("channel_test_content", "sonnet 4.0的发布日期是什么")
+		testReq.Content = s.configService.GetString("channel_test_content", "sonnet 4.0的发布日期是什么？")
 	}
 
 	// [INFO] 修复：应用模型重定向逻辑（与正常代理流程保持一致）

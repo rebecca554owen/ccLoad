@@ -6,7 +6,7 @@ let totalLogsPages = 1;
 let totalLogs = 0;
 let currentChannelType = 'all'; // 当前选中的渠道类型
 let authTokens = []; // 令牌列表
-let defaultTestContent = 'sonnet 4.0的发布日期是什么'; // 默认测试内容（从设置加载）
+let defaultTestContent = 'sonnet 4.0的发布日期是什么？'; // 默认测试内容（从设置加载）
 
 const ACTIVE_REQUESTS_POLL_INTERVAL_MS = 2000;
 let activeRequestsPollTimer = null;
@@ -1086,43 +1086,50 @@ async function testKey(channelId, channelName, apiKey, model, apiKeyHash = '') {
 
     // 填充模型下拉列表
     const modelSelect = document.getElementById('testKeyModel');
-    modelSelect.innerHTML = '';
-
     if (channel.models && channel.models.length > 0) {
       // channel.models 是 ModelEntry 对象数组，需访问 .model 属性
-      channel.models.forEach(m => {
-        const modelName = m.model || m; // 兼容字符串和对象
-        const option = document.createElement('option');
-        option.value = modelName;
-        option.textContent = modelName;
-        modelSelect.appendChild(option);
-      });
-
-      // 如果日志中的模型在支持列表中，则预选；否则选择第一个
       const modelNames = channel.models.map(m => m.model || m);
-      if (modelNames.includes(model)) {
-        modelSelect.value = model;
+      const options = modelNames.map(name => ({ value: name, label: name }));
+      const restoreValue = modelNames.includes(model) ? model : modelNames[0];
+      if (typeof window.populateSelect === 'function') {
+        window.populateSelect(modelSelect, options, { restoreValue });
       } else {
-        modelSelect.value = modelNames[0];
+        modelSelect.innerHTML = '';
+        options.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.label;
+          modelSelect.appendChild(option);
+        });
+        modelSelect.value = restoreValue;
       }
     } else {
       // 没有配置模型，使用日志中的模型
+      if (typeof window.populateSelect === 'function') {
+        window.populateSelect(modelSelect, [{ value: model, label: model }], { restoreValue: model });
+      } else {
+        modelSelect.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        modelSelect.appendChild(option);
+        modelSelect.value = model;
+      }
+    }
+  } catch (e) {
+    console.error('加载渠道配置失败', e);
+    // 降级方案：使用日志中的模型
+    const modelSelect = document.getElementById('testKeyModel');
+    if (typeof window.populateSelect === 'function') {
+      window.populateSelect(modelSelect, [{ value: model, label: model }], { restoreValue: model });
+    } else {
+      modelSelect.innerHTML = '';
       const option = document.createElement('option');
       option.value = model;
       option.textContent = model;
       modelSelect.appendChild(option);
       modelSelect.value = model;
     }
-  } catch (e) {
-    console.error('加载渠道配置失败', e);
-    // 降级方案：使用日志中的模型
-    const modelSelect = document.getElementById('testKeyModel');
-    modelSelect.innerHTML = '';
-    const option = document.createElement('option');
-    option.value = model;
-    option.textContent = model;
-    modelSelect.appendChild(option);
-    modelSelect.value = model;
     updateTestKeyIndexInfo('渠道配置加载失败，将按默认顺序测试');
   }
 }

@@ -1,15 +1,9 @@
 // Filter channels based on current filters
 let filteredChannels = []; // 存储筛选后的渠道列表
 let modelFilterOptions = [];
-let modelFilterCombobox = null; // 通用组件实例
 
 function getModelAllLabel() {
   return (window.t && window.t('channels.modelAll')) || '所有模型';
-}
-
-function modelFilterInputValueFromFilterValue(filterValue) {
-  if (!filterValue || filterValue === 'all') return getModelAllLabel();
-  return filterValue;
 }
 
 function filterChannels() {
@@ -100,10 +94,38 @@ function updateModelOptions() {
 
   modelFilterOptions = Array.from(modelSet).sort();
 
-  // 使用通用组件刷新下拉框
-  if (modelFilterCombobox) {
-    modelFilterCombobox.setValue(filters.model, modelFilterInputValueFromFilterValue(filters.model));
-    modelFilterCombobox.refresh();
+  // 使用原生 select 更新选项
+  const selectEl = document.getElementById('modelFilter');
+  if (selectEl) {
+    const currentValue = selectEl.value;
+    const options = modelFilterOptions.map(model => ({ value: model, label: model }));
+    if (typeof window.populateSelect === 'function') {
+      window.populateSelect(selectEl, options, {
+        defaultLabel: getModelAllLabel(),
+        defaultValue: 'all',
+        restoreValue: currentValue
+      });
+    } else {
+      // Fallback
+      const fragment = document.createDocumentFragment();
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = getModelAllLabel();
+      fragment.appendChild(allOption);
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        fragment.appendChild(option);
+      });
+      selectEl.innerHTML = '';
+      selectEl.appendChild(fragment);
+      if (modelFilterOptions.includes(currentValue)) {
+        selectEl.value = currentValue;
+      } else {
+        selectEl.value = 'all';
+      }
+    }
   }
 }
 
@@ -148,26 +170,13 @@ function setupFilterListeners() {
     filterChannels();
   });
 
-  // 使用通用组件初始化模型筛选器（附着模式）
-  const modelFilterInput = document.getElementById('modelFilter');
-  if (modelFilterInput) {
-    modelFilterCombobox = createSearchableCombobox({
-      attachMode: true,
-      inputId: 'modelFilter',
-      dropdownId: 'modelFilterDropdown',
-      initialValue: filters.model,
-      initialLabel: modelFilterInputValueFromFilterValue(filters.model),
-      getOptions: () => {
-        const allLabel = getModelAllLabel();
-        return [{ value: 'all', label: allLabel }].concat(
-          modelFilterOptions.map(m => ({ value: m, label: m }))
-        );
-      },
-      onSelect: (value) => {
-        filters.model = value;
-        if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-        filterChannels();
-      }
+  // 模型筛选 - 原生 select
+  const modelFilterSelect = document.getElementById('modelFilter');
+  if (modelFilterSelect) {
+    modelFilterSelect.addEventListener('change', (e) => {
+      filters.model = e.target.value;
+      if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+      filterChannels();
     });
   }
 

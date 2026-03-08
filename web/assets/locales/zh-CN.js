@@ -57,6 +57,7 @@ window.I18N_LOCALES['zh-CN'] = {
   'common.timeHM': '{h}小时{m}分',
   'common.timeMS': '{m}分{s}秒',
   'common.timeS': '{s}秒',
+  'common.darkMode': '深色模式',
 
   // ============================================================
   // 导航
@@ -97,8 +98,7 @@ window.I18N_LOCALES['zh-CN'] = {
   // 首页概览
   // ============================================================
   'index.title': 'Claude Code & Codex Proxy 代理服务',
-  'index.heroTitle': 'Claude Code & Codex API 代理服务',
-  'index.heroSubtitle': '智能路由 · 故障切换 · 统计分析',
+  'index.pageSubtitle': '统计分析',
   'index.timeRange.today': '本日',
   'index.timeRange.yesterday': '昨日',
   'index.timeRange.dayBeforeYesterday': '前日',
@@ -147,6 +147,7 @@ window.I18N_LOCALES['zh-CN'] = {
   'channels.statusCooldown': '冷却中',
   'channels.modelFilter': '模型',
   'channels.modelAll': '所有模型',
+  'channels.allModels': '所有模型',
   'channels.searchChannel': '搜索渠道',
   'channels.searchPlaceholder': '输入渠道名称...',
   'channels.filterInfo': '{filtered} / {total} 个渠道',

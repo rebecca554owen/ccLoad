@@ -87,14 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     filters.id = urlChannelId;
     document.getElementById('statusFilter').value = 'all';
     const modelFilterEl = document.getElementById('modelFilter');
-    if (modelFilterEl) {
-      modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-        ? modelFilterInputValueFromFilterValue('all')
-        : window.t('channels.modelAll');
-    }
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    }
+    if (modelFilterEl) modelFilterEl.value = 'all';
     document.getElementById('searchInput').value = '';
     document.getElementById('idFilter').value = urlChannelId;
     const clearBtn = document.getElementById('clearSearchBtn');
@@ -106,12 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     filters.search = savedFilters.search || '';
     filters.id = savedFilters.id || '';
     document.getElementById('statusFilter').value = filters.status;
-    const modelFilterEl = document.getElementById('modelFilter');
-    if (modelFilterEl) {
-      modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-        ? modelFilterInputValueFromFilterValue(filters.model)
-        : (filters.model === 'all' ? window.t('channels.modelAll') : filters.model);
-    }
+    document.getElementById('modelFilter').value = filters.model || 'all';
     document.getElementById('searchInput').value = filters.search;
     document.getElementById('idFilter').value = filters.id;
   }
@@ -132,17 +120,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 清空ID筛选框
     const idFilterEl = document.getElementById('idFilter');
     if (idFilterEl) idFilterEl.value = '';
-    // 使用通用组件更新模型筛选器
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    } else {
-      const modelFilterEl = document.getElementById('modelFilter');
-      if (modelFilterEl) {
-        modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-          ? modelFilterInputValueFromFilterValue('all')
-          : window.t('channels.modelAll');
-      }
-    }
+    // 重置模型筛选器
+    const modelFilterEl2 = document.getElementById('modelFilter');
+    if (modelFilterEl2) modelFilterEl2.value = 'all';
     saveChannelsFilters();
     loadChannels(type);
   });

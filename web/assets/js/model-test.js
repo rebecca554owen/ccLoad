@@ -12,15 +12,13 @@ let testMode = TEST_MODE_CHANNEL;
 let isDeletingModels = false;
 let isTestingModels = false;
 
-let channelSelectCombobox = null;
-let modelSelectCombobox = null;
+const channelSelect = document.getElementById('testChannelSelect');
+const modelSelect = document.getElementById('testModelSelect');
 
 const headRow = document.getElementById('model-test-head-row');
 const tbody = document.getElementById('model-test-tbody');
-const channelSelectorLabel = document.getElementById('channelSelectorLabel');
 const modelSelectorLabel = document.getElementById('modelSelectorLabel');
 const typeSelect = document.getElementById('testChannelType');
-const modelSelect = document.getElementById('testModelSelect');
 const fetchModelsBtn = document.getElementById('fetchModelsBtn');
 const deleteModelsBtn = document.getElementById('deleteModelsBtn');
 const runTestBtn = document.getElementById('runTestBtn');
@@ -403,55 +401,33 @@ function getModelInputValue() {
 
 function setModelInputValue(value) {
   const nextValue = String(value || '').trim();
-  if (modelSelectCombobox) {
-    modelSelectCombobox.setValue(nextValue, nextValue);
-    return;
-  }
-
   if (modelSelect) {
     modelSelect.value = nextValue;
   }
 }
 
-function ensureModelSelectCombobox() {
-  if (modelSelectCombobox || !modelSelect) return;
-  if (typeof window.createSearchableCombobox !== 'function') return;
-
-  modelSelectCombobox = window.createSearchableCombobox({
-    attachMode: true,
-    inputId: 'testModelSelect',
-    dropdownId: 'testModelSelectDropdown',
-    initialValue: selectedModelName,
-    initialLabel: selectedModelName,
-    getOptions: () => {
-      const channelType = typeSelect.value;
-      const models = getAllModelsInType(channelType);
-      const options = models.map(name => ({ value: name, label: name }));
-
-      const typedModel = getModelInputValue();
-      const hasExactMatch = typedModel
-        ? options.some(option => String(option.value).toLowerCase() === typedModel.toLowerCase())
-        : false;
-      const hasFuzzyMatch = typedModel
-        ? options.some(option => String(option.label).toLowerCase().includes(typedModel.toLowerCase()) || String(option.value).toLowerCase().includes(typedModel.toLowerCase()))
-        : false;
-
-      if (typedModel && !hasExactMatch && !hasFuzzyMatch) {
-        options.unshift({ value: typedModel, label: typedModel });
-      }
-
-      return options;
-    },
-    onSelect: (value) => {
-      selectedModelName = String(value || '').trim();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    },
-    onCancel: () => {
-      selectedModelName = getModelInputValue() || selectedModelName;
-    }
-  });
+function populateModelSelector() {
+  if (!modelSelect) return;
+  const channelType = typeSelect?.value || (channelsList[0] ? getChannelType(channelsList[0]) : 'anthropic');
+  const models = getAllModelsInType(channelType);
+  if (typeof window.populateSelect === 'function') {
+    window.populateSelect(modelSelect, models.map(name => ({ value: name, label: name })), {
+      restoreValue: modelSelect.value
+    });
+  } else {
+    // Fallback for standalone usage
+    const currentValue = modelSelect.value;
+    const fragment = document.createDocumentFragment();
+    models.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      fragment.appendChild(option);
+    });
+    modelSelect.innerHTML = '';
+    modelSelect.appendChild(fragment);
+    if (models.includes(currentValue)) modelSelect.value = currentValue;
+  }
 }
 
 function clearProgress() {
@@ -534,7 +510,7 @@ function renderChannelModeRows() {
   finalizeTableRender();
 }
 
-function populateModelSelector() {
+function syncSelectedModel() {
   const channelType = typeSelect.value;
   const models = getAllModelsInType(channelType);
   const typedModel = getModelInputValue();
@@ -542,7 +518,6 @@ function populateModelSelector() {
   if (models.length === 0) {
     selectedModelName = typedModel || '';
     setModelInputValue(selectedModelName);
-    modelSelectCombobox?.refresh();
     return;
   }
 
@@ -553,7 +528,6 @@ function populateModelSelector() {
   }
 
   setModelInputValue(selectedModelName);
-  modelSelectCombobox?.refresh();
 }
 
 function renderModelModeRows() {
@@ -1315,35 +1289,41 @@ async function onChannelChange() {
   }
 }
 
-function renderSearchableChannelSelect() {
-  channelSelectCombobox = createSearchableCombobox({
-    container: 'testChannelSelectContainer',
-    inputId: 'testChannelSelect',
-    dropdownId: 'testChannelSelectDropdown',
-    placeholder: i18nText('modelTest.searchChannel', '搜索渠道...'),
-    minWidth: 250,
-    getOptions: () => channelsList.map(ch => ({
+function renderChannelSelect() {
+  if (!channelSelect) return;
+  if (typeof window.populateSelect === 'function') {
+    window.populateSelect(channelSelect, channelsList.map(ch => ({
       value: String(ch.id),
       label: `[${getChannelType(ch)}] ${ch.name}`
-    })),
-    onSelect: async (value) => {
-      const channelId = parseInt(value, 10);
-      selectedChannel = channelsList.find(c => c.id === channelId) || null;
-      await onChannelChange();
-    }
-  });
+    })));
+  } else {
+    const fragment = document.createDocumentFragment();
+    channelsList.forEach(ch => {
+      const option = document.createElement('option');
+      option.value = String(ch.id);
+      option.textContent = `[${getChannelType(ch)}] ${ch.name}`;
+      fragment.appendChild(option);
+    });
+    channelSelect.innerHTML = '';
+    channelSelect.appendChild(fragment);
+  }
 }
 
 async function loadChannels() {
   try {
     const list = (await fetchDataWithAuth('/admin/channels')) || [];
     channelsList = list.sort((a, b) => getChannelType(a).localeCompare(getChannelType(b)) || b.priority - a.priority);
-    renderSearchableChannelSelect();
+    renderChannelSelect();
 
     const firstType = channelsList[0] ? getChannelType(channelsList[0]) : 'anthropic';
     await window.ChannelTypeManager.renderChannelTypeSelect('testChannelType', firstType);
+    // 确保 typeSelect.value 被正确设置
+    if (typeSelect && !typeSelect.value && firstType) {
+      typeSelect.value = firstType;
+    }
 
     populateModelSelector();
+    syncSelectedModel();
     renderRowsByMode();
   } catch (e) {
     console.error('加载渠道列表失败:', e);
@@ -1368,11 +1348,19 @@ async function loadDefaultTestContent() {
 }
 
 function bindEvents() {
-  ensureModelSelectCombobox();
   const streamEnabled = document.getElementById('streamEnabled');
   if (streamEnabled) {
     streamEnabled.addEventListener('change', () => {
       applyFirstByteVisibility();
+    });
+  }
+
+  // 渠道选择变更事件（只绑定一次，避免重复监听器）
+  if (channelSelect) {
+    channelSelect.addEventListener('change', async () => {
+      const channelId = parseInt(channelSelect.value, 10);
+      selectedChannel = channelsList.find(c => c.id === channelId) || null;
+      await onChannelChange();
     });
   }
 
@@ -1382,18 +1370,12 @@ function bindEvents() {
     }
 
     populateModelSelector();
+    syncSelectedModel();
     renderModelModeRows();
   });
 
-  if (!modelSelectCombobox && modelSelect) {
+  if (modelSelect) {
     modelSelect.addEventListener('change', () => {
-      selectedModelName = getModelInputValue();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    });
-
-    modelSelect.addEventListener('input', () => {
       selectedModelName = getModelInputValue();
       if (testMode === TEST_MODE_MODEL) {
         renderModelModeRows();
@@ -1420,6 +1402,7 @@ function setTestMode(mode) {
 
   if (testMode === TEST_MODE_MODEL) {
     populateModelSelector();
+    syncSelectedModel();
   } else if (selectedChannel) {
     typeSelect.value = getChannelType(selectedChannel);
   }

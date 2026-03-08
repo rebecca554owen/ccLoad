@@ -18,20 +18,26 @@
   <script defer src="/web/assets/js/date-range-selector.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/logs.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
     
 
     <!-- 主内容区域 -->
-    <main class="main-content">
+    <main class="main-content mt-6 mb-6">
       <div class="content-area">
      <!-- 页面标题 -->
-        <header class="mb-2">
+        <header class="mb-6">
         </header>
 
         <!-- Filter Bar -->
-        <div class="filter-bar">
+        <div class="filter-bar glass-panel">
           <div class="filter-controls">
             <!-- 渠道类型筛选 -->
             <div class="filter-group">
@@ -96,7 +102,7 @@
 
   
         <!-- 日志列表 -->
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="glass-card" style="animation-delay: 0.2s;">
            
             
@@ -134,7 +140,7 @@
         </section>
 
         <!-- 底部分页控制 -->
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="glass-card" style="padding: var(--space-2);">
             <div class="flex justify-center items-center">
               <div class="pagination-controls">
@@ -155,7 +161,7 @@
                     max="1"
                     data-i18n-placeholder="logs.pagePlaceholder"
                     placeholder="页码"
-                    style="width: 100px; padding: 4px 8px; border: 1px solid var(--neutral-300); border-radius: 4px; text-align: center;"
+                    style="width: 100px; padding: 4px 8px; border: 1px solid currentColor; border-radius: 4px; text-align: center; opacity: 0.7;"
                     onkeydown="if(event.key==='Enter') jumpToPage()"
                   />
                   <span data-i18n="logs.pageUnit">页</span>
@@ -184,8 +190,8 @@
 
       <div class="form-group">
         <label class="form-label" data-i18n="logs.apiKeyLabel">API Key</label>
-        <code id="testKeyDisplay" style="display: block; padding: 8px; background: var(--neutral-100); border-radius: 4px; color: var(--neutral-700);"></code>
-        <small id="testKeyIndexInfo" style="color: var(--neutral-600); font-size: 0.85em; display: block; margin-top: 6px;"></small>
+        <code id="testKeyDisplay" class="glass-card rounded p-2 opacity-90" style="display: block;"></code>
+        <small id="testKeyIndexInfo" class="opacity-75 text-sm" style="display: block; margin-top: 6px;"></small>
       </div>
 
       <div class="form-group">
@@ -193,8 +199,8 @@
         <select id="testKeyModel" class="form-input">
           <option value="" data-i18n="common.loading">加载中...</option>
         </select>
-        <small style="color: var(--neutral-600); font-size: 0.85em; margin-top: 4px; display: block;">
-          <span data-i18n="logs.originalModel">日志中的模型:</span> <code id="testKeyOriginalModel" style="color: var(--neutral-700);"></code>
+        <small class="opacity-75 text-sm" style="margin-top: 4px; display: block;">
+          <span data-i18n="logs.originalModel">日志中的模型:</span> <code id="testKeyOriginalModel" class="opacity-75"></code>
         </small>
       </div>
 
@@ -234,7 +240,7 @@
   <template id="tpl-log-row">
     <tr>
       <td style="white-space: nowrap;">{{time}}</td>
-      <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);">{{{clientIPDisplay}}}</td>
+      <td class="config-info opacity-75" style="white-space: nowrap; font-family: monospace; font-size: 0.85em;">{{{clientIPDisplay}}}</td>
       <td style="text-align: center; white-space: nowrap;">{{{apiKeyDisplay}}}</td>
       <td class="config-info">{{{configDisplay}}}</td>
       <td>{{{modelDisplay}}}</td>
@@ -253,10 +259,10 @@
   <template id="tpl-log-empty">
     <tr>
       <td colspan="{{colspan}}" class="empty-state">
-        <svg class="w-12 h-12 mx-auto mb-4" style="color: var(--neutral-400);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <div style="font-weight: var(--font-medium); margin-bottom: var(--space-1); color: var(--neutral-700);" data-i18n="logs.noData">暂无日志数据</div>
+        <div class="opacity-75" style="font-weight: var(--font-medium); margin-bottom: var(--space-1);" data-i18n="logs.noData">暂无日志数据</div>
         <div data-i18n="logs.adjustFilter">请调整筛选条件或检查时间范围</div>
       </td>
     </tr>

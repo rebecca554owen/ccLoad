@@ -139,7 +139,7 @@ function initSettingsEventDelegation() {
 function renderInput(setting) {
   const safeKey = escapeHtml(setting.key);
   const safeValue = escapeHtml(setting.value);
-  const baseStyle = 'padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-bg-secondary); color: var(--color-text); font-size: 13px;';
+  const baseStyle = 'padding: 6px 10px; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; background: rgba(255,255,255,0.6); color: rgba(0,0,0,0.85); font-size: 13px;';
 
   switch (setting.value_type) {
     case 'bool':
