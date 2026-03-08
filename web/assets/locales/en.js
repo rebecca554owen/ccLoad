@@ -97,8 +97,7 @@ window.I18N_LOCALES['en'] = {
   // Index Overview
   // ============================================================
   'index.title': 'Claude Code & Codex Proxy Service',
-  'index.heroTitle': 'Claude Code & Codex API Proxy Service',
-  'index.heroSubtitle': 'Smart Routing · Failover · Analytics',
+  'index.pageSubtitle': 'Analytics',
   'index.timeRange.today': 'Today',
   'index.timeRange.yesterday': 'Yesterday',
   'index.timeRange.dayBeforeYesterday': 'Day Before',

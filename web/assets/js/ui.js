@@ -397,40 +397,48 @@
   window.showNotification = function (message, type = 'info') {
     const el = document.createElement('div');
     el.className = `notification notification-${type}`;
+    // 液态玻璃 Toast 样式
     el.style.cssText = `
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4) var(--space-6);
-      color: var(--neutral-900);
-      font-weight: var(--font-medium);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-weight: 500;
       opacity: 0;
-      transform: translateX(20px);
-      transition: all var(--duration-normal) var(--timing-function);
-      max-width: 360px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      transform: translateX(100%);
+      transition: all 0.2s ease;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       overflow: hidden;
       isolation: isolate;
       pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     `;
+    // 根据主题设置颜色
+    const isDark = document.body.classList.contains('dark-mode');
     if (type === 'success') {
-      // 高可读：浅底深字
-      el.style.background = 'var(--success-50)';
-      el.style.color = 'var(--success-600)';
-      el.style.borderColor = 'var(--success-500)';
-      el.style.boxShadow = '0 6px 28px rgba(16,185,129,0.18)';
+      el.style.background = isDark ? 'rgba(24, 160, 88, 0.2)' : 'rgba(24, 160, 88, 0.15)';
+      el.style.color = isDark ? '#4ade80' : '#16a34a';
+      el.style.border = `1px solid ${isDark ? 'rgba(24, 160, 88, 0.4)' : 'rgba(24, 160, 88, 0.3)'}`;
     } else if (type === 'error') {
-      el.style.background = 'var(--error-50)';
-      el.style.color = 'var(--error-600)';
-      el.style.borderColor = 'var(--error-500)';
-      el.style.boxShadow = '0 6px 28px rgba(239,68,68,0.18)';
+      el.style.background = isDark ? 'rgba(208, 48, 80, 0.2)' : 'rgba(208, 48, 80, 0.15)';
+      el.style.color = isDark ? '#f87171' : '#dc2626';
+      el.style.border = `1px solid ${isDark ? 'rgba(208, 48, 80, 0.4)' : 'rgba(208, 48, 80, 0.3)'}`;
     } else if (type === 'info') {
-      el.style.background = 'var(--info-50)';
-      el.style.color = 'var(--neutral-800)';
-      el.style.borderColor = 'rgba(0,0,0,0.08)';
+      el.style.background = isDark ? 'rgba(32, 128, 240, 0.2)' : 'rgba(32, 128, 240, 0.15)';
+      el.style.color = isDark ? '#60a5fa' : '#2563eb';
+      el.style.border = `1px solid ${isDark ? 'rgba(32, 128, 240, 0.4)' : 'rgba(32, 128, 240, 0.3)'}`;
     }
-    el.textContent = message;
+    // 添加图标
+    const icons = {
+      success: '✓',
+      error: '✗',
+      info: 'ⓘ'
+    };
+    el.innerHTML = `<span style="font-size: 18px; flex-shrink: 0;">${icons[type] || icons.info}</span><span>${message}</span>`;
     const host = ensureNotifyHost();
     host.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; });

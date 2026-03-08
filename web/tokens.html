@@ -17,19 +17,14 @@
   <script defer src="/web/assets/js/template-engine.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/tokens.js?v=__VERSION__"></script>
 </head>
-<body>
+<body class="light-mode">
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-         <header class="mb-2">
-        </header>
-        <header class="mb-4">
+        <header class="mt-6 mb-6">
           <div class="glass-card" style="padding: var(--space-6);">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-              <div>
-                <h1 class="page-title mb-2" data-i18n="tokens.pageTitle">API访问令牌</h1>
-                <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
-              </div>
+              <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
               <button onclick="showCreateModal()" class="btn btn-primary" style="padding: 8px 16px;" data-i18n="tokens.createToken">
                 + 创建令牌
               </button>
@@ -38,7 +33,7 @@
         </header>
 
         <!-- 时间范围选择器 -->
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="time-range-container">
             <div class="time-range-selector">
               <button class="time-range-btn active" data-range="today" data-i18n="index.timeRange.today">本日</button>
@@ -52,7 +47,7 @@
           </div>
         </section>
 
-        <section>
+        <section class="mb-6">
           <!-- 令牌表格 -->
           <div id="tokens-container" class="token-table"></div>
 
