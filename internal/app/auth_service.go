@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"maps"
 	"net/http"
 	"strings"
 	"sync"
@@ -116,9 +117,7 @@ func (s *AuthService) loadSessionsFromDB() error {
 	}
 
 	s.tokensMux.Lock()
-	for tokenHash, expiry := range sessions {
-		s.validTokens[tokenHash] = expiry
-	}
+	maps.Copy(s.validTokens, sessions)
 	s.tokensMux.Unlock()
 
 	if len(sessions) > 0 {
@@ -238,8 +237,8 @@ func (s *AuthService) RequireTokenAuth() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader != "" {
 			const prefix = "Bearer "
-			if strings.HasPrefix(authHeader, prefix) {
-				token := strings.TrimPrefix(authHeader, prefix)
+			if after, ok := strings.CutPrefix(authHeader, prefix); ok {
+				token := after
 
 				// 检查动态Token（登录生成的24小时Token）
 				if s.isValidToken(token) {
@@ -277,8 +276,8 @@ func (s *AuthService) RequireAPIAuth() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader != "" {
 			const prefix = "Bearer "
-			if strings.HasPrefix(authHeader, prefix) {
-				token = strings.TrimPrefix(authHeader, prefix)
+			if after, ok := strings.CutPrefix(authHeader, prefix); ok {
+				token = after
 				tokenFound = true
 			}
 		}
@@ -501,13 +500,14 @@ func (s *AuthService) ReloadAuthTokens() error {
 		if t.ExpiresAt != nil {
 			expiresAt = *t.ExpiresAt
 		}
+		// 统一存明文，认证时直接匹配
 		newTokens[t.Token] = expiresAt
 		newTokenIDs[t.Token] = t.ID
 		// 只有有限制时才存储（节省内存）
 		if len(t.AllowedModels) > 0 {
 			newTokenModels[t.Token] = t.AllowedModels
 		}
-		// 费用限额：只为“有限额”的令牌维护状态（避免无谓内存占用）
+		// 费用限额：只为”有限额”的令牌维护状态（避免无谓内存占用）
 		limitMicro := t.CostLimitMicroUSD
 		if limitMicro > 0 {
 			newTokenCostLimits[t.Token] = tokenCostLimit{

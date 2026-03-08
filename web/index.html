@@ -33,16 +33,19 @@
     <main class="main-content">
       <div class="content-area">
         <!-- 页面标题 -->
-        <header class="mt-6 mb-6">
+        <header class="page-section">
           <div class="glass-card" style="padding: var(--space-6);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-              <p class="page-subtitle" style="margin: 0;" data-i18n="index.pageSubtitle">统计分析</p>
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div>
+                <div class="brand-text" style="font-size: 1.25rem;">Claude Code & Codex Proxy</div>
+                <p class="page-subtitle" style="margin: 0; font-size: 0.9rem; opacity: 0.8; margin-top: 4px;" data-i18n="index.pageSubtitle">统计分析</p>
+              </div>
             </div>
           </div>
         </header>
 
         <!-- 时间范围选择器 -->
-        <section class="mb-6">
+        <section class="page-section">
           <div class="time-range-container">
             <div class="time-range-selector">
               <button class="time-range-btn active" data-range="today" data-i18n="index.timeRange.today">本日</button>
@@ -57,8 +60,8 @@
         </section>
 
         <!-- 按渠道类型统计 -->
-        <section class="mb-6">
-          <div class="grid grid-cols-2 animate-slide-up" style="animation-delay: 0.1s; gap: var(--space-5);">
+        <section class="page-section">
+          <div class="cards-grid cards-grid-2 animate-slide-up" style="animation-delay: 0.1s;">
             <!-- Claude Code -->
             <div class="channel-card" id="type-anthropic-card">
               <div class="channel-card-header">
@@ -277,8 +280,8 @@
           </div>
         </section>
         <!-- 实时状态栏 - 总览 -->
-        <section class="mb-6">
-          <div class="animate-slide-up" style="animation-delay: 0.2s; display: flex; gap: var(--space-5); flex-wrap: nowrap;">
+        <section class="page-section">
+          <div class="animate-slide-up" style="animation-delay: 0.2s; display: flex; gap: var(--card-gap); flex-wrap: nowrap;">
             <div class="summary-card summary-card-success" style="flex: 1; min-width: 0;">
               <div class="summary-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -306,7 +309,7 @@
         </section>
 
         <!-- 服务详情 -->
-        <section class="mb-6">
+        <section class="page-section">
             <!-- API接口 -->
             <div class="glass-card animate-slide-up" style="animation-delay: 0.3s;">
               <h3 class="text-xl font-semibold mb-6">

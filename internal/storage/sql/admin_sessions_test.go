@@ -132,7 +132,7 @@ func TestAdminSession_LoadAll(t *testing.T) {
 	ctx := context.Background()
 
 	// 创建多个会话
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		token := "session-token-" + string(rune('A'+i))
 		expiresAt := time.Now().Add(time.Duration(i+1) * time.Hour)
 		if err := store.CreateAdminSession(ctx, token, expiresAt); err != nil {

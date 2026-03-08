@@ -62,7 +62,7 @@ func prependToBody(resp *http.Response, prefix []byte) {
 // 从proxy.go提取，遵循SRP原则
 func (s *Server) buildProxyRequest(
 	reqCtx *requestContext,
-	_ *model.Config,
+	cfg *model.Config,
 	apiKey string,
 	method string,
 	body []byte,
@@ -82,7 +82,12 @@ func (s *Server) buildProxyRequest(
 	// 3. 复制请求头
 	copyRequestHeaders(req, hdr)
 
-	// 4. 注入认证头
+	// 4. 自定义 User-Agent 优先：如果配置了自定义 UA，覆盖客户端透传的 UA
+	if cfg.CustomUserAgent != "" {
+		req.Header.Set("User-Agent", cfg.CustomUserAgent)
+	}
+
+	// 5. 注入认证头
 	injectAPIKeyHeaders(req, apiKey, requestPath)
 
 	return req, nil

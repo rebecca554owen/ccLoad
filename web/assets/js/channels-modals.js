@@ -7,6 +7,7 @@ const FORM_FIELDS = [
   { id: 'channelName', key: 'name' },
   { id: 'channelPriority', key: 'priority', transform: v => parseInt(v) || 0 },
   { id: 'channelDailyCostLimit', key: 'daily_cost_limit', transform: v => parseFloat(v) || 0 },
+  { id: 'channelCustomUserAgent', key: 'custom_user_agent' },
   { id: 'channelEnabled', key: 'enabled', isCheckbox: true }
 ];
 
@@ -249,6 +250,7 @@ function buildFormData(validURLs, validKeys, models) {
     key_strategy: keyStrategy,
     priority: parseInt(document.getElementById('channelPriority').value) || 0,
     daily_cost_limit: parseFloat(document.getElementById('channelDailyCostLimit').value) || 0,
+    custom_user_agent: document.getElementById('channelCustomUserAgent').value.trim(),
     models: models,
     enabled: document.getElementById('channelEnabled').checked
   };
@@ -730,6 +732,7 @@ function setFormValuesForCopy(channel, copiedName) {
   document.getElementById('channelName').value = copiedName;
   document.getElementById('channelPriority').value = channel.priority;
   document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
+  document.getElementById('channelCustomUserAgent').value = channel.custom_user_agent || '';
   document.getElementById('channelEnabled').checked = true;
 
   const channelType = channel.channel_type || 'anthropic';

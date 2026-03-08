@@ -69,7 +69,7 @@ func setupProxyTestEnv(t testing.TB, channels []testChannel, upstreamURLs map[in
 
 		// 构建模型列表
 		var modelEntries []model.ModelEntry
-		for _, m := range strings.Split(ch.models, ",") {
+		for m := range strings.SplitSeq(ch.models, ",") {
 			m = strings.TrimSpace(m)
 			if m != "" {
 				modelEntries = append(modelEntries, model.ModelEntry{Model: m})

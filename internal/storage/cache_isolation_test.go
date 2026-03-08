@@ -240,7 +240,7 @@ func TestCacheIsolation_MultipleQueries(t *testing.T) {
 	cache := storage.NewChannelCache(store, 1*time.Minute)
 
 	// 并发查询和修改
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		channels, err := cache.GetEnabledChannelsByModel(ctx, "model-1")
 		if err != nil {
 			t.Fatalf("查询 %d 失败: %v", i, err)

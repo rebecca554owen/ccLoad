@@ -2,6 +2,7 @@
 package model
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -11,11 +12,28 @@ import (
 
 const microUSDScale = 1_000_000
 
+// TokenPrefix 是 API 令牌的前缀
+const TokenPrefix = "sk-"
+
+// NormalizeToken 规范化令牌值：去除空白
+func NormalizeToken(token string) string {
+	return strings.TrimSpace(token)
+}
+
+// GenerateToken 生成安全的随机令牌
+func GenerateToken() (string, error) {
+	b := make([]byte, 24)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return TokenPrefix + hex.EncodeToString(b), nil
+}
+
 // AuthToken 表示一个API访问令牌
 // 用于代理API (/v1/*) 的认证授权
 type AuthToken struct {
 	ID          int64     `json:"id"`
-	Token       string    `json:"token"`                  // SHA256哈希值(存储时)或明文(创建时返回)
+	Token       string    `json:"token"`                  // API访问令牌（明文存储，认证时请求值需与存储值一致）
 	Description string    `json:"description"`            // 令牌用途描述
 	CreatedAt   time.Time `json:"created_at"`             // 创建时间
 	ExpiresAt   *int64    `json:"expires_at,omitempty"`   // 过期时间(Unix毫秒时间戳)，nil/0 表示永不过期

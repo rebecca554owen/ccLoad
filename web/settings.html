@@ -26,11 +26,10 @@
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-        <header class="mt-6 mb-6">
-        
+        <header class="page-section">
         </header>
 
-        <section class="mb-6">
+        <section class="page-section">
           <div class="time-range-container">
             <div id="settings-group-nav" class="time-range-selector">
               <!-- 动态填充：分组快捷跳转 -->
@@ -38,7 +37,8 @@
           </div>
         </section>
 
-        <section class="glass-card mb-6">
+        <section class="page-section">
+          <div class="glass-card">
           <div class="table-container">
             <table class="modern-table">
               <thead>
@@ -54,7 +54,7 @@
             </table>
           </div>
           <div style="display: flex; justify-content: flex-end; padding: 16px 0 0 0;">
-            <button id="save-all-btn" onclick="saveAllSettings()" class="btn btn-primary" style="min-width: 120px;" data-i18n="settings.saveAll">
+            <button id="save-all-btn" onclick="saveAllSettings()" class="btn btn-primary btn-md" style="min-width: 120px;" data-i18n="settings.saveAll">
               保存所有更改
             </button>
           </div>

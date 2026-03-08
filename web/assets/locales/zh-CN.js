@@ -211,6 +211,8 @@ window.I18N_LOCALES['zh-CN'] = {
   'channels.priority': '优先级',
   'channels.dailyCostLimit': '每日限额',
   'channels.dailyCostLimitPlaceholder': '0=无限制',
+  'channels.customUserAgent': 'User-Agent',
+  'channels.customUserAgentPlaceholder': '留空则使用客户端透传的 UA',
 
   // 删除确认（扁平化键名）
   'channels.confirmDeleteTitle': '确认删除',
@@ -511,6 +513,14 @@ window.I18N_LOCALES['zh-CN'] = {
   'tokens.msg.allModelsExist': '所有模型已存在，无新增',
   'tokens.msg.importSuccess': '成功添加 {count} 个模型',
   'tokens.msg.importSuccessWithDuplicates': '成功添加 {added} 个模型，{duplicates} 个重复已忽略',
+  // 自定义 token
+  'tokens.customTokenLabel': '自定义令牌',
+  'tokens.customTokenPlaceholder': '留空则自动生成 (格式: sk-xxxxx)',
+  'tokens.customTokenHint': '留空则自动生成 48 位随机令牌',
+  'tokens.editTokenLabel': '修改令牌',
+  'tokens.editTokenHint': '留空则保持当前令牌不变',
+  'tokens.msg.tokenExists': '令牌已存在，请使用其他值',
+  'tokens.msg.tokenSameAsCurrent': '新令牌与当前令牌相同',
 
   // ============================================================
   // 调用统计

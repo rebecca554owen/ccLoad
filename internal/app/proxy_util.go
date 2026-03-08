@@ -213,7 +213,7 @@ var hopByHopHeaders = map[string]struct{}{
 func connectionHeaderTokens(h http.Header) map[string]struct{} {
 	var tokens map[string]struct{}
 	for _, v := range h.Values("Connection") {
-		for _, t := range strings.Split(v, ",") {
+		for t := range strings.SplitSeq(v, ",") {
 			t = strings.ToLower(strings.TrimSpace(t))
 			if t == "" {
 				continue

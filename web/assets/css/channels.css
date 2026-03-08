@@ -87,6 +87,22 @@
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
     }
 
+    /* 暗色模式 */
+    [data-theme="dark"] .content-area > header .glass-card,
+    [data-theme="dark"] .filter-bar {
+      background: rgba(30, 30, 35, 0.97);
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    [data-theme="dark"] .page-subtitle {
+      color: var(--neutral-400);
+    }
+
+    [data-theme="dark"] .page-subtitle b {
+      color: var(--neutral-200);
+    }
+
     .page-subtitle {
       color: var(--neutral-700);
       line-height: 1.6;
@@ -116,6 +132,12 @@
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
     }
 
+    [data-theme="dark"] .table-container {
+      background: rgba(30, 30, 35, 0.97);
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
     /* ===== 渠道表格布局 ===== */
     .channel-table {
       table-layout: fixed;
@@ -142,10 +164,21 @@
       border-bottom: 1px solid #d9e0e7;
     }
 
+    [data-theme="dark"] .channel-table thead th {
+      background: #2a2a35;
+      color: var(--neutral-100);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
     .channel-table td {
       padding: 6px 10px;
       color: var(--neutral-800);
       border-bottom: 1px solid #e3e8ee;
+    }
+
+    [data-theme="dark"] .channel-table td {
+      color: var(--neutral-300);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .channel-table td.ch-col-priority,
@@ -164,6 +197,14 @@
     .channel-table tbody tr {
       transition: background 0.15s ease;
       background: rgba(255, 255, 255, 0.98);
+    }
+
+    [data-theme="dark"] .channel-table tbody tr {
+      background: rgba(30, 30, 35, 0.98);
+    }
+
+    [data-theme="dark"] .channel-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .channel-table tbody tr:nth-child(odd) {
@@ -715,11 +756,34 @@
       background: rgba(255, 255, 255, 0.9);
       color-scheme: light;
       -webkit-text-fill-color: var(--neutral-900);
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
     }
 
     .model-select option {
       color: var(--neutral-900);
       background: white;
+    }
+
+    /* 暗色主题下的 model-select */
+    [data-theme="dark"] .model-select {
+      color: var(--text-primary-dark);
+      background: rgba(30, 30, 35, 0.6);
+      color-scheme: dark;
+      -webkit-text-fill-color: var(--text-primary-dark);
+    }
+
+    [data-theme="dark"] .model-select option {
+      color: var(--text-primary-dark);
+      background: rgba(30, 30, 35, 0.95);
+    }
+
+    /* 渠道类型等 select.form-input 的箭头修复 */
+    select.form-input {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
     }
 
     .channel-batch-float {

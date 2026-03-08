@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -277,6 +278,11 @@ func (s *Server) testChannelAPIWithURL(
 		req.Header.Set(key, value)
 	}
 
+	// 自定义 User-Agent 优先：如果配置了自定义 UA，覆盖测试器透传的 UA（与正常代理流程保持一致）
+	if cfg.CustomUserAgent != "" {
+		req.Header.Set("User-Agent", cfg.CustomUserAgent)
+	}
+
 	// 发送请求
 	start := time.Now()
 	resp, err := s.client.Do(req)
@@ -306,9 +312,7 @@ func (s *Server) testChannelAPIWithURL(
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			// 成功：委托给 tester 解析
 			parsed := tester.Parse(resp.StatusCode, bodyBytes)
-			for k, v := range parsed {
-				result[k] = v
-			}
+			maps.Copy(result, parsed)
 
 			// 补齐成本信息（与代理计费口径一致：使用归一化后的可计费inputTokens）
 			usageParser := newJSONUsageParser(channelType)

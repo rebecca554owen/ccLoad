@@ -57,7 +57,7 @@ func withTransaction(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) er
 	// 检查 context 是否有 deadline（用于限制总重试时间）
 	deadline, hasDeadline := ctx.Deadline()
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		err := executeSingleTransaction(ctx, db, fn)
 
 		// 成功或非BUSY错误,立即返回

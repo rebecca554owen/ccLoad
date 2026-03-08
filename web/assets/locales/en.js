@@ -211,6 +211,8 @@ window.I18N_LOCALES['en'] = {
   'channels.priority': 'Priority',
   'channels.dailyCostLimit': 'Daily Limit',
   'channels.dailyCostLimitPlaceholder': '0=No limit',
+  'channels.customUserAgent': 'User-Agent',
+  'channels.customUserAgentPlaceholder': 'Empty=Use client passthrough UA',
 
   // Delete Confirmation (flattened keys)
   'channels.confirmDeleteTitle': 'Confirm Delete',
@@ -511,6 +513,14 @@ window.I18N_LOCALES['en'] = {
   'tokens.msg.allModelsExist': 'All models already exist, nothing new to add',
   'tokens.msg.importSuccess': 'Successfully added {count} models',
   'tokens.msg.importSuccessWithDuplicates': 'Added {added} models, {duplicates} duplicates ignored',
+  // Custom token
+  'tokens.customTokenLabel': 'Custom Token',
+  'tokens.customTokenPlaceholder': 'Leave empty to auto-generate (format: sk-xxxxx)',
+  'tokens.customTokenHint': 'Leave empty to generate 48-char random token',
+  'tokens.editTokenLabel': 'Change Token',
+  'tokens.editTokenHint': 'Leave empty to keep current token unchanged',
+  'tokens.msg.tokenExists': 'Token already exists, please use a different value',
+  'tokens.msg.tokenSameAsCurrent': 'New token is the same as current token',
 
   // ============================================================
   // Statistics

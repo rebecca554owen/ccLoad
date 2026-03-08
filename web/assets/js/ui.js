@@ -262,8 +262,7 @@
         rel: 'noopener noreferrer',
         title: t('nav.githubRepo')
       }, [
-        h('img', { class: 'brand-icon', src: '/web/favicon.svg', alt: 'Logo' }),
-        h('div', { class: 'brand-text' }, 'Claude Code & Codex Proxy')
+        h('img', { class: 'brand-icon', src: '/web/favicon.svg', alt: 'Logo' })
       ])
     ]);
   }
@@ -306,18 +305,13 @@
   }
 
   function buildThemeToggle() {
-    const themeSwitchInput = h('input', {
-      type: 'checkbox',
-      id: 'theme-switch',
-      onchange: toggleTheme,
-      'aria-label': t('common.darkMode') || '深色模式'
-    });
-    return h('div', { class: 'theme-toggle-wrapper' }, [
-      h('span', { class: 'theme-toggle-label' }, t('common.darkMode') || '深色模式'),
-      h('label', { class: 'theme-switch' }, [
-        themeSwitchInput,
-        h('span', { class: 'slider' })
-      ])
+    return h('button', {
+      class: 'theme-toggle-btn',
+      'aria-label': t('common.darkMode') || '深色模式',
+      onclick: toggleTheme
+    }, [
+      h('span', { class: 'theme-icon-light' }, '☀️'),
+      h('span', { class: 'theme-icon-dark' }, '🌙')
     ]);
   }
 
@@ -354,28 +348,16 @@
   function initTheme() {
     const savedTheme = localStorage.getItem('ccload_theme') || 'light';
     document.documentElement.dataset.theme = savedTheme;
-    // 同步开关状态
-    const switchEl = document.getElementById('theme-switch');
-    if (switchEl) {
-      switchEl.checked = savedTheme === 'dark';
-    }
   }
 
   function toggleTheme(e) {
     const html = document.documentElement;
-    const switchEl = document.getElementById('theme-switch');
-
-    // 如果有事件对象，从开关状态获取；否则从当前主题状态获取
-    const isDark = e?.target?.type === 'checkbox' ? e.target.checked : html.dataset.theme === 'dark';
+    const currentTheme = html.dataset.theme || 'light';
+    const isDark = currentTheme === 'light'; // 切换
 
     // 设置主题
     html.dataset.theme = isDark ? 'dark' : 'light';
     localStorage.setItem('ccload_theme', isDark ? 'dark' : 'light');
-
-    // 同步开关状态
-    if (switchEl) {
-      switchEl.checked = isDark;
-    }
   }
 
   async function onLogout() {
@@ -1269,12 +1251,31 @@
 // ============================================================
 (function () {
   /**
-   * 复制文本到剪贴板（带降级处理）
+   * 复制文本到剪贴板（带降级处理，支持HTTP环境）
    * @param {string} text - 要复制的文本
    * @returns {Promise<void>}
    */
   function copyToClipboard(text) {
-    return navigator.clipboard.writeText(text).catch(() => {
+    // 如果支持 Clipboard API，使用 Clipboard API
+    if (typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        typeof navigator.clipboard === 'object' &&
+        typeof navigator.clipboard.writeText === 'function') {
+      return navigator.clipboard.writeText(text).catch(function() {
+        return fallbackCopy(text);
+      });
+    }
+    // 否则使用降级方案（兼容HTTP环境）
+    return fallbackCopy(text);
+  }
+
+  /**
+   * 降级复制方案（使用textarea + execCommand）
+   * @param {string} text - 要复制的文本
+   * @returns {Promise<void>}
+   */
+  function fallbackCopy(text) {
+    return new Promise((resolve, reject) => {
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.position = 'fixed';
@@ -1282,12 +1283,17 @@
       document.body.appendChild(ta);
       ta.select();
       try {
-        document.execCommand('copy');
-      } catch {
+        const success = document.execCommand('copy');
         document.body.removeChild(ta);
-        return Promise.reject(new Error('copy failed'));
+        if (success) {
+          resolve();
+        } else {
+          reject(new Error('copy failed'));
+        }
+      } catch (e) {
+        document.body.removeChild(ta);
+        reject(e);
       }
-      document.body.removeChild(ta);
     });
   }
 

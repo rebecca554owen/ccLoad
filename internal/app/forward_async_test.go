@@ -296,7 +296,7 @@ func TestClientCancelClosesUpstream(t *testing.T) {
 		// 如果连接被关闭，Write会失败
 		for i := 2; i <= 100; i++ {
 			time.Sleep(50 * time.Millisecond)
-			data := []byte(fmt.Sprintf("data: chunk%d\n\n", i))
+			data := fmt.Appendf(nil, "data: chunk%d\n\n", i)
 			_, err := w.Write(data)
 			if err != nil {
 				// 连接已关闭！这是我们期望的结果
@@ -412,7 +412,7 @@ func TestNoGoroutineLeak(t *testing.T) {
 
 		cfg := &model.Config{ID: 1, URL: upstream.URL}
 
-		for i := 0; i < 30; i++ {
+		for range 30 {
 			recorder := newRecorder()
 			_, _, _ = srv.forwardOnceAsync(
 				context.Background(),
@@ -449,7 +449,7 @@ func TestNoGoroutineLeak(t *testing.T) {
 
 		cfg := &model.Config{ID: 1, URL: upstream.URL}
 
-		for i := 0; i < 20; i++ {
+		for range 20 {
 			ctx, cancel := context.WithCancel(context.Background())
 			recorder := newRecorder()
 
@@ -485,7 +485,7 @@ func TestNoGoroutineLeak(t *testing.T) {
 
 		cfg := &model.Config{ID: 1, URL: upstream.URL}
 
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			recorder := newRecorder()
 			_, _, _ = srv.forwardOnceAsync(
 				context.Background(),

@@ -74,11 +74,11 @@
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-        <header class="mt-6 mb-6">
-
+        <header class="page-section">
         </header>
 
-        <section class="glass-card mb-6" style="overflow: visible;">
+        <section class="page-section" style="overflow: visible;">
+          <div class="glass-card" style="overflow: visible;">
           <!-- 模式切换 -->
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <button id="modeTabChannel" class="mode-tab-btn active" onclick="setTestMode('channel')" data-i18n="modelTest.mode.channel">按渠道测试</button>
@@ -89,17 +89,17 @@
           <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
             <label id="channelSelectorLabel" style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
               <span style="color: var(--color-text-secondary);" data-i18n="modelTest.channel">渠道</span>
-              <select id="testChannelSelect" class="filter-select" style="min-width: 150px;">
+              <select id="testChannelSelect" class="form-select" style="min-width: 150px;">
               </select>
             </label>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
               <span style="color: var(--color-text-secondary);" data-i18n="common.type">类型</span>
-              <select id="testChannelType" class="filter-select" style="min-width: 100px;">
+              <select id="testChannelType" class="form-select" style="min-width: 100px;">
               </select>
             </label>
             <label id="modelSelectorLabel" style="display: none; align-items: center; gap: 6px; font-size: 13px;">
               <span style="color: var(--color-text-secondary);" data-i18n="common.model">模型</span>
-              <select id="testModelSelect" class="filter-select" style="min-width: 200px;">
+              <select id="testModelSelect" class="form-select" style="min-width: 200px;">
               </select>
             </label>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; flex: 1; min-width: 200px;">
@@ -107,10 +107,10 @@
               <input type="text" id="modelTestContent" value="" class="form-input" data-i18n-placeholder="common.loading" placeholder="加载中..." style="flex: 1;">
             </label>
             <span id="testProgress" style="font-size: 13px; color: var(--color-text-secondary);"></span>
-            <button onclick="selectAllModels()" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px;" data-i18n="modelTest.selectAll">全选</button>
-            <button onclick="deselectAllModels()" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px;" data-i18n="modelTest.deselectAll">取消全选</button>
-            <button id="fetchModelsBtn" onclick="fetchAndAddModels()" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px;" data-i18n="modelTest.fetchModels">获取模型</button>
-            <button id="deleteModelsBtn" onclick="deleteSelectedModels()" class="btn btn-secondary" style="font-size: 13px; padding: 8px 16px; color: var(--error-500);" data-i18n="modelTest.deleteModels">删除模型</button>
+            <button onclick="selectAllModels()" class="btn btn-secondary btn-compact" data-i18n="modelTest.selectAll">全选</button>
+            <button onclick="deselectAllModels()" class="btn btn-secondary btn-compact" data-i18n="modelTest.deselectAll">取消全选</button>
+            <button id="fetchModelsBtn" onclick="fetchAndAddModels()" class="btn btn-secondary btn-compact" data-i18n="modelTest.fetchModels">获取模型</button>
+            <button id="deleteModelsBtn" onclick="deleteSelectedModels()" class="btn btn-danger btn-compact" data-i18n="modelTest.deleteModels">删除模型</button>
             <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer;">
               <input type="checkbox" id="streamEnabled" style="width: 16px; height: 16px;">
               <span data-i18n="modelTest.stream">流式</span>
@@ -119,7 +119,7 @@
               <span data-i18n="modelTest.concurrency">并发</span>
               <input type="number" id="concurrency" value="5" min="1" max="20" class="form-input" style="width: 60px; text-align: center;">
             </label>
-            <button id="runTestBtn" onclick="runModelTests()" class="btn btn-primary" style="font-size: 13px; padding: 8px 16px;" data-i18n="modelTest.startTest">开始测试</button>
+            <button id="runTestBtn" onclick="runModelTests()" class="btn btn-primary btn-compact" data-i18n="modelTest.startTest">开始测试</button>
           </div>
 
           <!-- 模型测试表格 -->

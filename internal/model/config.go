@@ -42,6 +42,9 @@ type Config struct {
 	Priority    int    `json:"priority"`
 	Enabled     bool   `json:"enabled"`
 
+	// 自定义 User-Agent（可选，空字符串表示使用客户端透传的 UA）
+	CustomUserAgent string `json:"custom_user_agent"`
+
 	// 模型配置（统一管理模型和重定向）
 	ModelEntries []ModelEntry `json:"models"`
 
@@ -252,11 +255,8 @@ func compareModelVersion(a, b string) int {
 	// 2. 版本数字序列比较
 	verA := extractVersionNumbers(a)
 	verB := extractVersionNumbers(b)
-	maxLen := len(verA)
-	if len(verB) > maxLen {
-		maxLen = len(verB)
-	}
-	for i := 0; i < maxLen; i++ {
+	maxLen := max(len(verB), len(verA))
+	for i := range maxLen {
 		va, vb := 0, 0
 		if i < len(verA) {
 			va = verA[i]
@@ -284,10 +284,7 @@ func extractDateSuffix(model string) string {
 	// 查找最后一个分隔符
 	lastDash := strings.LastIndexByte(model, '-')
 	lastDot := strings.LastIndexByte(model, '.')
-	lastSep := lastDash
-	if lastDot > lastSep {
-		lastSep = lastDot
-	}
+	lastSep := max(lastDot, lastDash)
 	if lastSep < 0 {
 		return ""
 	}

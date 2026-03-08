@@ -503,6 +503,7 @@
 
     function showCreateModal() {
       document.getElementById('tokenDescription').value = '';
+      document.getElementById('customToken').value = '';
       document.getElementById('tokenExpiry').value = 'never';
       document.getElementById('tokenCostLimitUSD').value = 0;
       document.getElementById('tokenActive').checked = true;
@@ -515,12 +516,16 @@
     }
 
     async function createToken() {
-      
+
       const description = document.getElementById('tokenDescription').value.trim();
       if (!description) {
         window.showNotification(t('tokens.msg.enterDescription'), 'error');
         return;
       }
+
+      // 获取自定义 token（可选）
+      const customToken = document.getElementById('customToken').value.trim();
+
       const expiryType = document.getElementById('tokenExpiry').value;
       let expiresAt = null;
       if (expiryType === 'custom') {
@@ -540,12 +545,23 @@
         return;
       }
       try {
+        const payload = {
+          description,
+          expires_at: expiresAt,
+          is_active: isActive,
+          cost_limit_usd: costLimitUSD
+        };
+        // 只有输入了自定义 token 才发送
+        if (customToken) {
+          payload.token = customToken;
+        }
+
         const data = await fetchDataWithAuth(`${API_BASE}/auth-tokens`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ description, expires_at: expiresAt, is_active: isActive, cost_limit_usd: costLimitUSD })
+          body: JSON.stringify(payload)
         });
 
         closeCreateModal();
@@ -582,6 +598,7 @@
       if (!token) return;
       document.getElementById('editTokenId').value = id;
       document.getElementById('editTokenDescription').value = token.description;
+      document.getElementById('editTokenValue').value = ''; // 清空 token 编辑字段
       document.getElementById('editTokenActive').checked = token.is_active;
       if (!token.expires_at) {
         document.getElementById('editTokenExpiry').value = 'never';
@@ -620,12 +637,16 @@
     }
 
     async function updateToken() {
-      
+
       const id = document.getElementById('editTokenId').value;
       const description = document.getElementById('editTokenDescription').value.trim();
       const isActive = document.getElementById('editTokenActive').checked;
       const expiryType = document.getElementById('editTokenExpiry').value;
       const costLimitUSD = parseFloat(document.getElementById('editCostLimitUSD').value) || 0;
+
+      // 获取新的 token 值（可选）
+      const newToken = document.getElementById('editTokenValue').value.trim();
+
       let expiresAt = null;
       if (expiryType === 'custom') {
         const customDate = document.getElementById('editCustomExpiry').value;
@@ -638,22 +659,35 @@
         expiresAt = calculateExpiryMs(expiryType);
       }
       try {
-        await fetchDataWithAuth(`${API_BASE}/auth-tokens/${id}`, {
+        const payload = {
+          description,
+          is_active: isActive,
+          expires_at: expiresAt,
+          allowed_models: editAllowedModels,  // 2026-01新增：模型限制
+          cost_limit_usd: costLimitUSD         // 2026-01新增：费用上限
+        };
+        // 只有输入了新 token 才发送
+        if (newToken) {
+          payload.token = newToken;
+        }
+
+        const data = await fetchDataWithAuth(`${API_BASE}/auth-tokens/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            description,
-            is_active: isActive,
-            expires_at: expiresAt,
-            allowed_models: editAllowedModels,  // 2026-01新增：模型限制
-            cost_limit_usd: costLimitUSD         // 2026-01新增：费用上限
-          })
+          body: JSON.stringify(payload)
         });
+
         closeEditModal();
+        if (data.token) {
+          document.getElementById('newTokenValue').value = data.token;
+          document.getElementById('tokenResultModal').style.display = 'block';
+          window.showNotification(t('tokens.msg.updateSuccess') + ' - ' + t('tokens.msg.regenerateSuccess'), 'success');
+        } else {
+          window.showNotification(t('tokens.msg.updateSuccess'), 'success');
+        }
         loadTokens();
-        window.showNotification(t('tokens.msg.updateSuccess'), 'success');
       } catch (error) {
         console.error('Failed to update token:', error);
         window.showNotification(t('tokens.msg.updateFailed') + ': ' + error.message, 'error');

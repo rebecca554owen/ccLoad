@@ -1,7 +1,7 @@
 package app
 
 import (
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -156,7 +156,7 @@ func (rr *SmoothWeightedRR) generateGroupKey(channels []*modelpkg.Config) string
 	if len(ids) == 0 {
 		return ""
 	}
-	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	slices.Sort(ids)
 
 	var b strings.Builder
 
