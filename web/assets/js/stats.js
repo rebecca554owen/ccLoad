@@ -2,6 +2,29 @@
     const t = window.t;
     const STATS_TABLE_COLUMNS = 12; // 统计表列数
 
+    // 图表颜色常量
+    const CHART_COLORS = [
+      '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+      '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1',
+      '#14b8a6', '#a855f7', '#eab308', '#22c55e', '#0ea5e9'
+    ];
+
+    // 排序比较器映射表
+    const SORT_COMPARATORS = {
+      channel_name: (a, b) => (a.channel_name || '').toLowerCase().localeCompare((b.channel_name || '').toLowerCase(), 'zh-CN'),
+      model: (a, b) => (a.model || '').toLowerCase().localeCompare((b.model || '').toLowerCase(), 'zh-CN'),
+      success: (a, b) => (a.success || 0) - (b.success || 0),
+      error: (a, b) => (a.error || 0) - (b.error || 0),
+      rpm: (a, b) => (a.peak_rpm || 0) - (b.peak_rpm || 0),
+      success_rate: (a, b) => ((a.total > 0 ? a.success / a.total : 0)) - ((b.total > 0 ? b.success / b.total : 0)),
+      avg_first_byte_time: (a, b) => (a.avg_duration_seconds || a.avg_first_byte_time_seconds || 0) - (b.avg_duration_seconds || b.avg_first_byte_time_seconds || 0),
+      total_input_tokens: (a, b) => (a.total_input_tokens || 0) - (b.total_input_tokens || 0),
+      total_output_tokens: (a, b) => (a.total_output_tokens || 0) - (b.total_output_tokens || 0),
+      total_cache_read: (a, b) => (a.total_cache_read_input_tokens || 0) - (b.total_cache_read_input_tokens || 0),
+      total_cache_creation: (a, b) => (a.total_cache_creation_input_tokens || 0) - (b.total_cache_creation_input_tokens || 0),
+      total_cost: (a, b) => (a.total_cost || 0) - (b.total_cost || 0)
+    };
+
     let statsData = null;
     let rpmStats = null; // 全局RPM统计（峰值、平均、最近一分钟）
     let isToday = true;  // 是否为本日（本日才显示最近一分钟）
@@ -138,76 +161,11 @@
         statsData.originalStats = [...statsData.stats];
       }
 
-      const column = sortState.column;
+      const comparator = SORT_COMPARATORS[sortState.column];
+      if (!comparator) return;
+
       const isAsc = sortState.order === 'asc';
-
-      statsData.stats.sort((a, b) => {
-        let valueA, valueB;
-
-        switch (column) {
-          case 'channel_name':
-            valueA = (a.channel_name || '').toLowerCase();
-            valueB = (b.channel_name || '').toLowerCase();
-            break;
-          case 'model':
-            valueA = (a.model || '').toLowerCase();
-            valueB = (b.model || '').toLowerCase();
-            break;
-          case 'success':
-            valueA = a.success || 0;
-            valueB = b.success || 0;
-            break;
-          case 'error':
-            valueA = a.error || 0;
-            valueB = b.error || 0;
-            break;
-          case 'rpm':
-            // 使用后端计算的峰值RPM排序
-            valueA = a.peak_rpm || 0;
-            valueB = b.peak_rpm || 0;
-            break;
-          case 'success_rate':
-            valueA = a.total > 0 ? (a.success / a.total) : 0;
-            valueB = b.total > 0 ? (b.success / b.total) : 0;
-            break;
-          case 'avg_first_byte_time':
-            // 优先按平均耗时排序，其次按平均首字时间
-            valueA = a.avg_duration_seconds || a.avg_first_byte_time_seconds || 0;
-            valueB = b.avg_duration_seconds || b.avg_first_byte_time_seconds || 0;
-            break;
-          case 'total_input_tokens':
-            valueA = a.total_input_tokens || 0;
-            valueB = b.total_input_tokens || 0;
-            break;
-          case 'total_output_tokens':
-            valueA = a.total_output_tokens || 0;
-            valueB = b.total_output_tokens || 0;
-            break;
-          case 'total_cache_read':
-            valueA = a.total_cache_read_input_tokens || 0;
-            valueB = b.total_cache_read_input_tokens || 0;
-            break;
-          case 'total_cache_creation':
-            valueA = a.total_cache_creation_input_tokens || 0;
-            valueB = b.total_cache_creation_input_tokens || 0;
-            break;
-          case 'total_cost':
-            valueA = a.total_cost || 0;
-            valueB = b.total_cost || 0;
-            break;
-          default:
-            return 0;
-        }
-
-        let result;
-        if (typeof valueA === 'string') {
-          result = valueA.localeCompare(valueB, 'zh-CN');
-        } else {
-          result = valueA - valueB;
-        }
-
-        return isAsc ? result : -result;
-      });
+      statsData.stats.sort((a, b) => isAsc ? comparator(a, b) : -comparator(a, b));
     }
 
     function renderStatsTable() {
@@ -235,14 +193,11 @@
       tbody.innerHTML = '';
 
       // 初始化合计变量
-      let totalSuccess = 0;
-      let totalError = 0;
-      let totalRequests = 0;
-      let totalInputTokens = 0;
-      let totalOutputTokens = 0;
-      let totalCacheRead = 0;
-      let totalCacheCreation = 0;
-      let totalCost = 0;
+      const totals = {
+        success: 0, error: 0, requests: 0,
+        inputTokens: 0, outputTokens: 0,
+        cacheRead: 0, cacheCreation: 0, cost: 0
+      };
 
       const fragment = document.createDocumentFragment();
 
@@ -263,23 +218,7 @@
           `<span style="color: var(--neutral-500);">${t('stats.unknownModel')}</span>`;
 
         // 格式化平均首字响应时间/平均耗时
-        const avgFirstByteTime = entry.avg_first_byte_time_seconds || 0;
-        const avgDuration = entry.avg_duration_seconds || 0;
-        let avgTimeText = '';
-
-        if (avgFirstByteTime > 0 && avgDuration > 0) {
-          // 流式请求：显示首字/耗时
-          const durationColor = getDurationColor(avgDuration);
-          avgTimeText = `<span style="color: ${durationColor};">${avgFirstByteTime.toFixed(2)}/${avgDuration.toFixed(2)}</span>`;
-        } else if (avgDuration > 0) {
-          // 非流式请求：只显示耗时
-          const durationColor = getDurationColor(avgDuration);
-          avgTimeText = `<span style="color: ${durationColor};">${avgDuration.toFixed(2)}</span>`;
-        } else if (avgFirstByteTime > 0) {
-          // 仅有首字时间（理论上不应出现）
-          const durationColor = getDurationColor(avgFirstByteTime);
-          avgTimeText = `<span style="color: ${durationColor};">${avgFirstByteTime.toFixed(2)}</span>`;
-        }
+        const avgTimeText = buildAvgTimeText(entry);
 
         // 格式化Token数据
         const inputTokensText = entry.total_input_tokens ? formatNumber(entry.total_input_tokens) : '';
@@ -316,35 +255,35 @@
         if (row) fragment.appendChild(row);
 
         // 累加合计数据
-        totalSuccess += entry.success || 0;
-        totalError += entry.error || 0;
-        totalRequests += entry.total || 0;
-        totalInputTokens += entry.total_input_tokens || 0;
-        totalOutputTokens += entry.total_output_tokens || 0;
-        totalCacheRead += entry.total_cache_read_input_tokens || 0;
-        totalCacheCreation += entry.total_cache_creation_input_tokens || 0;
-        totalCost += entry.total_cost || 0;
+        totals.success += entry.success || 0;
+        totals.error += entry.error || 0;
+        totals.requests += entry.total || 0;
+        totals.inputTokens += entry.total_input_tokens || 0;
+        totals.outputTokens += entry.total_output_tokens || 0;
+        totals.cacheRead += entry.total_cache_read_input_tokens || 0;
+        totals.cacheCreation += entry.total_cache_creation_input_tokens || 0;
+        totals.cost += entry.total_cost || 0;
       }
 
       tbody.appendChild(fragment);
 
       // 追加合计行（使用全局rpm_stats显示峰值/平均/最近）
-      const totalSuccessRateVal = totalRequests > 0 ? (totalSuccess / totalRequests) * 100 : 0;
+      const totalSuccessRateVal = totals.requests > 0 ? (totals.success / totals.requests) * 100 : 0;
       const totalSuccessRate = totalSuccessRateVal > 0 ? totalSuccessRateVal.toFixed(1) + '%' : '';
 
       // 使用全局rpm_stats格式化RPM
-      const totalRpmHtml = formatGlobalRpm(rpmStats, isToday);
+      const totalRpmHtml = formatRpmStats(rpmStats, isToday);
 
       const totalRow = TemplateEngine.render('tpl-stats-total', {
-        successCount: formatNumber(totalSuccess),
-        errorCount: formatNumber(totalError),
+        successCount: formatNumber(totals.success),
+        errorCount: formatNumber(totals.error),
         rpm: totalRpmHtml,
         successRateText: totalSuccessRate,
-        inputTokens: formatNumber(totalInputTokens),
-        outputTokens: formatNumber(totalOutputTokens),
-        cacheReadTokens: formatNumber(totalCacheRead),
-        cacheCreationTokens: formatNumber(totalCacheCreation),
-        costText: formatCost(totalCost)
+        inputTokens: formatNumber(totals.inputTokens),
+        outputTokens: formatNumber(totals.outputTokens),
+        cacheReadTokens: formatNumber(totals.cacheRead),
+        cacheCreationTokens: formatNumber(totals.cacheCreation),
+        costText: formatCost(totals.cost)
       });
       if (totalRow) tbody.appendChild(totalRow);
     }
@@ -526,18 +465,26 @@
     function formatRpm(rpm) {
       if (rpm < 0.01) return '';
       const color = getRpmColor(rpm);
-      const text = rpm >= 1000 ? (rpm / 1000).toFixed(1) + 'K' : rpm >= 1 ? rpm.toFixed(1) : rpm.toFixed(2);
+      const text = formatRpmValue(rpm);
       return `<span style="color: ${color}; font-weight: 500;">${text}</span>`;
     }
 
-    // 格式化全局RPM（峰值/平均/最近），固定格式，0显示为-
-    function formatGlobalRpm(stats, showRecent) {
+    // 通用RPM数值格式化
+    function formatRpmValue(rpm) {
+      if (rpm >= 1000) return (rpm / 1000).toFixed(1) + 'K';
+      if (rpm >= 1) return rpm.toFixed(1);
+      return rpm.toFixed(2);
+    }
+
+    // 通用RPM统计格式化（峰值/平均/最近）
+    function formatRpmStats(stats, showRecent) {
       if (!stats) return '-/-' + (showRecent ? '/-' : '');
 
       const formatVal = (v) => {
         const text = (v || 0).toFixed(1);
         return text === '0.0' ? '-' : text;
       };
+
       const peakText = formatVal(stats.peak_rpm);
       const avgText = formatVal(stats.avg_rpm);
 
@@ -555,28 +502,13 @@
       return result;
     }
 
-    // 格式化每行的RPM（峰值/平均/最近），固定格式，0显示为-
+    // 格式化每行的RPM（峰值/平均/最近）
     function formatEntryRpm(entry, showRecent) {
-      const formatVal = (v) => {
-        const text = (v || 0).toFixed(1);
-        return text === '0.0' ? '-' : text;
-      };
-
-      const peakText = formatVal(entry.peak_rpm);
-      const avgText = formatVal(entry.avg_rpm);
-
-      const peakColor = peakText !== '-' ? getRpmColor(entry.peak_rpm) : 'inherit';
-      const avgColor = avgText !== '-' ? getRpmColor(entry.avg_rpm) : 'inherit';
-
-      let result = `<span style="color: ${peakColor};">${peakText}</span>/<span style="color: ${avgColor};">${avgText}</span>`;
-
-      if (showRecent) {
-        const recentText = formatVal(entry.recent_rpm);
-        const recentColor = recentText !== '-' ? getRpmColor(entry.recent_rpm) : 'inherit';
-        result += `/<span style="color: ${recentColor};">${recentText}</span>`;
-      }
-
-      return result;
+      return formatRpmStats({
+        peak_rpm: entry.peak_rpm,
+        avg_rpm: entry.avg_rpm,
+        recent_rpm: entry.recent_rpm
+      }, showRecent);
     }
 
     // 根据耗时返回颜色
@@ -590,6 +522,43 @@
       }
     }
 
+    // 构建平均时间显示文本
+    function buildAvgTimeText(entry) {
+      const avgFirstByteTime = entry.avg_first_byte_time_seconds || 0;
+      const avgDuration = entry.avg_duration_seconds || 0;
+
+      // 优先处理流式请求（首字+耗时）
+      if (avgFirstByteTime > 0 && avgDuration > 0) {
+        const durationColor = getDurationColor(avgDuration);
+        return `<span style="color: ${durationColor};">${avgFirstByteTime.toFixed(2)}/${avgDuration.toFixed(2)}</span>`;
+      }
+
+      // 非流式请求：只显示耗时
+      if (avgDuration > 0) {
+        const durationColor = getDurationColor(avgDuration);
+        return `<span style="color: ${durationColor};">${avgDuration.toFixed(2)}</span>`;
+      }
+
+      // 仅有首字时间（理论上不应出现）
+      if (avgFirstByteTime > 0) {
+        const durationColor = getDurationColor(avgFirstByteTime);
+        return `<span style="color: ${durationColor};">${avgFirstByteTime.toFixed(2)}</span>`;
+      }
+
+      return '';
+    }
+
+    // Tooltip 字段定义
+    const TOOLTIP_FIELDS = [
+      { key: 'avg_first_byte_time', labelKey: 'stats.tooltipTTFT', format: (v) => `${v.toFixed(2)}s` },
+      { key: 'avg_duration', labelKey: 'stats.tooltipDuration', format: (v) => `${v.toFixed(2)}s` },
+      { key: 'input_tokens', labelKey: 'stats.tooltipInput', format: formatNumber },
+      { key: 'output_tokens', labelKey: 'stats.tooltipOutput', format: formatNumber },
+      { key: 'cache_read_tokens', labelKey: 'stats.tooltipCacheRead', format: formatNumber },
+      { key: 'cache_creation_tokens', labelKey: 'stats.tooltipCacheWrite', format: formatNumber },
+      { key: 'cost', labelKey: 'stats.tooltipCost', format: (v) => `$${v.toFixed(4)}` }
+    ];
+
     // 构建健康状态指示器 HTML（固定48个方块 + 当前成功率）
     // 性能优化：使用快速时间格式化，避免 toLocaleString 开销
     function buildHealthIndicator(timeline, currentRate) {
@@ -598,43 +567,36 @@
         return '';
       }
 
-      const fixedBucketCount = 48;
-      const normalizedTimeline = timeline.length >= fixedBucketCount
-        ? timeline.slice(-fixedBucketCount)
-        : [...Array(fixedBucketCount - timeline.length).fill(null), ...timeline];
-      const blocks = new Array(fixedBucketCount);
+      // 后端已返回固定48个时间点，rate=-1 表示无数据
+      // 使用数组预分配 + 直接拼接，减少内存分配
+      const len = timeline.length;
+      const blocks = new Array(len);
 
-      for (let i = 0; i < fixedBucketCount; i++) {
-        const point = normalizedTimeline[i];
-        if (!point || point.rate < 0) {
+      for (let i = 0; i < len; i++) {
+        const point = timeline[i];
+        const rate = point.rate;
+
+        // rate < 0 表示该时间桶无数据
+        if (rate < 0) {
           blocks[i] = `<span class="health-block unknown" title="${t('stats.healthNoData')}"></span>`;
           continue;
         }
 
-        const rate = point.rate;
         const className = rate >= 0.95 ? 'healthy' : rate >= 0.80 ? 'warning' : 'critical';
 
         // 快速时间格式化（避免 toLocaleString 的性能开销）
         const d = new Date(point.ts);
         const timeStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-        // 构建 tooltip - 使用条件拼接减少数组操作
-        let title = `${timeStr}
-${t('stats.tooltipSuccess')}: ${point.success || 0} / ${t('stats.tooltipFailed')}: ${point.error || 0}`;
-        if (point.avg_first_byte_time > 0) title += `
-${t('stats.tooltipTTFT')}: ${point.avg_first_byte_time.toFixed(2)}s`;
-        if (point.avg_duration > 0) title += `
-${t('stats.tooltipDuration')}: ${point.avg_duration.toFixed(2)}s`;
-        if (point.input_tokens > 0) title += `
-${t('stats.tooltipInput')}: ${formatNumber(point.input_tokens)}`;
-        if (point.output_tokens > 0) title += `
-${t('stats.tooltipOutput')}: ${formatNumber(point.output_tokens)}`;
-        if (point.cache_read_tokens > 0) title += `
-${t('stats.tooltipCacheRead')}: ${formatNumber(point.cache_read_tokens)}`;
-        if (point.cache_creation_tokens > 0) title += `
-${t('stats.tooltipCacheWrite')}: ${formatNumber(point.cache_creation_tokens)}`;
-        if (point.cost > 0) title += `
-${t('stats.tooltipCost')}: $${point.cost.toFixed(4)}`;
+        // 构建 tooltip - 使用循环简化字段添加
+        let title = `${timeStr}\n${t('stats.tooltipSuccess')}: ${point.success || 0} / ${t('stats.tooltipFailed')}: ${point.error || 0}`;
+
+        for (const field of TOOLTIP_FIELDS) {
+          const value = point[field.key];
+          if (value > 0) {
+            title += `\n${t(field.labelKey)}: ${field.format(value)}`;
+          }
+        }
 
         blocks[i] = `<span class="health-block ${className}" title="${escapeHtml(title)}"></span>`;
       }
@@ -643,7 +605,7 @@ ${t('stats.tooltipCost')}: $${point.cost.toFixed(4)}`;
       const ratePercent = (currentRate * 100).toFixed(1);
       const rateColor = currentRate >= 0.95 ? 'var(--success-600)' :
                         currentRate >= 0.80 ? 'var(--warning-600)' : 'var(--error-600)';
-      return `<div class="health-indicator"><span class="health-track">${blocks.join('')}</span><span class="health-rate" style="color: ${rateColor}">${ratePercent}%</span></div>`;
+      return `<div class="health-indicator">${blocks.join('')}<span class="health-rate" style="color: ${rateColor}">${ratePercent}%</span></div>`;
     }
 
     // 注销功能（已由 ui.js 的 onLogout 统一处理）
@@ -910,12 +872,6 @@ ${t('stats.tooltipCost')}: $${point.cost.toFixed(4)}`;
         return;
       }
 
-      // 颜色方案
-      const colors = [
-        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-        '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1',
-        '#14b8a6', '#a855f7', '#eab308', '#22c55e', '#0ea5e9'
-      ];
 
       // 计算总值用于百分比
       const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -964,7 +920,7 @@ ${t('stats.tooltipCost')}: $${point.cost.toFixed(4)}`;
             return name;
           }
         },
-        color: colors,
+        color: CHART_COLORS,
         series: [{
           type: 'pie',
           radius: ['40%', '70%'],

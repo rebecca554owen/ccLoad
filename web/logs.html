@@ -18,23 +18,29 @@
   <script defer src="/web/assets/js/date-range-selector.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/logs.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
     
 
     <!-- 主内容区域 -->
-    <main class="main-content">
+    <main class="main-content mt-6 mb-6">
       <div class="content-area">
      <!-- 页面标题 -->
-        <header class="mb-2">
+        <header class="mb-6">
         </header>
 
         <!-- Filter Bar -->
-        <div class="filter-bar logs-filter-bar">
-          <div class="filter-controls logs-filter-controls">
+        <div class="filter-bar glass-panel">
+          <div class="filter-controls">
             <!-- 渠道类型筛选 -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
               <select id="f_channel_type" class="filter-select" style="min-width: 120px;">
                 <!-- 动态加载渠道类型选项 -->
@@ -42,7 +48,7 @@
             </div>
 
             <!-- 时间范围筛选 -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
               <select id="f_hours" class="filter-select" style="min-width: 100px;">
                 <!-- 动态生成选项 by date-range-selector.js -->
@@ -50,31 +56,31 @@
             </div>
 
             <!-- 渠道ID筛选 -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
               <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID..." style="max-width: 100px;">
             </div>
 
             <!-- 渠道名筛选 -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
               <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
             <!-- 模型筛选（合并重复字段） -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
               <input type="text" id="f_model" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
             <!-- 状态码筛选 -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_status" class="filter-label" data-i18n="logs.statusCode">状态码</label>
               <input type="number" id="f_status" class="filter-input" data-i18n-placeholder="logs.statusPlaceholder" placeholder="如 200 / 403" style="max-width: 110px;">
             </div>
 
             <!-- 令牌筛选 -->
-            <div class="filter-group logs-filter-group">
+            <div class="filter-group">
               <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
               <select id="f_auth_token" class="filter-select" style="min-width: 150px;">
                 <option value="" data-i18n="stats.allTokens">全部令牌</option>
@@ -83,12 +89,12 @@
             </div>
 
             <!-- 统计信息 -->
-            <div class="filter-info logs-filter-info">
+            <div class="filter-info">
               <span data-i18n="logs.showPrefix">显示</span><span id="displayedCount">0</span>/<span id="totalCount">0</span><span data-i18n="logs.recordsSuffix">条</span>
             </div>
 
             <!-- 操作按钮组 -->
-            <div class="logs-filter-actions">
+            <div style="flex: none;">
               <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;" data-i18n="common.filter">筛选</button>
             </div>
           </div>
@@ -96,7 +102,7 @@
 
   
         <!-- 日志列表 -->
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="glass-card" style="animation-delay: 0.2s;">
            
             
@@ -134,50 +140,36 @@
         </section>
 
         <!-- 底部分页控制 -->
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="glass-card" style="padding: var(--space-2);">
             <div class="flex justify-center items-center">
-              <div class="pagination-controls logs-pagination-controls">
-                <button id="logs_first2" class="btn btn-secondary btn-sm" onclick="firstLogsPage()">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 17l-5-5 5-5"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18V6"/>
-                  </svg>
-                  <span data-i18n="common.firstPage">首页</span>
-                </button>
+              <div class="pagination-controls">
                 <button id="logs_prev2" class="btn btn-secondary btn-sm" onclick="prevLogsPage()">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6"/>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                   </svg>
                   <span data-i18n="common.prevPage">上一页</span>
                 </button>
-                <span class="pagination-info logs-pagination-info">
+                <span class="pagination-info" style="margin: 0 var(--space-4); display: flex; align-items: center; gap: var(--space-2);">
                   <span data-i18n="logs.pagePrefix">第</span> <span id="logs_current_page2">1</span> <span data-i18n="logs.pageMid">页，共</span> <span id="logs_total_pages2">1</span> <span data-i18n="logs.pageSuffix">页</span>
-                  <span class="logs-pagination-separator">|</span>
+                  <span style="margin-left: var(--space-2);">|</span>
                   <span data-i18n="logs.jumpTo">跳转到</span>
                   <input
                     type="number"
                     id="logs_jump_page"
-                    class="logs-jump-input"
                     min="1"
                     max="1"
                     data-i18n-placeholder="logs.pagePlaceholder"
                     placeholder="页码"
+                    style="width: 100px; padding: 4px 8px; border: 1px solid currentColor; border-radius: 4px; text-align: center; opacity: 0.7;"
                     onkeydown="if(event.key==='Enter') jumpToPage()"
                   />
                   <span data-i18n="logs.pageUnit">页</span>
                 </span>
                 <button id="logs_next2" class="btn btn-secondary btn-sm" onclick="nextLogsPage()">
                   <span data-i18n="common.nextPage">下一页</span>
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l6 6-6 6"/>
-                  </svg>
-                </button>
-                <button id="logs_last2" class="btn btn-secondary btn-sm" onclick="lastLogsPage()">
-                  <span data-i18n="common.lastPage">尾页</span>
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7l5 5-5 5"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6v12"/>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
                 </button>
               </div>
@@ -198,8 +190,8 @@
 
       <div class="form-group">
         <label class="form-label" data-i18n="logs.apiKeyLabel">API Key</label>
-        <code id="testKeyDisplay" style="display: block; padding: 8px; background: var(--neutral-100); border-radius: 4px; color: var(--neutral-700);"></code>
-        <small id="testKeyIndexInfo" style="color: var(--neutral-600); font-size: 0.85em; display: block; margin-top: 6px;"></small>
+        <code id="testKeyDisplay" class="glass-card rounded p-2 opacity-90" style="display: block;"></code>
+        <small id="testKeyIndexInfo" class="opacity-75 text-sm" style="display: block; margin-top: 6px;"></small>
       </div>
 
       <div class="form-group">
@@ -207,8 +199,8 @@
         <select id="testKeyModel" class="form-input">
           <option value="" data-i18n="common.loading">加载中...</option>
         </select>
-        <small style="color: var(--neutral-600); font-size: 0.85em; margin-top: 4px; display: block;">
-          <span data-i18n="logs.originalModel">日志中的模型:</span> <code id="testKeyOriginalModel" style="color: var(--neutral-700);"></code>
+        <small class="opacity-75 text-sm" style="margin-top: 4px; display: block;">
+          <span data-i18n="logs.originalModel">日志中的模型:</span> <code id="testKeyOriginalModel" class="opacity-75"></code>
         </small>
       </div>
 
@@ -248,7 +240,7 @@
   <template id="tpl-log-row">
     <tr>
       <td style="white-space: nowrap;">{{time}}</td>
-      <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);">{{{clientIPDisplay}}}</td>
+      <td class="config-info opacity-75" style="white-space: nowrap; font-family: monospace; font-size: 0.85em;">{{{clientIPDisplay}}}</td>
       <td style="text-align: center; white-space: nowrap;">{{{apiKeyDisplay}}}</td>
       <td class="config-info">{{{configDisplay}}}</td>
       <td>{{{modelDisplay}}}</td>
@@ -267,10 +259,10 @@
   <template id="tpl-log-empty">
     <tr>
       <td colspan="{{colspan}}" class="empty-state">
-        <svg class="w-12 h-12 mx-auto mb-4" style="color: var(--neutral-400);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <div style="font-weight: var(--font-medium); margin-bottom: var(--space-1); color: var(--neutral-700);" data-i18n="logs.noData">暂无日志数据</div>
+        <div class="opacity-75" style="font-weight: var(--font-medium); margin-bottom: var(--space-1);" data-i18n="logs.noData">暂无日志数据</div>
         <div data-i18n="logs.adjustFilter">请调整筛选条件或检查时间范围</div>
       </td>
     </tr>

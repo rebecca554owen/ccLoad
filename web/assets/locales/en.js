@@ -59,6 +59,7 @@ window.I18N_LOCALES['en'] = {
   'common.timeHM': '{h}h {m}m',
   'common.timeMS': '{m}m {s}s',
   'common.timeS': '{s}s',
+  'common.darkMode': 'Dark Mode',
 
   // ============================================================
   // Navigation
@@ -99,8 +100,7 @@ window.I18N_LOCALES['en'] = {
   // Index Overview
   // ============================================================
   'index.title': 'Claude Code & Codex Proxy Service',
-  'index.heroTitle': 'Claude Code & Codex API Proxy Service',
-  'index.heroSubtitle': 'Smart Routing · Failover · Analytics',
+  'index.pageSubtitle': 'Analytics',
   'index.timeRange.today': 'Today',
   'index.timeRange.yesterday': 'Yesterday',
   'index.timeRange.dayBeforeYesterday': 'Day Before',
@@ -149,6 +149,7 @@ window.I18N_LOCALES['en'] = {
   'channels.statusCooldown': 'Cooldown',
   'channels.modelFilter': 'Model',
   'channels.modelAll': 'All Models',
+  'channels.allModels': 'All Models',
   'channels.searchChannel': 'Search Channel',
   'channels.searchPlaceholder': 'Enter channel name...',
   'channels.filterInfo': '{filtered} / {total} channels',

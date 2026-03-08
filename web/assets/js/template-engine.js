@@ -64,6 +64,22 @@ const TemplateEngine = {
   },
 
   /**
+   * 替换模板占位符
+   * @param {string} html - 模板HTML
+   * @param {Object} data - 数据对象
+   * @param {boolean} escapeHtml - 是否转义HTML
+   * @returns {string} 替换后的HTML
+   */
+  _replacePlaceholder(html, data, escapeHtml) {
+    const pattern = escapeHtml ? /\{\{(\w+(?:\.\w+)*)\}\}/g : /\{\{\{(\w+(?:\.\w+)*)\}\}\}/g;
+    return html.replace(pattern, (_, path) => {
+      const value = this._getValue(data, path);
+      if (value === undefined) return '';
+      return escapeHtml ? this._escape(value) : String(value);
+    });
+  },
+
+  /**
    * 渲染单个模板
    * @param {string} id - 模板ID
    * @param {Object} data - 数据对象
@@ -74,29 +90,24 @@ const TemplateEngine = {
     if (!html) return null;
 
     // 处理 {{{raw}}} 语法 (原始HTML，不转义)
-    html = html.replace(/\{\{\{(\w+(?:\.\w+)*)\}\}\}/g, (_, path) => {
-      const value = this._getValue(data, path);
-      return value !== undefined ? String(value) : '';
-    });
+    html = this._replacePlaceholder(html, data, false);
 
     // 处理 {{key}} 语法 (自动转义)
-    html = html.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (_, path) => {
-      const value = this._getValue(data, path);
-      return value !== undefined ? this._escape(value) : '';
-    });
+    html = this._replacePlaceholder(html, data, true);
 
     // 创建DOM元素 - 表格元素需要正确的父容器才能被浏览器正确解析
     const trimmed = html.trim().toLowerCase();
-    let temp;
-    if (trimmed.startsWith('<tr')) {
-      temp = document.createElement('tbody');
-    } else if (trimmed.startsWith('<td') || trimmed.startsWith('<th')) {
-      temp = document.createElement('tr');
-    } else if (trimmed.startsWith('<thead') || trimmed.startsWith('<tbody') || trimmed.startsWith('<tfoot')) {
-      temp = document.createElement('table');
-    } else {
-      temp = document.createElement('div');
-    }
+    const containerMap = {
+      '<tr': 'tbody',
+      '<td': 'tr',
+      '<th': 'tr',
+      '<thead': 'table',
+      '<tbody': 'table',
+      '<tfoot': 'table'
+    };
+
+    const containerTag = Object.entries(containerMap).find(([tag]) => trimmed.startsWith(tag));
+    const temp = document.createElement(containerTag ? containerTag[1] : 'div');
     temp.innerHTML = html;
     return temp.firstElementChild;
   }

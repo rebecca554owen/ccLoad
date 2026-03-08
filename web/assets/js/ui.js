@@ -253,9 +253,8 @@
     return el;
   }
 
-  function buildTopbar(active) {
-    const bar = h('header', { class: 'topbar' });
-    const left = h('div', { class: 'topbar-left' }, [
+  function buildBrand() {
+    return h('div', { class: 'topbar-left' }, [
       h('a', {
         class: 'brand',
         href: GITHUB_REPO_URL,
@@ -267,17 +266,20 @@
         h('div', { class: 'brand-text' }, 'Claude Code & Codex Proxy')
       ])
     ]);
-    const nav = h('nav', { class: 'topnav' }, [
+  }
+
+  function buildNav(active) {
+    return h('nav', { class: 'topnav' }, [
       ...NAVS.map(n => h('a', {
         class: `topnav-link ${n.key === active ? 'active' : ''}`,
         href: n.href,
         'data-nav-key': n.key
       }, [n.icon(), h('span', { 'data-i18n': n.labelKey }, t(n.labelKey))]))
     ]);
-    const loggedIn = isLoggedIn();
+  }
 
-    // 版本信息组件（点击跳转到GitHub releases页面）
-    const versionBadge = h('a', {
+  function buildVersionBadge() {
+    return h('a', {
       id: 'version-badge',
       class: 'version-badge',
       href: GITHUB_RELEASES_URL,
@@ -287,34 +289,93 @@
     }, [
       h('span', { id: 'version-display' }, 'v...')
     ]);
+  }
 
-    // GitHub链接
-    const githubLink = h('a', {
+  function buildGithubLink() {
+    return h('a', {
       href: GITHUB_REPO_URL,
       target: '_blank',
       rel: 'noopener noreferrer',
       class: 'github-link',
       title: t('nav.githubRepo')
     }, [iconGitHub()]);
+  }
 
-    // 版本+GitHub组合成一个视觉组
-    const versionGroup = h('div', { class: 'version-group' }, [versionBadge, githubLink]);
+  function buildVersionGroup() {
+    return h('div', { class: 'version-group' }, [buildVersionBadge(), buildGithubLink()]);
+  }
 
-    // 语言切换器
+  function buildThemeToggle() {
+    const themeSwitchInput = h('input', {
+      type: 'checkbox',
+      id: 'theme-switch',
+      onchange: toggleTheme,
+      'aria-label': t('common.darkMode') || '深色模式'
+    });
+    return h('div', { class: 'theme-toggle-wrapper' }, [
+      h('span', { class: 'theme-toggle-label' }, t('common.darkMode') || '深色模式'),
+      h('label', { class: 'theme-switch' }, [
+        themeSwitchInput,
+        h('span', { class: 'slider' })
+      ])
+    ]);
+  }
+
+  function buildAuthButton(loggedIn) {
+    return h('button', {
+      id: 'auth-btn',
+      class: 'btn btn-secondary btn-sm',
+      'data-i18n': loggedIn ? 'common.logout' : 'common.login',
+      onclick: loggedIn ? onLogout : () => location.href = window.getLoginUrl()
+    }, t(loggedIn ? 'common.logout' : 'common.login'));
+  }
+
+  function buildTopbarRight() {
+    const loggedIn = isLoggedIn();
     const langSwitcher = window.i18n ? window.i18n.createLanguageSwitcher() : null;
 
-    const right = h('div', { class: 'topbar-right' }, [
-      versionGroup,
+    return h('div', { class: 'topbar-right' }, [
+      buildVersionGroup(),
       langSwitcher,
-      h('button', {
-        id: 'auth-btn',
-        class: 'btn btn-secondary btn-sm',
-        'data-i18n': loggedIn ? 'common.logout' : 'common.login',
-        onclick: loggedIn ? onLogout : () => location.href = window.getLoginUrl()
-      }, t(loggedIn ? 'common.logout' : 'common.login'))
+      buildThemeToggle(),
+      buildAuthButton(loggedIn)
     ].filter(Boolean));
-    bar.appendChild(left); bar.appendChild(nav); bar.appendChild(right);
+  }
+
+  function buildTopbar(active) {
+    const bar = h('header', { class: 'topbar' });
+    bar.appendChild(buildBrand());
+    bar.appendChild(buildNav(active));
+    bar.appendChild(buildTopbarRight());
     return bar;
+  }
+
+  // 主题切换功能
+  function initTheme() {
+    const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+    document.documentElement.dataset.theme = savedTheme;
+    // 同步开关状态
+    const switchEl = document.getElementById('theme-switch');
+    if (switchEl) {
+      switchEl.checked = savedTheme === 'dark';
+    }
+  }
+
+  function toggleTheme(e) {
+    const html = document.documentElement;
+    const switchEl = document.getElementById('theme-switch');
+
+    // 如果有事件对象，从开关状态获取；否则从当前主题状态获取
+    const isDark = e?.target?.type === 'checkbox' ? e.target.checked : html.dataset.theme === 'dark';
+
+    // 设置主题
+    html.dataset.theme = isDark ? 'dark' : 'light';
+    localStorage.setItem('ccload_theme', isDark ? 'dark' : 'light');
+
+    // 同步开关状态
+    if (switchEl) {
+      switchEl.checked = isDark;
+    }
   }
 
   async function onLogout() {
@@ -375,6 +436,12 @@
     const topbar = buildTopbar(activeKey);
     document.body.appendChild(topbar);
 
+    // 同步主题开关状态
+    const themeSwitch = document.getElementById('theme-switch');
+    if (themeSwitch) {
+      themeSwitch.checked = document.documentElement.dataset.theme === 'dark';
+    }
+
     // 背景动效
     injectBackground();
 
@@ -383,6 +450,46 @@
   }
 
   // 通知系统（全局复用，DRY）
+  const NOTIFICATION_STYLES = {
+    base: `
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.2s ease;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      overflow: hidden;
+      isolation: isolate;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `,
+    success: {
+      light: { bg: 'rgba(24, 160, 88, 0.15)', color: '#16a34a', border: 'rgba(24, 160, 88, 0.3)' },
+      dark: { bg: 'rgba(24, 160, 88, 0.2)', color: '#4ade80', border: 'rgba(24, 160, 88, 0.4)' }
+    },
+    error: {
+      light: { bg: 'rgba(208, 48, 80, 0.15)', color: '#dc2626', border: 'rgba(208, 48, 80, 0.3)' },
+      dark: { bg: 'rgba(208, 48, 80, 0.2)', color: '#f87171', border: 'rgba(208, 48, 80, 0.4)' }
+    },
+    info: {
+      light: { bg: 'rgba(32, 128, 240, 0.15)', color: '#2563eb', border: 'rgba(32, 128, 240, 0.3)' },
+      dark: { bg: 'rgba(32, 128, 240, 0.2)', color: '#60a5fa', border: 'rgba(32, 128, 240, 0.4)' }
+    }
+  };
+
+  const NOTIFICATION_ICONS = {
+    success: '✓',
+    error: '✗',
+    info: 'ⓘ'
+  };
+
   function ensureNotifyHost() {
     let host = document.getElementById('notify-host');
     if (!host) {
@@ -394,53 +501,74 @@
     return host;
   }
 
+  function buildNotificationStyles(type) {
+    const isDark = document.body.classList.contains('dark-mode');
+    const theme = isDark ? 'dark' : 'light';
+    const colors = NOTIFICATION_STYLES[type] || NOTIFICATION_STYLES.info;
+    const colorSet = colors[theme];
+
+    return `
+      ${NOTIFICATION_STYLES.base}
+      background: ${colorSet.bg};
+      color: ${colorSet.color};
+      border: 1px solid ${colorSet.border};
+    `;
+  }
+
+  function animateNotificationIn(el) {
+    return requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateX(0)';
+    });
+  }
+
+  function animateNotificationOut(el, onComplete) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(20px)';
+    return setTimeout(onComplete, 320);
+  }
+
+  function setupNotificationTimers(el) {
+    const animRaf = animateNotificationIn(el);
+
+    const dismissTimer = setTimeout(() => {
+      const removeTimer = animateNotificationOut(el, () => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      });
+      el._removeTimer = removeTimer;
+    }, 3600);
+
+    el._animRaf = animRaf;
+    el._dismissTimer = dismissTimer;
+  }
+
+  function dismissNotification(el) {
+    if (el._dismissTimer) clearTimeout(el._dismissTimer);
+    if (el._removeTimer) clearTimeout(el._removeTimer);
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(20px)';
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 200);
+  }
+
   window.showNotification = function (message, type = 'info') {
     const el = document.createElement('div');
     el.className = `notification notification-${type}`;
-    el.style.cssText = `
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4) var(--space-6);
-      color: var(--neutral-900);
-      font-weight: var(--font-medium);
-      opacity: 0;
-      transform: translateX(20px);
-      transition: all var(--duration-normal) var(--timing-function);
-      max-width: 360px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-      overflow: hidden;
-      isolation: isolate;
-      pointer-events: auto;
-    `;
-    if (type === 'success') {
-      // 高可读：浅底深字
-      el.style.background = 'var(--success-50)';
-      el.style.color = 'var(--success-600)';
-      el.style.borderColor = 'var(--success-500)';
-      el.style.boxShadow = '0 6px 28px rgba(16,185,129,0.18)';
-    } else if (type === 'error') {
-      el.style.background = 'var(--error-50)';
-      el.style.color = 'var(--error-600)';
-      el.style.borderColor = 'var(--error-500)';
-      el.style.boxShadow = '0 6px 28px rgba(239,68,68,0.18)';
-    } else if (type === 'info') {
-      el.style.background = 'var(--info-50)';
-      el.style.color = 'var(--neutral-800)';
-      el.style.borderColor = 'rgba(0,0,0,0.08)';
-    }
-    el.textContent = message;
+    el.style.cssText = buildNotificationStyles(type);
+
+    const icon = NOTIFICATION_ICONS[type] || NOTIFICATION_ICONS.info;
+    el.innerHTML = `<span style="font-size: 18px; flex-shrink: 0;">${icon}</span><span>${message}</span>`;
+
     const host = ensureNotifyHost();
     host.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; });
-    setTimeout(() => {
-      el.style.opacity = '0'; el.style.transform = 'translateX(20px)';
-      setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
-    }, 3600);
+
+    setupNotificationTimers(el);
+
+    el.addEventListener('click', () => dismissNotification(el), { once: true });
   }
-  window.showSuccess = (msg) => window.showNotification(msg, 'success');
-  window.showError = (msg) => window.showNotification(msg, 'error');
+  window.showSuccess = function(msg) { return window.showNotification(msg, 'success'); };
+  window.showError = function(msg) { return window.showNotification(msg, 'error'); };
+  window.initTheme = initTheme;
+  window.toggleTheme = toggleTheme;
 })();
 
 // ============================================================
@@ -451,7 +579,9 @@
   const searchableSelectOutsideClickHandlers = new Map();
 
   // 复用公共工具（DRY）：真实实现由下方公共工具模块导出到 window.escapeHtml
-  const escapeHtml = (str) => window.escapeHtml(str);
+  function escapeHtml(str) {
+    return window.escapeHtml(str);
+  }
 
   /**
    * 获取渠道类型配置（带缓存）
@@ -704,6 +834,17 @@
   }
 
   /**
+   * 验证并转换数值
+   * @param {*} value - 待验证的值
+   * @param {number} defaultValue - 验证失败时的默认值
+   * @returns {number} 验证后的数值
+   */
+  function validateNumber(value, defaultValue) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : defaultValue;
+  }
+
+  /**
    * 格式化成本（美元）
    * @param {number} cost - 成本值
    * @returns {string} 格式化后的字符串
@@ -715,19 +856,22 @@
 
   // 格式化数字显示（通用：K/M缩写）
   function formatNumber(num) {
-    const n = Number(num);
-    if (!Number.isFinite(n)) return '0';
+    const n = validateNumber(num, 0);
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
     if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
     return n.toString();
   }
 
+  // RPM 阈值常量
+  const RPM_LOW_THRESHOLD = 10;
+  const RPM_HIGH_THRESHOLD = 100;
+
   // RPM 颜色：低流量绿色，中等橙色，高流量红色
   function getRpmColor(rpm) {
-    const n = Number(rpm);
-    if (!Number.isFinite(n)) return 'var(--neutral-600)';
-    if (n < 10) return 'var(--success-600)';
-    if (n < 100) return 'var(--warning-600)';
+    const n = validateNumber(rpm, NaN);
+    if (Number.isNaN(n)) return 'var(--neutral-600)';
+    if (n < RPM_LOW_THRESHOLD) return 'var(--success-600)';
+    if (n < RPM_HIGH_THRESHOLD) return 'var(--warning-600)';
     return 'var(--error-600)';
   }
 
@@ -825,7 +969,7 @@
         <div class="filter-combobox-wrapper" style="min-width: ${minWidth}px;">
           <input
             id="${inputId}"
-            class="filter-select filter-combobox"
+            class="filter-input"
             type="text"
             autocomplete="off"
             spellcheck="false"
@@ -1002,72 +1146,68 @@
       renderDropdown();
     }
 
-    // 事件绑定
-    input.addEventListener('mousedown', () => {
+    function handleMousedown() {
       beginPick();
       openDropdown();
-    });
+    }
 
-    input.addEventListener('input', () => {
+    function handleInput() {
       if (dropdown.dataset.open !== '1') {
         beginPick();
         openDropdown();
       }
       activeIndex = -1;
       renderDropdown();
-    });
+    }
 
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (dropdown.dataset.open === '1') {
-          e.preventDefault();
-          cancelPick();
-        }
-        return;
-      }
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (dropdown.dataset.open !== '1') {
-          beginPick();
-          openDropdown();
-          return;
-        }
-        moveActive(1);
-        return;
-      }
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (dropdown.dataset.open !== '1') {
-          beginPick();
-          openDropdown();
-          return;
-        }
-        moveActive(-1);
-        return;
-      }
-
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (dropdown.dataset.open === '1') {
-          const items = getDropdownItems();
-          if (activeIndex >= 0 && activeIndex < items.length) {
-            commitValue(items[activeIndex].value, items[activeIndex].label);
-            return;
+    function handleKeydown(e) {
+      switch (e.key) {
+        case 'Escape':
+          if (dropdown.dataset.open === '1') {
+            e.preventDefault();
+            cancelPick();
           }
-        }
-        // 没有选中项时，取消编辑
-        if (input.dataset.pickActive === '1' && !input.value.trim()) {
-          cancelPick();
-        }
-      }
-    });
+          break;
 
-    input.addEventListener('blur', () => {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (dropdown.dataset.open !== '1') {
+            beginPick();
+            openDropdown();
+          } else {
+            moveActive(1);
+          }
+          break;
+
+        case 'ArrowUp':
+          e.preventDefault();
+          if (dropdown.dataset.open !== '1') {
+            beginPick();
+            openDropdown();
+          } else {
+            moveActive(-1);
+          }
+          break;
+
+        case 'Enter':
+          e.preventDefault();
+          if (dropdown.dataset.open === '1') {
+            const items = getDropdownItems();
+            if (activeIndex >= 0 && activeIndex < items.length) {
+              commitValue(items[activeIndex].value, items[activeIndex].label);
+              return;
+            }
+          }
+          if (input.dataset.pickActive === '1' && !input.value.trim()) {
+            cancelPick();
+          }
+          break;
+      }
+    }
+
+    function handleBlur() {
       if (dropdown.dataset.open !== '1') return;
 
-      // 如果用户输入了内容，自动选择第一个匹配项
       if (input.value.trim()) {
         const items = getDropdownItems();
         if (items.length > 0) {
@@ -1076,7 +1216,23 @@
         }
       }
       cancelPick();
-    });
+    }
+
+    function bindEvents() {
+      input.addEventListener('mousedown', handleMousedown);
+      input.addEventListener('input', handleInput);
+      input.addEventListener('keydown', handleKeydown);
+      input.addEventListener('blur', handleBlur);
+    }
+
+    function unbindEvents() {
+      input.removeEventListener('mousedown', handleMousedown);
+      input.removeEventListener('input', handleInput);
+      input.removeEventListener('keydown', handleKeydown);
+      input.removeEventListener('blur', handleBlur);
+    }
+
+    bindEvents();
 
     // 返回组件实例，提供外部控制接口
     return {
@@ -1093,6 +1249,7 @@
       getInput: () => input,
       getDropdown: () => dropdown,
       destroy: () => {
+        unbindEvents();
         closeDropdown();
         clearOutsideHandler();
         clearRepositionHandler();
@@ -1207,5 +1364,56 @@
   window.copyToClipboard = copyToClipboard;
   window.initChannelTypeFilter = initChannelTypeFilter;
   window.loadAuthTokensIntoSelect = loadAuthTokensIntoSelect;
+
+  /**
+   * 填充 select 下拉选项（使用 DocumentFragment 优化性能）
+   * @param {string|HTMLSelectElement} select - select 元素或 ID
+   * @param {Array<{value: string, label: string}>} options - 选项数组
+   * @param {Object} [opts] - 可选配置
+   * @param {string} [opts.defaultLabel] - 默认选项文本（value=''），如不提供则不添加默认选项
+   * @param {string} [opts.defaultValue] - 默认选项值，默认为 ''
+   * @param {string} [opts.restoreValue] - 填充后恢复选中的值
+   * @returns {boolean} - 是否成功填充
+   */
+  function populateSelect(select, options, opts) {
+    const o = opts || {};
+    const el = typeof select === 'string' ? document.getElementById(select) : select;
+    if (!el || !Array.isArray(options)) return false;
+
+    const fragment = document.createDocumentFragment();
+
+    if (o.defaultLabel !== undefined) {
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = o.defaultValue || '';
+      defaultOpt.textContent = o.defaultLabel;
+      fragment.appendChild(defaultOpt);
+    }
+
+    options.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = String(opt.value);
+      option.textContent = opt.label !== undefined ? opt.label : String(opt.value);
+      fragment.appendChild(option);
+    });
+
+    el.innerHTML = '';
+    el.appendChild(fragment);
+
+    // 恢复选中值：检查 restoreValue 是否在 options 中，或者是 defaultValue
+    if (o.restoreValue !== undefined) {
+      const valueExists = options.some(opt => opt.value === o.restoreValue);
+      const isDefaultValue = o.restoreValue === (o.defaultValue || '');
+      if (valueExists || isDefaultValue) {
+        el.value = o.restoreValue;
+      }
+    }
+
+    return true;
+  }
+
+  window.populateSelect = populateSelect;
   window.initTimeRangeSelector = initTimeRangeSelector;
+
+  // 初始化主题
+  window.initTheme();
 })();

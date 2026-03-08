@@ -1,17 +1,17 @@
+// 高亮配置常量
+const HIGHLIGHT_CONFIG = {
+  DURATION: 1600,
+  HASH_PATTERN: /^#channel-(\d+)$/
+};
+
 function highlightFromHash() {
-  const m = (location.hash || '').match(/^#channel-(\d+)$/);
+  const m = (location.hash || '').match(HIGHLIGHT_CONFIG.HASH_PATTERN);
   if (!m) return;
   const el = document.getElementById(`channel-${m[1]}`);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const prev = el.style.boxShadow;
-  el.style.transition = 'box-shadow 0.3s ease, background 0.3s ease';
-  el.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.35), 0 10px 25px rgba(59,130,246,0.20)';
-  el.style.background = 'rgba(59,130,246,0.06)';
-  setTimeout(() => {
-    el.style.boxShadow = prev || '';
-    el.style.background = '';
-  }, 1600);
+  el.classList.add('channel-highlight');
+  setTimeout(() => el.classList.remove('channel-highlight'), HIGHLIGHT_CONFIG.DURATION);
 }
 
 // 从URL参数获取目标渠道ID，查询其类型并返回
@@ -31,6 +31,39 @@ async function getTargetChannelType() {
 
 // localStorage key for channels page filters
 const CHANNELS_FILTER_KEY = 'channels.filters';
+
+// 重置筛选表单
+function resetFilterForm() {
+  document.getElementById('statusFilter').value = 'all';
+  const modelFilterEl = document.getElementById('modelFilter');
+  if (modelFilterEl) modelFilterEl.value = 'all';
+  document.getElementById('searchInput').value = '';
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if (clearBtn) clearBtn.style.opacity = '0';
+}
+
+// 从URL参数应用筛选
+function applyFiltersFromUrl(urlChannelId) {
+  filters.status = 'all';
+  filters.model = 'all';
+  filters.search = '';
+  filters.id = urlChannelId;
+  document.getElementById('idFilter').value = urlChannelId;
+  resetFilterForm();
+  saveChannelsFilters();
+}
+
+// 从localStorage应用筛选
+function applyFiltersFromStorage(savedFilters) {
+  filters.status = savedFilters.status || 'all';
+  filters.model = savedFilters.model || 'all';
+  filters.search = savedFilters.search || '';
+  filters.id = savedFilters.id || '';
+  document.getElementById('statusFilter').value = filters.status;
+  document.getElementById('modelFilter').value = filters.model || 'all';
+  document.getElementById('searchInput').value = filters.search;
+  document.getElementById('idFilter').value = filters.id;
+}
 
 function saveChannelsFilters() {
   try {
@@ -80,40 +113,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   filters.channelType = initialType;
   const urlChannelId = new URLSearchParams(location.search).get('id');
   if (urlChannelId) {
-    // 从日志等页面跳转过来时，仅按渠道ID过滤，清除其他条件
-    filters.status = 'all';
-    filters.model = 'all';
-    filters.search = '';
-    filters.id = urlChannelId;
-    document.getElementById('statusFilter').value = 'all';
-    const modelFilterEl = document.getElementById('modelFilter');
-    if (modelFilterEl) {
-      modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-        ? modelFilterInputValueFromFilterValue('all')
-        : window.t('channels.modelAll');
-    }
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    }
-    document.getElementById('searchInput').value = '';
-    document.getElementById('idFilter').value = urlChannelId;
-    const clearBtn = document.getElementById('clearSearchBtn');
-    if (clearBtn) clearBtn.style.opacity = '0';
-    saveChannelsFilters();
+    applyFiltersFromUrl(urlChannelId);
   } else if (savedFilters) {
-    filters.status = savedFilters.status || 'all';
-    filters.model = savedFilters.model || 'all';
-    filters.search = savedFilters.search || '';
-    filters.id = savedFilters.id || '';
-    document.getElementById('statusFilter').value = filters.status;
-    const modelFilterEl = document.getElementById('modelFilter');
-    if (modelFilterEl) {
-      modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-        ? modelFilterInputValueFromFilterValue(filters.model)
-        : (filters.model === 'all' ? window.t('channels.modelAll') : filters.model);
-    }
-    document.getElementById('searchInput').value = filters.search;
-    document.getElementById('idFilter').value = filters.id;
+    applyFiltersFromStorage(savedFilters);
   }
 
   // 初始化渠道类型筛选器（替换原Tab逻辑）
@@ -132,17 +134,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 清空ID筛选框
     const idFilterEl = document.getElementById('idFilter');
     if (idFilterEl) idFilterEl.value = '';
-    // 使用通用组件更新模型筛选器
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    } else {
-      const modelFilterEl = document.getElementById('modelFilter');
-      if (modelFilterEl) {
-        modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-          ? modelFilterInputValueFromFilterValue('all')
-          : window.t('channels.modelAll');
-      }
-    }
+    // 重置模型筛选器
+    const modelFilterEl2 = document.getElementById('modelFilter');
+    if (modelFilterEl2) modelFilterEl2.value = 'all';
     saveChannelsFilters();
     loadChannels(type);
   });
@@ -162,31 +156,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    // 按层级优先关闭最上层模态框
-    const modelImportModal = document.getElementById('modelImportModal');
-    const keyImportModal = document.getElementById('keyImportModal');
-    const keyExportModal = document.getElementById('keyExportModal');
-    const sortModal = document.getElementById('sortModal');
-    const deleteModal = document.getElementById('deleteModal');
-    const testModal = document.getElementById('testModal');
-    const channelModal = document.getElementById('channelModal');
+// 模态框关闭顺序配置（按优先级从高到低）
+const MODAL_CLOSE_ORDER = [
+  { id: 'modelImportModal', closeFn: 'closeModelImportModal' },
+  { id: 'keyImportModal', closeFn: 'closeKeyImportModal' },
+  { id: 'keyExportModal', closeFn: 'closeKeyExportModal' },
+  { id: 'sortModal', closeFn: 'closeSortModal' },
+  { id: 'deleteModal', closeFn: 'closeDeleteModal' },
+  { id: 'testModal', closeFn: 'closeTestModal' },
+  { id: 'channelModal', closeFn: 'closeModal' }
+];
 
-    if (modelImportModal && modelImportModal.classList.contains('show')) {
-      closeModelImportModal();
-    } else if (keyImportModal && keyImportModal.classList.contains('show')) {
-      closeKeyImportModal();
-    } else if (keyExportModal && keyExportModal.classList.contains('show')) {
-      closeKeyExportModal();
-    } else if (sortModal && sortModal.classList.contains('show')) {
-      closeSortModal();
-    } else if (deleteModal && deleteModal.classList.contains('show')) {
-      closeDeleteModal();
-    } else if (testModal && testModal.classList.contains('show')) {
-      closeTestModal();
-    } else if (channelModal && channelModal.classList.contains('show')) {
-      closeModal();
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+
+  for (const { id, closeFn } of MODAL_CLOSE_ORDER) {
+    const modal = document.getElementById(id);
+    if (modal?.classList.contains('show')) {
+      window[closeFn]();
+      return;
     }
   }
 });

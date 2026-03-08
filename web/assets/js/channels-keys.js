@@ -10,8 +10,80 @@ function parseKeys(input) {
   return [...new Set(keys)];
 }
 
+// 使用 channels-state.js 中已定义的 VIRTUAL_SCROLL_CONFIG，或提供默认值
+const VIRTUAL_SCROLL_CONFIG_KEYS = typeof VIRTUAL_SCROLL_CONFIG !== 'undefined' ? VIRTUAL_SCROLL_CONFIG : {
+  ROW_HEIGHT: 48,
+  BUFFER_SIZE: 5,
+  CONTAINER_HEIGHT: 320,
+  ENABLE_THRESHOLD: 50
+};
+
+// 按钮状态配置
+const BUTTON_STATES = {
+  enabled: {
+    disabled: false,
+    cursor: 'pointer',
+    opacity: '1',
+    background: 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
+    borderColor: '#fca5a5',
+    color: '#dc2626'
+  },
+  disabled: {
+    disabled: true,
+    cursor: 'not-allowed',
+    opacity: '0.5',
+    background: '',
+    borderColor: '',
+    color: ''
+  }
+};
+
+/**
+ * 应用按钮状态
+ */
+function applyButtonState(btn, state, text) {
+  const config = BUTTON_STATES[state];
+  btn.disabled = config.disabled;
+  btn.style.cursor = config.cursor;
+  btn.style.opacity = config.opacity;
+  btn.style.background = config.background;
+  btn.style.borderColor = config.borderColor;
+  btn.style.color = config.color;
+
+  const textSpan = btn.querySelector('span');
+  if (textSpan && text) textSpan.textContent = text;
+}
+
+/**
+ * 渲染空状态
+ */
+function renderEmptyState(tbody, message) {
+  const emptyRow = TemplateEngine.render('tpl-key-empty', { message });
+  if (emptyRow) tbody.appendChild(emptyRow);
+}
+
+/**
+ * 删除后更新冷却索引
+ */
+function updateCooldownIndicesAfterDelete(deletedIndex) {
+  currentChannelKeyCooldowns = currentChannelKeyCooldowns
+    .filter(kc => kc.key_index !== deletedIndex)
+    .map(kc => kc.key_index > deletedIndex ? { ...kc, key_index: kc.key_index - 1 } : kc);
+}
+
+/**
+ * 批量删除后更新冷却索引
+ */
+function updateCooldownIndicesAfterBatchDelete(indicesToDelete) {
+  indicesToDelete.forEach(index => {
+    currentChannelKeyCooldowns = currentChannelKeyCooldowns
+      .filter(kc => kc.key_index !== index)
+      .map(kc => kc.key_index > index ? { ...kc, key_index: kc.key_index - 1 } : kc);
+  });
+}
+
 function calculateVisibleRange(totalItems) {
-  const { ROW_HEIGHT, BUFFER_SIZE, CONTAINER_HEIGHT } = VIRTUAL_SCROLL_CONFIG;
+  const { ROW_HEIGHT, BUFFER_SIZE, CONTAINER_HEIGHT } = VIRTUAL_SCROLL_CONFIG_KEYS;
   const { scrollTop } = virtualScrollState;
 
   const visibleRowCount = Math.ceil(CONTAINER_HEIGHT / ROW_HEIGHT);
@@ -27,7 +99,7 @@ function calculateVisibleRange(totalItems) {
 }
 
 function renderVirtualRows(tbody, visibleStart, visibleEnd, filteredIndices) {
-  const { ROW_HEIGHT } = VIRTUAL_SCROLL_CONFIG;
+  const { ROW_HEIGHT } = VIRTUAL_SCROLL_CONFIG_KEYS;
 
   tbody.innerHTML = '';
 
@@ -285,13 +357,11 @@ function initKeyTableEventDelegation() {
     }
   });
 
-  // 处理输入框焦点样式
+  // 输入框焦点样式通过CSS类处理
   tbody.addEventListener('focusin', (e) => {
     const input = e.target.closest('.inline-key-input');
     if (input) {
-      input.style.borderColor = 'var(--primary-500)';
-      input.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.1)';
-      // Ensure drag doesn't interfere with typing
+      input.classList.add('focused');
       input.closest('tr').setAttribute('draggable', 'false');
     }
   });
@@ -299,41 +369,24 @@ function initKeyTableEventDelegation() {
   tbody.addEventListener('focusout', (e) => {
     const input = e.target.closest('.inline-key-input');
     if (input) {
-      input.style.borderColor = 'var(--neutral-300)';
-      input.style.boxShadow = 'none';
+      input.classList.remove('focused');
       input.closest('tr').setAttribute('draggable', 'true');
     }
   });
 
-  // 处理按钮悬停样式
-  tbody.addEventListener('mouseover', (e) => {
-    const btn = e.target.closest('.key-action-btn');
-    if (btn) {
-      const action = btn.dataset.action;
-      if (action === 'test') {
-        btn.style.background = '#eff6ff';
-        btn.style.borderColor = '#93c5fd';
-        btn.style.color = '#3b82f6';
-      } else if (action === 'copy') {
-        btn.style.background = '#f0fdf4';
-        btn.style.borderColor = '#86efac';
-        btn.style.color = '#16a34a';
-      } else if (action === 'delete') {
-        btn.style.background = '#fef2f2';
-        btn.style.borderColor = '#fca5a5';
-        btn.style.color = '#dc2626';
-      }
-    }
-  });
+  // 按钮悬停样式通过CSS类处理，不再使用内联样式
+}
 
-  tbody.addEventListener('mouseout', (e) => {
-    const btn = e.target.closest('.key-action-btn');
-    if (btn) {
-      btn.style.background = 'white';
-      btn.style.borderColor = 'var(--neutral-200)';
-      btn.style.color = 'var(--neutral-500)';
-    }
-  });
+/**
+ * 获取空状态消息
+ */
+function getEmptyStateMessage() {
+  if (inlineKeyTableData.length === 0) {
+    return window.t('channels.noApiKey');
+  }
+  return currentKeyStatusFilter === 'normal'
+    ? window.t('channels.noNormalKeys')
+    : window.t('channels.noCooldownKeys');
 }
 
 function renderInlineKeyTable() {
@@ -350,25 +403,10 @@ function renderInlineKeyTable() {
   // 初始化事件委托
   initKeyTableEventDelegation();
 
-  if (inlineKeyTableData.length === 0) {
-    const emptyRow = TemplateEngine.render('tpl-key-empty', {
-      message: window.t('channels.noApiKey')
-    });
-    if (emptyRow) tbody.appendChild(emptyRow);
-    cleanupVirtualScroll();
-    virtualScrollState.enabled = false;
-    if (virtualScrollHint) virtualScrollHint.style.display = 'none';
-    return;
-  }
-
   const visibleIndices = getVisibleKeyIndices();
 
-  if (visibleIndices.length === 0) {
-    const filterMessage = currentKeyStatusFilter === 'normal'
-      ? window.t('channels.noNormalKeys')
-      : window.t('channels.noCooldownKeys');
-    const emptyRow = TemplateEngine.render('tpl-key-empty', { message: filterMessage });
-    if (emptyRow) tbody.appendChild(emptyRow);
+  if (inlineKeyTableData.length === 0 || visibleIndices.length === 0) {
+    renderEmptyState(tbody, getEmptyStateMessage());
     cleanupVirtualScroll();
     virtualScrollState.enabled = false;
     if (virtualScrollHint) virtualScrollHint.style.display = 'none';
@@ -399,7 +437,7 @@ function renderInlineKeyTable() {
   }
 
   if (virtualScrollHint) {
-    const showHint = visibleIndices.length >= VIRTUAL_SCROLL_CONFIG.ENABLE_THRESHOLD;
+    const showHint = visibleIndices.length >= VIRTUAL_SCROLL_CONFIG_KEYS.ENABLE_THRESHOLD;
     virtualScrollHint.style.display = showHint ? 'inline' : 'none';
   }
 
@@ -572,10 +610,7 @@ function deleteInlineKey(index) {
     const scrollTop = tableContainer ? tableContainer.scrollTop : 0;
 
     inlineKeyTableData.splice(index, 1);
-
-    currentChannelKeyCooldowns = currentChannelKeyCooldowns
-      .filter(kc => kc.key_index !== index)
-      .map(kc => kc.key_index > index ? { ...kc, key_index: kc.key_index - 1 } : kc);
+    updateCooldownIndicesAfterDelete(index);
 
     selectedKeyIndices.clear();
     updateBatchDeleteButton();
@@ -618,25 +653,11 @@ function updateBatchDeleteButton() {
   if (!btn) return;
 
   const count = selectedKeyIndices.size;
-  const textSpan = btn.querySelector('span');
+  const text = count > 0
+    ? window.t('channels.deleteSelectedCount', { count })
+    : window.t('channels.deleteSelected');
 
-  if (count > 0) {
-    btn.disabled = false;
-    if (textSpan) textSpan.textContent = window.t('channels.deleteSelectedCount', { count });
-    btn.style.cursor = 'pointer';
-    btn.style.opacity = '1';
-    btn.style.background = 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)';
-    btn.style.borderColor = '#fca5a5';
-    btn.style.color = '#dc2626';
-  } else {
-    btn.disabled = true;
-    if (textSpan) textSpan.textContent = window.t('channels.deleteSelected');
-    btn.style.cursor = 'not-allowed';
-    btn.style.opacity = '0.5';
-    btn.style.background = '';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-  }
+  applyButtonState(btn, count > 0 ? 'enabled' : 'disabled', text);
 
   // 同步更新导出按钮状态
   updateExportButton(count);
@@ -675,11 +696,8 @@ function batchDeleteSelectedKeys() {
 
   indicesToDelete.forEach(index => {
     inlineKeyTableData.splice(index, 1);
-
-    currentChannelKeyCooldowns = currentChannelKeyCooldowns
-      .filter(kc => kc.key_index !== index)
-      .map(kc => kc.key_index > index ? { ...kc, key_index: kc.key_index - 1 } : kc);
   });
+  updateCooldownIndicesAfterBatchDelete(indicesToDelete);
 
   selectedKeyIndices.clear();
   updateBatchDeleteButton();
@@ -869,18 +887,28 @@ function copyExportKeys() {
 }
 
 /**
- * 导出为文件下载
+ * 通用文件下载函数
+ * @param {string} content - 文件内容
+ * @param {string} filename - 文件名
+ * @param {string} mimeType - MIME类型
  */
-function downloadExportKeys() {
-  const text = document.getElementById('keyExportPreview').value;
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+function downloadFile(content, filename, mimeType = 'text/plain;charset=utf-8') {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'api-keys.txt';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/**
+ * 导出为文件下载
+ */
+function downloadExportKeys() {
+  const text = document.getElementById('keyExportPreview').value;
+  downloadFile(text, 'api-keys.txt');
   closeKeyExportModal();
 }

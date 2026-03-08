@@ -1,6 +1,27 @@
 // ==================== 渠道排序功能 ====================
 // 拖拽排序实现,优先级相差10
 
+// 渠道类型颜色配置
+const CHANNEL_TYPE_COLORS = {
+  anthropic: '#3b82f6',
+  openai: '#10b981',
+  azure: '#0ea5e9',
+  bedrock: '#f59e0b',
+  vertex: '#8b5cf6',
+  openrouter: '#ec4899',
+  cohere: '#06b6d4',
+  groq: '#f97316',
+  deepseek: '#6366f1',
+  qwen: '#14b8a6',
+  zhipu: '#a855f7',
+  baidu: '#3b82f6',
+  ollama: '#84cc16',
+  custom: '#6b7280'
+};
+
+// 优先级步长常量
+const PRIORITY_STEP = 10;
+
 let sortChannels = []; // 存储排序中的渠道列表
 let draggedItem = null; // 当前拖拽的元素
 
@@ -70,29 +91,50 @@ function renderSortList() {
   }
 }
 
+// 状态徽章样式映射
+const STATUS_BADGE_STYLES = {
+  disabled: { bg: 'var(--neutral-200)', color: 'var(--neutral-600)', i18nKey: 'channels.statusDisabled' },
+  cooldown: { bg: 'var(--error-100)', color: 'var(--error-600)', i18nKey: 'channels.cooldownStatus' },
+  normal: { bg: 'var(--success-100)', color: 'var(--success-600)', i18nKey: 'channels.statusNormal' }
+};
+
+// 创建状态徽章
+function createStatusBadge(style) {
+  return `<span style="background: ${style.bg}; color: ${style.color}; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">${window.t(style.i18nKey)}</span>`;
+}
+
+// 获取渠道状态徽章
+function getStatusBadge(channel) {
+  if (!channel.enabled) {
+    return createStatusBadge(STATUS_BADGE_STYLES.disabled);
+  }
+  if (channel.cooldown_until && new Date(channel.cooldown_until) > new Date()) {
+    return createStatusBadge(STATUS_BADGE_STYLES.cooldown);
+  }
+  return createStatusBadge(STATUS_BADGE_STYLES.normal);
+}
+
+// 渲染模板（通用函数）
+function renderTemplate(templateId, replacements) {
+  const template = document.getElementById(templateId);
+  if (!template) return '';
+
+  let html = template.innerHTML;
+  for (const [key, value] of Object.entries(replacements)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    html = html.replace(regex, value);
+  }
+  return html;
+}
+
 // 创建排序卡片
 function createSortItem(channel, index) {
-  const template = document.getElementById('tpl-sort-item');
-  if (!template) return document.createElement('div');
-
-  // 渠道类型徽章
-  const typeColor = getChannelTypeColor(channel.type || 'anthropic');
-
-  // 状态徽章
-  let statusBadge = '';
-  if (!channel.enabled) {
-    statusBadge = `<span style="background: var(--neutral-200); color: var(--neutral-600); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">${window.t('channels.statusDisabled')}</span>`;
-  } else if (channel.cooldown_until && new Date(channel.cooldown_until) > new Date()) {
-    statusBadge = `<span style="background: var(--error-100); color: var(--error-600); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">${window.t('channels.cooldownStatus')}</span>`;
-  } else {
-    statusBadge = `<span style="background: var(--success-100); color: var(--success-600); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">${window.t('channels.statusNormal')}</span>`;
-  }
-
-  const html = template.innerHTML
-    .replace(/\{\{id\}\}/g, channel.id)
-    .replace(/\{\{name\}\}/g, escapeHtml(channel.name))
-    .replace(/\{\{priority\}\}/g, channel.priority)
-    .replace(/\{\{\{statusBadge\}\}\}/g, statusBadge);
+  const html = renderTemplate('tpl-sort-item', {
+    id: channel.id,
+    name: escapeHtml(channel.name),
+    priority: channel.priority,
+    statusBadge: getStatusBadge(channel)
+  });
 
   const div = document.createElement('div');
   div.innerHTML = html;
@@ -106,23 +148,7 @@ function createSortItem(channel, index) {
 
 // 获取渠道类型颜色
 function getChannelTypeColor(type) {
-  const colors = {
-    anthropic: '#3b82f6',
-    openai: '#10b981',
-    azure: '#0ea5e9',
-    bedrock: '#f59e0b',
-    vertex: '#8b5cf6',
-    openrouter: '#ec4899',
-    cohere: '#06b6d4',
-    groq: '#f97316',
-    deepseek: '#6366f1',
-    qwen: '#14b8a6',
-    zhipu: '#a855f7',
-    baidu: '#3b82f6',
-    ollama: '#84cc16',
-    custom: '#6b7280'
-  };
-  return colors[type.toLowerCase()] || colors.custom;
+  return CHANNEL_TYPE_COLORS[type.toLowerCase()] || CHANNEL_TYPE_COLORS.custom;
 }
 
 // 添加拖拽事件监听
@@ -146,16 +172,29 @@ function handleDragStart(e) {
   e.dataTransfer.effectAllowed = 'move';
 }
 
-// 拖拽结束
-function handleDragEnd(e) {
-  this.style.opacity = '1';
-
-  // 移除所有拖拽样式
+// 清除所有拖拽样式
+function clearDragStyles() {
   document.querySelectorAll('.sort-item').forEach(item => {
     item.style.borderTop = '';
     item.style.borderBottom = '';
   });
+}
 
+// 设置拖拽插入指示器
+function setDragInsertIndicator(item, position) {
+  if (position === 'top') {
+    item.style.borderTop = '2px solid var(--primary-500)';
+    item.style.borderBottom = '';
+  } else {
+    item.style.borderTop = '';
+    item.style.borderBottom = '2px solid var(--primary-500)';
+  }
+}
+
+// 拖拽结束
+function handleDragEnd(e) {
+  this.style.opacity = '1';
+  clearDragStyles();
   draggedItem = null;
 }
 
@@ -175,20 +214,12 @@ function handleDragEnter(e) {
   // 显示插入位置提示
   const rect = this.getBoundingClientRect();
   const midpoint = rect.top + rect.height / 2;
-
-  if (e.clientY < midpoint) {
-    this.style.borderTop = '2px solid var(--primary-500)';
-    this.style.borderBottom = '';
-  } else {
-    this.style.borderTop = '';
-    this.style.borderBottom = '2px solid var(--primary-500)';
-  }
+  setDragInsertIndicator(this, e.clientY < midpoint ? 'top' : 'bottom');
 }
 
 // 拖拽离开
 function handleDragLeave(e) {
-  this.style.borderTop = '';
-  this.style.borderBottom = '';
+  clearDragStyles();
 }
 
 // 放置
@@ -213,15 +244,12 @@ function handleDrop(e) {
   const draggedChannel = sortChannels[draggedIndex];
   sortChannels.splice(draggedIndex, 1);
 
+  // 简化插入位置计算
   let newIndex = targetIndex;
-  if (draggedIndex < targetIndex && !insertBefore) {
-    newIndex = targetIndex;
-  } else if (draggedIndex < targetIndex && insertBefore) {
-    newIndex = targetIndex - 1;
-  } else if (draggedIndex > targetIndex && insertBefore) {
-    newIndex = targetIndex;
-  } else if (draggedIndex > targetIndex && !insertBefore) {
-    newIndex = targetIndex + 1;
+  if (draggedIndex < targetIndex) {
+    newIndex = insertBefore ? targetIndex - 1 : targetIndex;
+  } else {
+    newIndex = insertBefore ? targetIndex : targetIndex + 1;
   }
 
   sortChannels.splice(newIndex, 0, draggedChannel);
@@ -239,14 +267,11 @@ async function saveSortOrder() {
     return;
   }
 
-  // 计算新的优先级(从高到低,相差10)
-  const updates = sortChannels.map((channel, index) => {
-    const newPriority = (sortChannels.length - index) * 10;
-    return {
-      id: channel.id,
-      priority: newPriority
-    };
-  });
+  // 计算新的优先级(从高到低,相差PRIORITY_STEP)
+  const updates = sortChannels.map((channel, index) => ({
+    id: channel.id,
+    priority: (sortChannels.length - index) * PRIORITY_STEP
+  }));
 
   try {
     const result = await fetchDataWithAuth('/admin/channels/batch-priority', {

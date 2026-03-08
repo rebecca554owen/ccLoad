@@ -15,16 +15,22 @@
   <script defer src="/web/assets/js/template-engine.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/settings.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-        <header class="mb-2">
+        <header class="mt-6 mb-6">
         
         </header>
 
-        <section class="mb-2">
+        <section class="mb-6">
           <div class="time-range-container">
             <div id="settings-group-nav" class="time-range-selector">
               <!-- 动态填充：分组快捷跳转 -->
@@ -76,7 +82,7 @@
   <!-- 分组标题行模板 -->
   <template id="tpl-setting-group-row">
     <tr id="settings-group-{{groupId}}" data-group="{{groupId}}">
-      <td colspan="3" style="background: var(--neutral-100); color: var(--neutral-700); font-weight: 700; letter-spacing: 0.2px;">
+      <td colspan="3" style="background: var(--glass-bg-dark, var(--neutral-800)); color: var(--text-primary-dark, #fff); font-weight: 700; letter-spacing: 0.2px;">
         {{groupName}}
       </td>
     </tr>

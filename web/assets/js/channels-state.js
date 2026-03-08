@@ -87,11 +87,15 @@ function formatCompactNumber(num) {
   return num.toString();
 }
 
+function isValidNumber(value) {
+  return value !== null && value !== undefined && Number.isFinite(Number(value));
+}
+
 function formatSuccessRate(success, total) {
-  if (success === null || success === undefined || total === null || total === undefined) return '--';
+  if (!isValidNumber(success) || !isValidNumber(total)) return '--';
   const succ = Number(success);
   const ttl = Number(total);
-  if (!Number.isFinite(succ) || !Number.isFinite(ttl) || ttl <= 0) return '--';
+  if (ttl <= 0) return '--';
   return ((succ / ttl) * 100).toFixed(1) + '%';
 }
 
@@ -123,9 +127,14 @@ function getStatsRangeLabel(range) {
 }
 
 function formatTimestampForFilename() {
-  const pad = (n) => String(n).padStart(2, '0');
   const now = new Date();
-  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}-${hours}${minutes}${seconds}`;
 }
 
 // 遮罩Key显示（保留前后各4个字符）
@@ -156,33 +165,34 @@ function resetChannelFormDirty() {
   }
 }
 
+// UI-only 元素 ID 和类名常量
+const UI_ONLY_IDS = new Set([
+  'channelApiKey',
+  'selectAllURLs',
+  'selectAllKeys',
+  'keyStatusFilter',
+  'selectAllModels',
+  'modelFilterInput'
+]);
+
+const UI_ONLY_CLASSES = ['url-checkbox', 'key-checkbox', 'model-checkbox'];
+
+// 检查是否应该追踪目标元素的变更
+function shouldTrackTarget(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (!target.closest('#channelForm')) return false;
+  if (UI_ONLY_IDS.has(target.id)) return false;
+  if (UI_ONLY_CLASSES.some(cls => target.classList.contains(cls))) return false;
+
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
 // 初始化表单变更追踪（覆盖输入类改动，非输入改动由调用方手动 mark）
 function initChannelFormDirtyTracking() {
   const form = document.getElementById('channelForm');
   if (!form || form.dataset.dirtyTracking === '1') return;
   form.dataset.dirtyTracking = '1';
-
-  const uiOnlyIDs = new Set([
-    'channelApiKey',
-    'selectAllURLs',
-    'selectAllKeys',
-    'keyStatusFilter',
-    'selectAllModels',
-    'modelFilterInput'
-  ]);
-
-  const uiOnlyClasses = ['url-checkbox', 'key-checkbox', 'model-checkbox'];
-
-  const shouldTrackTarget = (target) => {
-    if (!(target instanceof HTMLElement)) return false;
-    if (!target.closest('#channelForm')) return false;
-
-    if (uiOnlyIDs.has(target.id)) return false;
-    if (uiOnlyClasses.some(cls => target.classList.contains(cls))) return false;
-
-    const tag = target.tagName;
-    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-  };
 
   const markDirtyOnEdit = (event) => {
     if (!shouldTrackTarget(event.target)) return;

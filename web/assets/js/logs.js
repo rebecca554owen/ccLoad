@@ -6,7 +6,7 @@ let totalLogsPages = 1;
 let totalLogs = 0;
 let currentChannelType = 'all'; // 当前选中的渠道类型
 let authTokens = []; // 令牌列表
-let defaultTestContent = 'sonnet 4.0的发布日期是什么'; // 默认测试内容（从设置加载）
+let defaultTestContent = 'sonnet 4.0的发布日期是什么？'; // 默认测试内容（从设置加载）
 
 const ACTIVE_REQUESTS_POLL_INTERVAL_MS = 2000;
 let activeRequestsPollTimer = null;
@@ -48,14 +48,16 @@ function toUnixMs(value) {
   return null;
 }
 
+// 字节格式化常量
+const BYTES_UNITS = ['B', 'K', 'M', 'G'];
+const BYTES_FACTOR = 1024;
+
 // 格式化字节数为可读形式（K/M/G）- 使用对数优化
 function formatBytes(bytes) {
   if (bytes == null || bytes <= 0) return '';
-  const UNITS = ['B', 'K', 'M', 'G'];
-  const FACTOR = 1024;
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(FACTOR)), UNITS.length - 1);
-  const value = bytes / Math.pow(FACTOR, i);
-  return value.toFixed(i > 0 ? 1 : 0) + ' ' + UNITS[i];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(BYTES_FACTOR)), BYTES_UNITS.length - 1);
+  const value = bytes / Math.pow(BYTES_FACTOR, i);
+  return value.toFixed(i > 0 ? 1 : 0) + ' ' + BYTES_UNITS[i];
 }
 
 // IP 地址掩码处理（隐藏最后两段）
@@ -295,6 +297,119 @@ async function fetchActiveRequests() {
   }
 }
 
+// 状态类型常量
+const STATUS_PENDING = 'pending';
+const STATUS_STREAMING = 'streaming';
+const STATUS_COMPLETED = 'completed';
+const STATUS_ERROR = 'error';
+
+/**
+ * 构建活跃请求的耗时显示
+ */
+function buildActiveRequestDurationDisplay(req, startMs) {
+  const elapsedRaw = startMs ? Math.max(0, (Date.now() - startMs) / 1000) : null;
+  const elapsed = elapsedRaw !== null ? elapsedRaw.toFixed(1) : '-';
+
+  if (req.is_streaming && req.client_first_byte_time > 0 && startMs) {
+    return `${req.client_first_byte_time.toFixed(2)}s/${elapsed}s...`;
+  }
+  return startMs ? `${elapsed}s...` : '-';
+}
+
+/**
+ * 构建渠道显示HTML
+ */
+function buildChannelDisplay(req) {
+  if (!req.channel_id || !req.channel_name) {
+    return '<span style="color: var(--neutral-500);">选择中...</span>';
+  }
+
+  const channelTooltip = req.base_url ? ` title="${escapeHtml(req.base_url)}"` : '';
+  return `<a class="channel-link" href="/web/channels.html?id=${req.channel_id}#channel-${req.channel_id}"${channelTooltip}>${escapeHtml(req.channel_name)} <small>(#${req.channel_id})</small></a>`;
+}
+
+/**
+ * 构建API Key显示HTML
+ */
+function buildKeyDisplay(apiKeyUsed) {
+  if (!apiKeyUsed) {
+    return '<span style="color: var(--neutral-500);">-</span>';
+  }
+  return `<span style="font-family: monospace; font-size: 0.85em;">${escapeHtml(apiKeyUsed)}</span>`;
+}
+
+/**
+ * 构建活跃请求的信息显示
+ */
+function buildActiveRequestInfo(bytesReceived) {
+  const bytesInfo = formatBytes(bytesReceived);
+  const hasBytes = !!bytesInfo;
+  return {
+    text: hasBytes ? `已接收 ${bytesInfo}` : '请求处理中...',
+    color: hasBytes ? 'var(--success-600)' : 'var(--neutral-500)'
+  };
+}
+
+/**
+ * 构建紧凑视图的活跃请求行HTML
+ */
+function buildCompactActiveRequestRow(req, totalCols, durationDisplay, infoDisplay, infoColor) {
+  const streamFlag = getStreamFlagHtml(req.is_streaming);
+  return `
+    <td colspan="${totalCols}">
+      <span class="status-pending">进行中</span>
+      <span style="margin-left: 8px;">${formatTime(req.start_time)}</span>
+      <span style="margin-left: 8px; color: var(--neutral-600);" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</span>
+      <span style="margin-left: 8px;">${escapeHtml(req.model || '-')}</span>
+      <span style="margin-left: 8px;">${durationDisplay} ${streamFlag}</span>
+      <span style="margin-left: 8px; color: ${infoColor};">${escapeHtml(infoDisplay)}</span>
+    </td>
+  `;
+}
+
+/**
+ * 构建完整视图的活跃请求行HTML
+ */
+function buildFullActiveRequestRow(req, totalCols, durationDisplay, infoDisplay, infoColor) {
+  const streamFlag = getStreamFlagHtml(req.is_streaming);
+  const emptyCols = Math.max(0, totalCols - 8);
+  const emptyCells = '<td></td>'.repeat(emptyCols);
+  const channelDisplay = buildChannelDisplay(req);
+  const keyDisplay = buildKeyDisplay(req.api_key_used);
+
+  return `
+    <td style="white-space: nowrap;">${formatTime(req.start_time)}</td>
+    <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</td>
+    <td style="text-align: center;">${keyDisplay}</td>
+    <td class="config-info">${channelDisplay}</td>
+    <td><span class="model-tag">${escapeHtml(req.model)}</span></td>
+    <td><span class="status-pending">进行中</span></td>
+    <td style="text-align: right;">${durationDisplay} ${streamFlag}</td>
+    ${emptyCells}
+    <td><span style="color: ${infoColor};">${escapeHtml(infoDisplay)}</span></td>
+  `;
+}
+
+/**
+ * 创建单个活跃请求行元素
+ */
+function createActiveRequestRow(req, totalCols) {
+  const startMs = toUnixMs(req.start_time);
+  const durationDisplay = buildActiveRequestDurationDisplay(req, startMs);
+  const { text: infoDisplay, color: infoColor } = buildActiveRequestInfo(req.bytes_received);
+
+  const row = document.createElement('tr');
+  row.className = 'pending-row';
+
+  if (totalCols < 8) {
+    row.innerHTML = buildCompactActiveRequestRow(req, totalCols, durationDisplay, infoDisplay, infoColor);
+  } else {
+    row.innerHTML = buildFullActiveRequestRow(req, totalCols, durationDisplay, infoDisplay, infoColor);
+  }
+
+  return row;
+}
+
 // 渲染进行中的请求（插入到表格顶部）
 function renderActiveRequests(activeRequests) {
   // 移除旧的进行中行
@@ -310,68 +425,7 @@ function renderActiveRequests(activeRequests) {
   const fragment = document.createDocumentFragment();
 
   for (const req of activeRequests) {
-    const startMs = toUnixMs(req.start_time);
-    const elapsedRaw = startMs ? Math.max(0, (Date.now() - startMs) / 1000) : null;
-    const elapsed = elapsedRaw !== null ? elapsedRaw.toFixed(1) : '-';
-    const streamFlag = getStreamFlagHtml(req.is_streaming);
-
-    // 耗时显示：流式请求有首字时间则显示 "首字/总耗时" 格式
-    let durationDisplay = startMs ? `${elapsed}s...` : '-';
-    if (req.is_streaming && req.client_first_byte_time > 0 && startMs) {
-      durationDisplay = `${req.client_first_byte_time.toFixed(2)}s/${elapsed}s...`;
-    }
-
-    // 渠道显示（鼠标移上去时显示URL）
-    let channelTooltip = '';
-    if (req.base_url) {
-      channelTooltip = ` title="${escapeHtml(req.base_url)}"`;
-    }
-    let channelDisplay = '<span style="color: var(--neutral-500);">选择中...</span>';
-    if (req.channel_id && req.channel_name) {
-      channelDisplay = `<a class="channel-link" href="/web/channels.html?id=${req.channel_id}#channel-${req.channel_id}"${channelTooltip}>${escapeHtml(req.channel_name)} <small>(#${req.channel_id})</small></a>`;
-    }
-
-    // Key显示
-    let keyDisplay = '<span style="color: var(--neutral-500);">-</span>';
-    if (req.api_key_used) {
-      keyDisplay = `<span style="font-family: monospace; font-size: 0.85em;">${escapeHtml(req.api_key_used)}</span>`;
-    }
-
-    const bytesInfo = formatBytes(req.bytes_received);
-    const hasBytes = !!bytesInfo;
-    const infoDisplay = hasBytes ? `已接收 ${bytesInfo}` : '请求处理中...';
-    const infoColor = hasBytes ? 'var(--success-600)' : 'var(--neutral-500)';
-
-
-
-    const row = document.createElement('tr');
-    row.className = 'pending-row';
-    if (totalCols < 8) {
-      row.innerHTML = `
-            <td colspan="${totalCols}">
-              <span class="status-pending">进行中</span>
-              <span style="margin-left: 8px;">${formatTime(req.start_time)}</span>
-              <span style="margin-left: 8px; color: var(--neutral-600);" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</span>
-              <span style="margin-left: 8px;">${escapeHtml(req.model || '-')}</span>
-              <span style="margin-left: 8px;">${durationDisplay} ${streamFlag}</span>
-              <span style="margin-left: 8px; color: ${infoColor};">${escapeHtml(infoDisplay)}</span>
-            </td>
-          `;
-    } else {
-      const emptyCols = Math.max(0, totalCols - 8); // 7列固定信息 + 末尾消息列
-      const emptyCells = '<td></td>'.repeat(emptyCols);
-      row.innerHTML = `
-            <td style="white-space: nowrap;">${formatTime(req.start_time)}</td>
-            <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</td>
-            <td style="text-align: center;">${keyDisplay}</td>
-            <td class="config-info">${channelDisplay}</td>
-            <td><span class="model-tag">${escapeHtml(req.model)}</span></td>
-            <td><span class="status-pending">进行中</span></td>
-            <td style="text-align: right;">${durationDisplay} ${streamFlag}</td>
-            ${emptyCells}
-            <td><span style="color: ${infoColor};">${escapeHtml(infoDisplay)}</span></td>
-          `;
-    }
+    const row = createActiveRequestRow(req, totalCols);
     fragment.appendChild(row);
   }
 
@@ -1104,43 +1158,50 @@ async function testKey(channelId, channelName, apiKey, model, apiKeyHash = '') {
 
     // 填充模型下拉列表
     const modelSelect = document.getElementById('testKeyModel');
-    modelSelect.innerHTML = '';
-
     if (channel.models && channel.models.length > 0) {
       // channel.models 是 ModelEntry 对象数组，需访问 .model 属性
-      channel.models.forEach(m => {
-        const modelName = m.model || m; // 兼容字符串和对象
-        const option = document.createElement('option');
-        option.value = modelName;
-        option.textContent = modelName;
-        modelSelect.appendChild(option);
-      });
-
-      // 如果日志中的模型在支持列表中，则预选；否则选择第一个
       const modelNames = channel.models.map(m => m.model || m);
-      if (modelNames.includes(model)) {
-        modelSelect.value = model;
+      const options = modelNames.map(name => ({ value: name, label: name }));
+      const restoreValue = modelNames.includes(model) ? model : modelNames[0];
+      if (typeof window.populateSelect === 'function') {
+        window.populateSelect(modelSelect, options, { restoreValue });
       } else {
-        modelSelect.value = modelNames[0];
+        modelSelect.innerHTML = '';
+        options.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.label;
+          modelSelect.appendChild(option);
+        });
+        modelSelect.value = restoreValue;
       }
     } else {
       // 没有配置模型，使用日志中的模型
+      if (typeof window.populateSelect === 'function') {
+        window.populateSelect(modelSelect, [{ value: model, label: model }], { restoreValue: model });
+      } else {
+        modelSelect.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        modelSelect.appendChild(option);
+        modelSelect.value = model;
+      }
+    }
+  } catch (e) {
+    console.error('加载渠道配置失败', e);
+    // 降级方案：使用日志中的模型
+    const modelSelect = document.getElementById('testKeyModel');
+    if (typeof window.populateSelect === 'function') {
+      window.populateSelect(modelSelect, [{ value: model, label: model }], { restoreValue: model });
+    } else {
+      modelSelect.innerHTML = '';
       const option = document.createElement('option');
       option.value = model;
       option.textContent = model;
       modelSelect.appendChild(option);
       modelSelect.value = model;
     }
-  } catch (e) {
-    console.error('加载渠道配置失败', e);
-    // 降级方案：使用日志中的模型
-    const modelSelect = document.getElementById('testKeyModel');
-    modelSelect.innerHTML = '';
-    const option = document.createElement('option');
-    option.value = model;
-    option.textContent = model;
-    modelSelect.appendChild(option);
-    modelSelect.value = model;
     updateTestKeyIndexInfo('渠道配置加载失败，将按默认顺序测试');
   }
 }

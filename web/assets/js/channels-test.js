@@ -105,12 +105,7 @@ async function runChannelTest() {
   document.getElementById('runTestBtn').disabled = true;
 
   try {
-    const testRequest = {
-      model: selectedModel,
-      stream: streamEnabled,
-      content: testContent,
-      channel_type: channelType
-    };
+    let testRequest = buildTestRequest(selectedModel, testContent, channelType, streamEnabled);
 
     if (keySelect && keySelect.parentElement.style.display !== 'none') {
       testRequest.key_index = parseInt(keySelect.value) || 0;
@@ -138,6 +133,171 @@ async function runChannelTest() {
   }
 }
 
+/**
+ * 构建测试请求
+ */
+function buildTestRequest(model, content, channelType, streamEnabled, keyIndex) {
+  return {
+    model,
+    stream: streamEnabled,
+    content,
+    channel_type: channelType,
+    key_index: keyIndex
+  };
+}
+
+/**
+ * 准备批量测试配置
+ */
+function prepareBatchTestConfig() {
+  const modelSelect = document.getElementById('testModelSelect');
+  const contentInput = document.getElementById('testContentInput');
+  const channelTypeSelect = document.getElementById('testChannelType');
+  const streamCheckbox = document.getElementById('testStreamEnabled');
+  const concurrencyInput = document.getElementById('testConcurrency');
+
+  return {
+    selectedModel: modelSelect.value,
+    testContent: contentInput.value.trim() || defaultTestContent,
+    channelType: channelTypeSelect.value,
+    streamEnabled: streamCheckbox.checked,
+    concurrency: Math.max(1, Math.min(50, parseInt(concurrencyInput.value) || 10))
+  };
+}
+
+/**
+ * 创建进度更新函数
+ */
+function createProgressUpdater(total, keys) {
+  const counterSpan = document.getElementById('batchTestCounter');
+  const progressBar = document.getElementById('batchTestProgressBar');
+  const statusDiv = document.getElementById('batchTestStatus');
+
+  return (completedCount, concurrency) => {
+    const progress = (completedCount / total * 100).toFixed(0);
+    counterSpan.textContent = `${completedCount} / ${total}`;
+    progressBar.style.width = `${progress}%`;
+    statusDiv.textContent = window.t('channels.test.progressStatus', { completed: completedCount, total, concurrency });
+  };
+}
+
+/**
+ * 执行批量测试
+ */
+async function executeBatchTests(keys, config) {
+  const { selectedModel, testContent, channelType, streamEnabled, concurrency } = config;
+
+  let successCount = 0;
+  let failedCount = 0;
+  const failedKeys = [];
+  let completedCount = 0;
+
+  const updateProgress = createProgressUpdater(keys.length, keys);
+
+  const testSingleKey = async (keyIndex) => {
+    try {
+      const testRequest = buildTestRequest(selectedModel, testContent, channelType, streamEnabled, keyIndex);
+
+      const testResult = await fetchDataWithAuth(`/admin/channels/${testingChannelId}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testRequest)
+      });
+
+      if (testResult.success) {
+        successCount++;
+      } else {
+        failedCount++;
+        failedKeys.push({ index: keyIndex, key: maskKey(keys[keyIndex]), error: testResult.error });
+      }
+    } catch (e) {
+      failedCount++;
+      failedKeys.push({ index: keyIndex, key: maskKey(keys[keyIndex]), error: e.message });
+    } finally {
+      completedCount++;
+      updateProgress(completedCount, concurrency);
+    }
+  };
+
+  // 构建批次
+  const batches = [];
+  for (let i = 0; i < keys.length; i += concurrency) {
+    const batchIndexes = [];
+    for (let j = i; j < Math.min(i + concurrency, keys.length); j++) {
+      batchIndexes.push(j);
+    }
+    batches.push(batchIndexes);
+  }
+
+  updateProgress(0, concurrency);
+
+  for (const batch of batches) {
+    const batchPromises = batch.map(keyIndex => testSingleKey(keyIndex));
+    await Promise.all(batchPromises);
+  }
+
+  return { successCount, failedCount, failedKeys };
+}
+
+/**
+ * 渲染测试结果头部
+ */
+function renderTestResultHeader(contentDiv, icon, message) {
+  const header = TemplateEngine.render('tpl-test-result-header', { icon, message });
+  contentDiv.innerHTML = '';
+  if (header) contentDiv.appendChild(header);
+}
+
+/**
+ * 构建失败详情HTML
+ */
+function buildFailDetails(failedKeys) {
+  const items = failedKeys.map(({ index, key, error }) => {
+    const item = TemplateEngine.render('tpl-batch-fail-item', {
+      keyNum: index + 1,
+      keyMask: key,
+      error: escapeHtml(error)
+    });
+    return item ? item.outerHTML : '';
+  }).join('');
+  return `<ul style="margin: 8px 0; padding-left: 20px;">${items}</ul>`;
+}
+
+/**
+ * 显示批量测试结果
+ */
+function displayBatchTestResult(successCount, failedCount, totalCount, failedKeys) {
+  const testResultDiv = document.getElementById('testResult');
+  const contentDiv = document.getElementById('testResultContent');
+  const detailsDiv = document.getElementById('testResultDetails');
+  const statusDiv = document.getElementById('batchTestStatus');
+
+  testResultDiv.classList.remove('success', 'error');
+  testResultDiv.classList.add('show');
+
+  statusDiv.textContent = window.t('channels.test.completed', { success: successCount, failed: failedCount });
+
+  const hasFailures = failedCount > 0;
+  const hasSuccesses = successCount > 0;
+
+  if (!hasFailures) {
+    // 全部成功
+    testResultDiv.classList.add('success');
+    renderTestResultHeader(contentDiv, '✅', window.t('channels.test.batchAllSuccess', { count: totalCount }));
+    detailsDiv.innerHTML = '';
+  } else if (!hasSuccesses) {
+    // 全部失败
+    testResultDiv.classList.add('error');
+    renderTestResultHeader(contentDiv, '❌', window.t('channels.test.batchAllFailed', { count: totalCount }));
+    detailsDiv.innerHTML = `<h4 style="margin-top: 12px; color: var(--error-600);">${window.t('channels.test.failDetails')}</h4>${buildFailDetails(failedKeys)}<p style="color: var(--error-600); margin-top: 8px;">${window.t('channels.test.failedKeysAutoCooldown')}</p>`;
+  } else {
+    // 部分成功
+    testResultDiv.classList.add('success');
+    renderTestResultHeader(contentDiv, '⚠️', window.t('channels.test.batchPartial', { success: successCount, failed: failedCount }));
+    detailsDiv.innerHTML = `<p style="color: var(--success-600);">✅ ${window.t('channels.test.keysAvailable', { count: successCount })}</p><h4 style="margin-top: 12px; color: var(--error-600);">${window.t('channels.test.failDetails')}</h4>${buildFailDetails(failedKeys)}<p style="color: var(--error-600); margin-top: 8px;">${window.t('channels.test.failedKeysAutoCooldown')}</p>`;
+  }
+}
+
 async function runBatchTest() {
   if (!testingChannelId) return;
 
@@ -157,19 +317,9 @@ async function runBatchTest() {
     return;
   }
 
-  const modelSelect = document.getElementById('testModelSelect');
-  const contentInput = document.getElementById('testContentInput');
-  const channelTypeSelect = document.getElementById('testChannelType');
-  const streamCheckbox = document.getElementById('testStreamEnabled');
-  const concurrencyInput = document.getElementById('testConcurrency');
+  const config = prepareBatchTestConfig();
 
-  const selectedModel = modelSelect.value;
-  const testContent = contentInput.value.trim() || defaultTestContent;
-  const channelType = channelTypeSelect.value;
-  const streamEnabled = streamCheckbox.checked;
-  const concurrency = Math.max(1, Math.min(50, parseInt(concurrencyInput.value) || 10));
-
-  if (!selectedModel) {
+  if (!config.selectedModel) {
     if (window.showError) window.showError(window.t('channels.test.selectModelRequired'));
     return;
   }
@@ -178,77 +328,16 @@ async function runBatchTest() {
   document.getElementById('batchTestBtn').disabled = true;
 
   const progressDiv = document.getElementById('batchTestProgress');
-  const counterSpan = document.getElementById('batchTestCounter');
-  const progressBar = document.getElementById('batchTestProgressBar');
-  const statusDiv = document.getElementById('batchTestStatus');
-  
   progressDiv.style.display = 'block';
   document.getElementById('testResult').classList.remove('show');
 
-  let successCount = 0;
-  let failedCount = 0;
-  const failedKeys = [];
-  let completedCount = 0;
-
-  const updateProgress = () => {
-    const progress = (completedCount / keys.length * 100).toFixed(0);
-    counterSpan.textContent = `${completedCount} / ${keys.length}`;
-    progressBar.style.width = `${progress}%`;
-    statusDiv.textContent = window.t('channels.test.progressStatus', { completed: completedCount, total: keys.length, concurrency });
-  };
-
-  const testSingleKey = async (keyIndex) => {
-    try {
-      const testRequest = {
-        model: selectedModel,
-        stream: streamEnabled,
-        content: testContent,
-        channel_type: channelType,
-        key_index: keyIndex
-      };
-
-      const testResult = await fetchDataWithAuth(`/admin/channels/${testingChannelId}/test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(testRequest)
-      });
-
-      if (testResult.success) {
-        successCount++;
-      } else {
-        failedCount++;
-        failedKeys.push({ index: keyIndex, key: maskKey(keys[keyIndex]), error: testResult.error });
-      }
-    } catch (e) {
-      failedCount++;
-      failedKeys.push({ index: keyIndex, key: maskKey(keys[keyIndex]), error: e.message });
-    } finally {
-      completedCount++;
-      updateProgress();
-    }
-  };
-
-  const batches = [];
-  for (let i = 0; i < keys.length; i += concurrency) {
-    const batchIndexes = [];
-    for (let j = i; j < Math.min(i + concurrency, keys.length); j++) {
-      batchIndexes.push(j);
-    }
-    batches.push(batchIndexes);
-  }
-
-  updateProgress();
-
-  for (const batch of batches) {
-    const batchPromises = batch.map(keyIndex => testSingleKey(keyIndex));
-    await Promise.all(batchPromises);
-  }
+  const { successCount, failedCount, failedKeys } = await executeBatchTests(keys, config);
 
   displayBatchTestResult(successCount, failedCount, keys.length, failedKeys);
 
   document.getElementById('runTestBtn').disabled = false;
   document.getElementById('batchTestBtn').disabled = false;
-  
+
   clearChannelsCache();
   await loadChannels(filters.channelType);
 }
@@ -307,13 +396,6 @@ function displayTestResult(result) {
   testResultDiv.classList.remove('success', 'error');
   testResultDiv.classList.add('show');
 
-  // 使用模板渲染头部
-  const renderHeader = (icon, message) => {
-    const header = TemplateEngine.render('tpl-test-result-header', { icon, message });
-    contentDiv.innerHTML = '';
-    if (header) contentDiv.appendChild(header);
-  };
-
   // 渲染响应区块
   const renderResponseSection = (title, content, display = 'none', hasToggle = true) => {
     const contentId = `response-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -330,7 +412,7 @@ function displayTestResult(result) {
 
   if (result.success) {
     testResultDiv.classList.add('success');
-    renderHeader('✅', result.message || window.t('channels.test.apiTestSuccess'));
+    renderTestResultHeader(contentDiv, '✅', result.message || window.t('channels.test.apiTestSuccess'));
 
     let details = `${window.t('channels.test.responseTime')}: ${result.duration_ms}ms`;
     if (result.status_code) {
@@ -350,7 +432,7 @@ function displayTestResult(result) {
     detailsDiv.innerHTML = details;
   } else {
     testResultDiv.classList.add('error');
-    renderHeader('❌', window.t('channels.msg.testFailed'));
+    renderTestResultHeader(contentDiv, '❌', window.t('channels.msg.testFailed'));
 
     // [FIX] Escape result.error to prevent XSS
     let details = escapeHtml(result.error || window.t('error.unknown'));

@@ -1,51 +1,80 @@
-function showAddModal() {
+// 常量定义
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DEFAULT_COOLDOWN_MS = 2 * 60 * 1000;
+
+// 表单字段配置
+const FORM_FIELDS = [
+  { id: 'channelName', key: 'name' },
+  { id: 'channelPriority', key: 'priority', transform: v => parseInt(v) || 0 },
+  { id: 'channelDailyCostLimit', key: 'daily_cost_limit', transform: v => parseFloat(v) || 0 },
+  { id: 'channelEnabled', key: 'enabled', isCheckbox: true }
+];
+
+/**
+ * 重置模态框状态
+ */
+function resetModalState() {
   editingChannelId = null;
   currentChannelKeyCooldowns = [];
+  redirectTableData = [];
+  selectedModelIndices.clear();
+  currentModelFilter = '';
+  inlineURLTableData = [''];
+  selectedURLIndices.clear();
+  inlineKeyTableData = [''];
+  inlineKeyVisible = true;
+}
 
-  document.getElementById('modalTitle').textContent = window.t('channels.addChannel');
+/**
+ * 重置表单控件到默认值
+ */
+function resetFormControls() {
   document.getElementById('channelForm').reset();
   document.getElementById('channelEnabled').checked = true;
   document.querySelector('input[name="channelType"][value="anthropic"]').checked = true;
   document.querySelector('input[name="keyStrategy"][value="sequential"]').checked = true;
 
-  redirectTableData = [];
-  selectedModelIndices.clear();
-  currentModelFilter = '';
   const modelFilterInput = document.getElementById('modelFilterInput');
   if (modelFilterInput) modelFilterInput.value = '';
-  renderRedirectTable();
 
-  inlineURLTableData = [''];
-  selectedURLIndices.clear();
-  renderInlineURLTable();
-
-  inlineKeyTableData = [''];
-  inlineKeyVisible = true;
   document.getElementById('inlineEyeIcon').style.display = 'none';
   document.getElementById('inlineEyeOffIcon').style.display = 'block';
-  renderInlineKeyTable();
+}
 
+/**
+ * 渲染所有表格
+ */
+function renderAllTables() {
+  renderRedirectTable();
+  renderInlineURLTable();
+  renderInlineKeyTable();
+}
+
+/**
+ * 显示模态框
+ */
+function showModal() {
   resetChannelFormDirty();
   document.getElementById('channelModal').classList.add('show');
 }
 
-async function editChannel(id) {
-  const channel = channels.find(c => c.id === id);
-  if (!channel) return;
-
-  editingChannelId = id;
-
-  document.getElementById('modalTitle').textContent = window.t('channels.editChannel');
-  document.getElementById('channelName').value = channel.name;
-  setInlineURLTableData(channel.url);
-
-  let apiKeys = [];
-  try {
-    apiKeys = (await fetchDataWithAuth(`/admin/channels/${id}/keys`)) || [];
-  } catch (e) {
-    console.error('Failed to fetch API Keys', e);
+/**
+ * 通用错误处理
+ */
+function handleError(context, error, fallbackMsg) {
+  console.error(context, error);
+  const msg = error?.message || fallbackMsg;
+  if (window.showError) {
+    window.showError(msg);
+  } else {
+    alert(msg);
   }
+}
 
+/**
+ * 处理API Keys数据，转换为内部格式
+ */
+function processApiKeys(apiKeys) {
   const now = Date.now();
   currentChannelKeyCooldowns = apiKeys.map((apiKey, index) => {
     const cooldownUntilMs = (apiKey.cooldown_until || 0) * 1000;
@@ -61,24 +90,56 @@ async function editChannel(id) {
     inlineKeyTableData = [''];
     currentChannelKeyCooldowns = [];
   }
+}
+
+/**
+ * 加载渠道数据到表单
+ */
+async function loadChannelData(channel) {
+  document.getElementById('modalTitle').textContent = window.t('channels.editChannel');
+  document.getElementById('channelName').value = channel.name;
+  setInlineURLTableData(channel.url);
+
+  let apiKeys = [];
+  try {
+    apiKeys = (await fetchDataWithAuth(`/admin/channels/${channel.id}/keys`)) || [];
+  } catch (e) {
+    console.error('Failed to fetch API Keys', e);
+  }
+  processApiKeys(apiKeys);
 
   inlineKeyVisible = true;
   document.getElementById('inlineEyeIcon').style.display = 'none';
   document.getElementById('inlineEyeOffIcon').style.display = 'block';
   renderInlineKeyTable();
+}
 
+/**
+ * 设置模态框为编辑模式
+ */
+async function setupModalForEdit(channel) {
   const channelType = channel.channel_type || 'anthropic';
   await window.ChannelTypeManager.renderChannelTypeRadios('channelTypeRadios', channelType);
+
   const keyStrategy = channel.key_strategy || 'sequential';
   const strategyRadio = document.querySelector(`input[name="keyStrategy"][value="${keyStrategy}"]`);
   if (strategyRadio) {
     strategyRadio.checked = true;
   }
-  document.getElementById('channelPriority').value = channel.priority;
-  document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
-  document.getElementById('channelEnabled').checked = channel.enabled;
 
-  // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
+  // 使用formFields循环设置表单值
+  FORM_FIELDS.forEach(field => {
+    const el = document.getElementById(field.id);
+    if (!el) return;
+
+    if (field.isCheckbox) {
+      el.checked = channel[field.key];
+    } else {
+      el.value = channel[field.key] || '';
+    }
+  });
+
+  // 加载模型配置
   redirectTableData = (channel.models || []).map(m => ({
     model: m.model || '',
     redirect_model: m.redirect_model || ''
@@ -88,6 +149,26 @@ async function editChannel(id) {
   const modelFilterInput = document.getElementById('modelFilterInput');
   if (modelFilterInput) modelFilterInput.value = '';
   renderRedirectTable();
+}
+
+function showAddModal() {
+  resetModalState();
+  resetFormControls();
+  document.getElementById('modalTitle').textContent = window.t('channels.addChannel');
+  renderAllTables();
+  showModal();
+}
+
+async function editChannel(id) {
+  const channel = channels.find(c => c.id === id);
+  if (!channel) return;
+
+  editingChannelId = id;
+  currentChannelKeyCooldowns = [];
+
+  await loadChannelData(channel);
+  await setupModalForEdit(channel);
+  renderInlineURLTable();
 
   resetChannelFormDirty();
   document.getElementById('channelModal').classList.add('show');
@@ -100,6 +181,77 @@ function closeModal() {
   document.getElementById('channelModal').classList.remove('show');
   editingChannelId = null;
   resetChannelFormDirty();
+}
+
+/**
+ * 验证表单数据
+ */
+function validateFormData(formData) {
+  if (!formData.name || !formData.url || !formData.api_key || formData.models.length === 0) {
+    if (window.showError) window.showError(window.t('channels.fillAllRequired'));
+    return false;
+  }
+  return true;
+}
+
+/**
+ * 检查并处理重复模型
+ */
+function checkDuplicateModels(models) {
+  const seenModels = new Set();
+  const duplicateModels = [];
+  for (const entry of models) {
+    const modelKey = entry.model.toLowerCase();
+    if (seenModels.has(modelKey)) {
+      duplicateModels.push(entry.model);
+      continue;
+    }
+    seenModels.add(modelKey);
+  }
+
+  if (duplicateModels.length > 0) {
+    const uniqueDuplicates = [...new Set(duplicateModels)];
+    const msg = window.t('channels.duplicateModelsNotAllowed', { models: uniqueDuplicates.join(', ') });
+    if (window.showError) {
+      window.showError(msg);
+    } else {
+      alert(msg);
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * 构建模型配置
+ */
+function buildModelsConfig() {
+  return redirectTableData
+    .filter(r => r.model && r.model.trim())
+    .map(r => ({
+      model: r.model.trim(),
+      redirect_model: (r.redirect_model || '').trim()
+    }));
+}
+
+/**
+ * 构建表单数据
+ */
+function buildFormData(validURLs, validKeys, models) {
+  const channelType = document.querySelector('input[name="channelType"]:checked')?.value || 'anthropic';
+  const keyStrategy = document.querySelector('input[name="keyStrategy"]:checked')?.value || 'sequential';
+
+  return {
+    name: document.getElementById('channelName').value.trim(),
+    url: validURLs.join('\n'),
+    api_key: validKeys.join(','),
+    channel_type: channelType,
+    key_strategy: keyStrategy,
+    priority: parseInt(document.getElementById('channelPriority').value) || 0,
+    daily_cost_limit: parseFloat(document.getElementById('channelDailyCostLimit').value) || 0,
+    models: models,
+    enabled: document.getElementById('channelEnabled').checked
+  };
 }
 
 async function saveChannel(event) {
@@ -120,53 +272,11 @@ async function saveChannel(event) {
   document.getElementById('channelUrl').value = validURLs.join('\n');
   document.getElementById('channelApiKey').value = validKeys.join(',');
 
-  // 构建模型配置（新格式：models 数组）
-  const models = redirectTableData
-    .filter(r => r.model && r.model.trim())
-    .map(r => ({
-      model: r.model.trim(),
-      redirect_model: (r.redirect_model || '').trim()
-    }));
-  const seenModels = new Set();
-  const duplicateModels = [];
-  for (const entry of models) {
-    const modelKey = entry.model.toLowerCase();
-    if (seenModels.has(modelKey)) {
-      duplicateModels.push(entry.model);
-      continue;
-    }
-    seenModels.add(modelKey);
-  }
-  if (duplicateModels.length > 0) {
-    const uniqueDuplicates = [...new Set(duplicateModels)];
-    const msg = window.t('channels.duplicateModelsNotAllowed', { models: uniqueDuplicates.join(', ') });
-    if (window.showError) {
-      window.showError(msg);
-    } else {
-      alert(msg);
-    }
-    return;
-  }
+  const models = buildModelsConfig();
+  if (checkDuplicateModels(models)) return;
 
-  const channelType = document.querySelector('input[name="channelType"]:checked')?.value || 'anthropic';
-  const keyStrategy = document.querySelector('input[name="keyStrategy"]:checked')?.value || 'sequential';
-
-  const formData = {
-    name: document.getElementById('channelName').value.trim(),
-    url: validURLs.join('\n'),
-    api_key: validKeys.join(','),
-    channel_type: channelType,
-    key_strategy: keyStrategy,
-    priority: parseInt(document.getElementById('channelPriority').value) || 0,
-    daily_cost_limit: parseFloat(document.getElementById('channelDailyCostLimit').value) || 0,
-    models: models,
-    enabled: document.getElementById('channelEnabled').checked
-  };
-
-  if (!formData.name || !formData.url || !formData.api_key || formData.models.length === 0) {
-    if (window.showError) window.showError(window.t('channels.fillAllRequired'));
-    return;
-  }
+  const formData = buildFormData(validURLs, validKeys, models);
+  if (!validateFormData(formData)) return;
 
   try {
     const resp = editingChannelId
@@ -201,8 +311,7 @@ async function saveChannel(event) {
     await loadChannels(filters.channelType);
     if (window.showSuccess) window.showSuccess(isNewChannel ? window.t('channels.channelAdded') : window.t('channels.channelUpdated'));
   } catch (e) {
-    console.error('Save channel failed', e);
-    if (window.showError) window.showError(window.t('channels.saveFailed', { error: e.message }));
+    handleError('Save channel failed', e, window.t('channels.saveFailed', { error: e.message }));
   }
 }
 
@@ -613,6 +722,25 @@ function batchRefreshSelectedChannelsReplace() {
   return batchRefreshSelectedChannels('replace');
 }
 
+/**
+ * 设置表单字段值（复制模式）
+ */
+function setFormValuesForCopy(channel, copiedName) {
+  document.getElementById('modalTitle').textContent = window.t('channels.copyChannel');
+  document.getElementById('channelName').value = copiedName;
+  document.getElementById('channelPriority').value = channel.priority;
+  document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
+  document.getElementById('channelEnabled').checked = true;
+
+  const channelType = channel.channel_type || 'anthropic';
+  const radioButton = document.querySelector(`input[name="channelType"][value="${channelType}"]`);
+  if (radioButton) radioButton.checked = true;
+
+  const keyStrategy = channel.key_strategy || 'sequential';
+  const strategyRadio = document.querySelector(`input[name="keyStrategy"][value="${keyStrategy}"]`);
+  if (strategyRadio) strategyRadio.checked = true;
+}
+
 async function copyChannel(id, name) {
   const channel = channels.find(c => c.id === id);
   if (!channel) return;
@@ -621,8 +749,8 @@ async function copyChannel(id, name) {
 
   editingChannelId = null;
   currentChannelKeyCooldowns = [];
-  document.getElementById('modalTitle').textContent = window.t('channels.copyChannel');
-  document.getElementById('channelName').value = copiedName;
+
+  setFormValuesForCopy(channel, copiedName);
   setInlineURLTableData(channel.url);
 
   let apiKeys = [];
@@ -642,21 +770,7 @@ async function copyChannel(id, name) {
   document.getElementById('inlineEyeOffIcon').style.display = 'block';
   renderInlineKeyTable();
 
-  const channelType = channel.channel_type || 'anthropic';
-  const radioButton = document.querySelector(`input[name="channelType"][value="${channelType}"]`);
-  if (radioButton) {
-    radioButton.checked = true;
-  }
-  const keyStrategy = channel.key_strategy || 'sequential';
-  const strategyRadio = document.querySelector(`input[name="keyStrategy"][value="${keyStrategy}"]`);
-  if (strategyRadio) {
-    strategyRadio.checked = true;
-  }
-  document.getElementById('channelPriority').value = channel.priority;
-  document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
-  document.getElementById('channelEnabled').checked = true;
-
-  // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
+  // 加载模型配置
   redirectTableData = (channel.models || []).map(m => ({
     model: m.model || '',
     redirect_model: m.redirect_model || ''

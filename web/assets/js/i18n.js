@@ -8,7 +8,7 @@
   window.I18N_LOCALES = window.I18N_LOCALES || {};
 
   // 当前语言
-  let currentLocale = 'zh-CN';
+  const currentLocale = { value: 'zh-CN' };
 
   // 支持的语言列表
   const SUPPORTED_LOCALES = ['zh-CN', 'en'];
@@ -18,6 +18,14 @@
     'zh-CN': '中文',
     'en': 'English'
   };
+
+  // 翻译属性配置
+  const TRANSLATION_ATTRIBUTES = [
+    { attr: 'data-i18n', prop: 'textContent' },
+    { attr: 'data-i18n-placeholder', prop: 'placeholder' },
+    { attr: 'data-i18n-title', prop: 'title' },
+    { attr: 'data-i18n-value', prop: 'value' }
+  ];
 
   // 已注册的刷新回调
   const refreshCallbacks = [];
@@ -38,11 +46,11 @@
   function init() {
     const saved = localStorage.getItem('ccload_locale');
     if (saved && SUPPORTED_LOCALES.includes(saved)) {
-      currentLocale = saved;
+      currentLocale.value = saved;
     } else {
-      currentLocale = detectBrowserLocale();
+      currentLocale.value = detectBrowserLocale();
     }
-    document.documentElement.lang = currentLocale;
+    document.documentElement.lang = currentLocale.value;
   }
 
   /**
@@ -50,7 +58,7 @@
    * @returns {string}
    */
   function getLocale() {
-    return currentLocale;
+    return currentLocale.value;
   }
 
   /**
@@ -62,7 +70,7 @@
       console.warn('[i18n] Unsupported locale:', locale);
       return;
     }
-    currentLocale = locale;
+    currentLocale.value = locale;
     localStorage.setItem('ccload_locale', locale);
     document.documentElement.lang = locale;
 
@@ -102,28 +110,27 @@
   function t(key, params) {
     if (!key) return '';
 
-    const localeData = window.I18N_LOCALES[currentLocale] || {};
+    const localeData = window.I18N_LOCALES[currentLocale.value] || {};
     let text = localeData[key];
 
+    // 回退到中文
     if (text === undefined) {
-      // 回退到中文
       text = (window.I18N_LOCALES['zh-CN'] || {})[key];
-      if (text === undefined) {
-        // 生产环境不打印警告，避免日志污染
-        if (typeof console !== 'undefined' && console.warn) {
-          console.warn('[i18n] Missing key:', key);
-        }
-        return key;
+    }
+
+    // 未找到翻译
+    if (text === undefined) {
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[i18n] Missing key:', key);
       }
+      return key;
     }
 
     // 处理插值 {name} -> value
     if (params) {
-      for (const k in params) {
-        if (Object.prototype.hasOwnProperty.call(params, k)) {
-          text = text.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
-        }
-      }
+      Object.entries(params).forEach(([k, v]) => {
+        text = text.replace(new RegExp('\\{' + k + '\\}', 'g'), v);
+      });
     }
 
     return text;
@@ -133,28 +140,11 @@
    * 翻译页面中所有带 data-i18n 属性的元素
    */
   function translatePage() {
-    // data-i18n: 替换 textContent
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (key) el.textContent = t(key);
-    });
-
-    // data-i18n-placeholder: 替换 placeholder
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-      const key = el.getAttribute('data-i18n-placeholder');
-      if (key) el.placeholder = t(key);
-    });
-
-    // data-i18n-title: 替换 title
-    document.querySelectorAll('[data-i18n-title]').forEach(el => {
-      const key = el.getAttribute('data-i18n-title');
-      if (key) el.title = t(key);
-    });
-
-    // data-i18n-value: 替换 value (用于 option 等)
-    document.querySelectorAll('[data-i18n-value]').forEach(el => {
-      const key = el.getAttribute('data-i18n-value');
-      if (key) el.value = t(key);
+    TRANSLATION_ATTRIBUTES.forEach(({ attr, prop }) => {
+      document.querySelectorAll(`[${attr}]`).forEach(el => {
+        const key = el.getAttribute(attr);
+        if (key) el[prop] = t(key);
+      });
     });
 
     // 注意: 不支持 data-i18n-html 以避免 XSS 风险
@@ -204,7 +194,7 @@
       item.setAttribute('role', 'menuitem');
       item.setAttribute('data-locale', code);
       item.textContent = name;
-      if (code === currentLocale) {
+      if (code === currentLocale.value) {
         item.classList.add('active');
       }
       item.addEventListener('click', () => {

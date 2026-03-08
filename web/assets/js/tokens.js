@@ -185,54 +185,104 @@
     }
 
     /**
-     * 使用模板引擎渲染令牌行
+     * 计算过期时间（毫秒）
      */
-    function createTokenRowWithTemplate(token) {
-      
-      const locale = window.i18n?.getLocale?.() || 'en';
-      const status = getTokenStatus(token);
-      const createdAt = new Date(token.created_at).toLocaleString(locale);
-      const lastUsed = token.last_used_at ? new Date(token.last_used_at).toLocaleString(locale) : t('tokens.neverUsed');
-      const expiresAt = token.expires_at ? new Date(token.expires_at).toLocaleString(locale) : t('tokens.expiryNever');
+    function calculateExpiryMs(expiryType) {
+      if (expiryType === 'never' || !expiryType) return null;
 
-      // 计算统计信息
+      const days = parseInt(expiryType);
+      if (isNaN(days)) return null;
+
+      return Date.now() + days * 24 * 60 * 60 * 1000;
+    }
+
+    /**
+     * 格式化日期为本地字符串
+     */
+    function formatLocaleDate(dateValue, fallback) {
+      if (!dateValue) return fallback;
+      const locale = window.i18n?.getLocale?.() || 'en';
+      return new Date(dateValue).toLocaleString(locale);
+    }
+
+    /**
+     * 获取掩码后的令牌
+     */
+    function getMaskedToken(token) {
+      if (!token || token.length <= 8) return token || '';
+      return token.substring(0, 4) + '****' + token.slice(-4);
+    }
+
+    /**
+     * 构建令牌行的HTML片段数据
+     */
+    function buildTokenRowData(token) {
       const successCount = token.success_count || 0;
       const failureCount = token.failure_count || 0;
       const totalCount = successCount + failureCount;
       const successRate = totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(1) : 0;
 
-      // 预构建各个HTML片段(保留条件逻辑在JS中)
-      const callsHtml = buildCallsHtml(successCount, failureCount, totalCount);
-      const successRateHtml = buildSuccessRateHtml(successRate, totalCount);
-      const rpmHtml = buildRpmHtml(token);
-      const tokensHtml = buildTokensHtml(token);
-      const costHtml = buildCostHtml(token.total_cost_usd);
-      const streamAvgHtml = buildResponseTimeHtml(token.stream_avg_ttfb, token.stream_count);
-      const nonStreamAvgHtml = buildResponseTimeHtml(token.non_stream_avg_rt, token.non_stream_count);
-
-      // 使用模板引擎渲染
-      const maskedToken = token.token.length > 8
-        ? token.token.substring(0, 4) + '****' + token.token.slice(-4)
-        : token.token;
-
-      return TemplateEngine.render('tpl-token-row', {
+      return {
         id: token.id,
         description: token.description,
         token: token.token,
-        maskedToken: maskedToken,
-        statusClass: status.class,
-        createdAt: createdAt,
+        maskedToken: getMaskedToken(token.token),
+        status: getTokenStatus(token),
+        createdAt: formatLocaleDate(token.created_at, ''),
         createdLabel: t('tokens.createdSuffix'),
-        expiresAt: expiresAt,
-        callsHtml: callsHtml,
-        rpmHtml: rpmHtml,
-        successRateHtml: successRateHtml,
-        tokensHtml: tokensHtml,
-        costHtml: costHtml,
-        streamAvgHtml: streamAvgHtml,
-        nonStreamAvgHtml: nonStreamAvgHtml,
-        lastUsed: lastUsed
+        expiresAt: formatLocaleDate(token.expires_at, t('tokens.expiryNever')),
+        lastUsed: formatLocaleDate(token.last_used_at, t('tokens.neverUsed')),
+        callsHtml: buildCallsHtml(successCount, failureCount, totalCount),
+        successRateHtml: buildSuccessRateHtml(successRate, totalCount),
+        rpmHtml: buildRpmHtml(token),
+        tokensHtml: buildTokensHtml(token),
+        costHtml: buildCostHtml(token.total_cost_usd),
+        streamAvgHtml: buildResponseTimeHtml(token.stream_avg_ttfb, token.stream_count),
+        nonStreamAvgHtml: buildResponseTimeHtml(token.non_stream_avg_rt, token.non_stream_count)
+      };
+    }
+
+    /**
+     * 使用模板引擎渲染令牌行
+     */
+    function createTokenRowWithTemplate(token) {
+      const data = buildTokenRowData(token);
+
+      return TemplateEngine.render('tpl-token-row', {
+        id: data.id,
+        description: data.description,
+        token: data.token,
+        maskedToken: data.maskedToken,
+        statusClass: data.status.class,
+        createdAt: data.createdAt,
+        createdLabel: data.createdLabel,
+        expiresAt: data.expiresAt,
+        callsHtml: data.callsHtml,
+        rpmHtml: data.rpmHtml,
+        successRateHtml: data.successRateHtml,
+        tokensHtml: data.tokensHtml,
+        costHtml: data.costHtml,
+        streamAvgHtml: data.streamAvgHtml,
+        nonStreamAvgHtml: data.nonStreamAvgHtml,
+        lastUsed: data.lastUsed
       });
+    }
+
+    // 统计徽章样式常量
+    const BADGE_STYLES = {
+      success: 'background: var(--success-50); color: var(--success-700); border: 1px solid var(--success-200);',
+      error: 'background: var(--error-50); color: var(--error-700); border: 1px solid var(--error-200);'
+    };
+
+    /**
+     * 构建统计徽章HTML
+     */
+    function buildStatsBadge(type, icon, count, titleKey) {
+      const style = BADGE_STYLES[type];
+      const iconColor = type === 'success' ? 'var(--success-600)' : 'var(--error-600)';
+      return `<span class="stats-badge" style="${style} font-weight: 600;" title="${t(titleKey)}">
+        <span style="color: ${iconColor}; font-size: 14px; font-weight: 700;">${icon}</span> ${count.toLocaleString()}
+      </span>`;
     }
 
     /**
@@ -243,51 +293,56 @@
         return '<span style="color: var(--neutral-500); font-size: 13px;">-</span>';
       }
 
-      
-      let html = '<div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">';
-      html += `<span class="stats-badge" style="background: var(--success-50); color: var(--success-700); font-weight: 600; border: 1px solid var(--success-200);" title="${t('tokens.successCall')}">`;
-      html += `<span style="color: var(--success-600); font-size: 14px; font-weight: 700;">✓</span> ${successCount.toLocaleString()}`;
-      html += `</span>`;
+      const badges = [
+        buildStatsBadge('success', '✓', successCount, 'tokens.successCall')
+      ];
 
       if (failureCount > 0) {
-        html += `<span class="stats-badge" style="background: var(--error-50); color: var(--error-700); font-weight: 600; border: 1px solid var(--error-200);" title="${t('tokens.failedCall')}">`;
-        html += `<span style="color: var(--error-600); font-size: 14px; font-weight: 700;">✗</span> ${failureCount.toLocaleString()}`;
-        html += `</span>`;
+        badges.push(buildStatsBadge('error', '✗', failureCount, 'tokens.failedCall'));
       }
 
-      html += '</div>';
-      return html;
+      return `<div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">${badges.join('')}</div>`;
+    }
+
+    // RPM格式化配置
+    const RPM_FORMAT_RULES = [
+      { threshold: 1000, format: (v) => (v / 1000).toFixed(1) + 'K' },
+      { threshold: 1, format: (v) => v.toFixed(1) },
+      { threshold: 0.01, format: (v) => v.toFixed(2) }
+    ];
+
+    /**
+     * 格式化RPM值
+     */
+    function formatRpmValue(rpm) {
+      for (const rule of RPM_FORMAT_RULES) {
+        if (rpm >= rule.threshold) return rule.format(rpm);
+      }
+      return '-';
     }
 
     /**
      * 构建RPM HTML（峰/均/近格式）
      */
     function buildRpmHtml(token) {
-      const peakRPM = token.peak_rpm || 0;
-      const avgRPM = token.avg_rpm || 0;
-      const recentRPM = token.recent_rpm || 0;
+      const rpms = {
+        peak: token.peak_rpm || 0,
+        avg: token.avg_rpm || 0,
+        recent: isToday ? (token.recent_rpm || 0) : null
+      };
 
       // 如果都是0，返回空
-      if (peakRPM < 0.01 && avgRPM < 0.01 && recentRPM < 0.01) {
+      if (rpms.peak < 0.01 && rpms.avg < 0.01 && (!isToday || rpms.recent < 0.01)) {
         return '<span style="color: var(--neutral-500); font-size: 13px;">-</span>';
       }
 
-      // 格式化RPM值
-      const formatRpm = (rpm) => {
-        if (rpm < 0.01) return '-';
-        if (rpm >= 1000) return (rpm / 1000).toFixed(1) + 'K';
-        if (rpm >= 1) return rpm.toFixed(1);
-        return rpm.toFixed(2);
-      };
-
-      const peakText = formatRpm(peakRPM);
-      const avgText = formatRpm(avgRPM);
-      const recentText = isToday ? formatRpm(recentRPM) : '-';
+      const parts = [formatRpmValue(rpms.peak), formatRpmValue(rpms.avg)];
+      if (isToday) parts.push(formatRpmValue(rpms.recent));
 
       // 颜色：峰值决定整体颜色
-      const color = getRpmColor(peakRPM);
+      const color = getRpmColor(rpms.peak);
 
-      return `<span style="color: ${color}; font-weight: 500;">${peakText}/${avgText}/${recentText}</span>`;
+      return `<span style="color: ${color}; font-weight: 500;">${parts.join('/')}</span>`;
     }
 
     /**
@@ -309,6 +364,36 @@
       return `<span class="${className}">${successRate}%</span>`;
     }
 
+    // Token徽章样式配置
+    const TOKEN_BADGE_STYLES = {
+      input: { bg: 'var(--primary-50)', color: 'var(--primary-700)', titleKey: 'tokens.inputTokens' },
+      output: { bg: 'var(--secondary-50)', color: 'var(--secondary-700)', titleKey: 'tokens.outputTokens' },
+      cacheRead: { bg: 'var(--success-50)', color: 'var(--success-700)', titleKey: 'tokens.cacheReadTokens' },
+      cacheCreate: { bg: 'var(--warning-50)', color: 'var(--warning-700)', titleKey: 'tokens.cacheCreateTokens' }
+    };
+
+    /**
+     * 构建Token徽章HTML
+     */
+    function buildTokenBadge(type, labelKey, value) {
+      const style = TOKEN_BADGE_STYLES[type];
+      return `<span class="stats-badge" style="background: ${style.bg}; color: ${style.color};" title="${t(style.titleKey)}">${t(labelKey)} ${formatTokenCount(value)}</span>`;
+    }
+
+    /**
+     * 构建缓存徽章HTML数组
+     */
+    function buildCacheBadges(token) {
+      const badges = [];
+      if (token.cache_read_tokens_total > 0) {
+        badges.push(buildTokenBadge('cacheRead', 'tokens.cacheRead', token.cache_read_tokens_total));
+      }
+      if (token.cache_creation_tokens_total > 0) {
+        badges.push(buildTokenBadge('cacheCreate', 'tokens.cacheCreate', token.cache_creation_tokens_total));
+      }
+      return badges;
+    }
+
     /**
      * 构建Token用量HTML
      */
@@ -322,40 +407,21 @@
         return '<span style="color: var(--neutral-500); font-size: 13px;">-</span>';
       }
 
-      
-      let html = '<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">';
+      // 输入/输出行
+      const ioBadges = [
+        buildTokenBadge('input', 'tokens.input', token.prompt_tokens_total || 0),
+        buildTokenBadge('output', 'tokens.output', token.completion_tokens_total || 0)
+      ];
 
-      // 输入/输出
-      html += '<div style="display: inline-flex; gap: 4px; font-size: 12px;">';
-      html += `<span class="stats-badge" style="background: var(--primary-50); color: var(--primary-700);" title="${t('tokens.inputTokens')}">`;
-      html += `${t('tokens.input')} ${formatTokenCount(token.prompt_tokens_total || 0)}`;
-      html += `</span>`;
-      html += `<span class="stats-badge" style="background: var(--secondary-50); color: var(--secondary-700);" title="${t('tokens.outputTokens')}">`;
-      html += `${t('tokens.output')} ${formatTokenCount(token.completion_tokens_total || 0)}`;
-      html += `</span>`;
-      html += '</div>';
+      // 缓存行
+      const cacheBadges = buildCacheBadges(token);
 
-      // 缓存
-      if (token.cache_read_tokens_total > 0 || token.cache_creation_tokens_total > 0) {
-        html += '<div style="display: inline-flex; gap: 4px; font-size: 12px;">';
-
-        if (token.cache_read_tokens_total > 0) {
-          html += `<span class="stats-badge" style="background: var(--success-50); color: var(--success-700);" title="${t('tokens.cacheReadTokens')}">`;
-          html += `${t('tokens.cacheRead')} ${formatTokenCount(token.cache_read_tokens_total || 0)}`;
-          html += `</span>`;
-        }
-
-        if (token.cache_creation_tokens_total > 0) {
-          html += `<span class="stats-badge" style="background: var(--warning-50); color: var(--warning-700);" title="${t('tokens.cacheCreateTokens')}">`;
-          html += `${t('tokens.cacheCreate')} ${formatTokenCount(token.cache_creation_tokens_total || 0)}`;
-          html += `</span>`;
-        }
-
-        html += '</div>';
+      const rows = [`<div style="display: inline-flex; gap: 4px; font-size: 12px;">${ioBadges.join('')}</div>`];
+      if (cacheBadges.length > 0) {
+        rows.push(`<div style="display: inline-flex; gap: 4px; font-size: 12px;">${cacheBadges.join('')}</div>`);
       }
 
-      html += '</div>';
-      return html;
+      return `<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">${rows.join('')}</div>`;
     }
 
     /**
@@ -402,49 +468,25 @@
      * 降级：模板引擎不可用时的渲染方式
      */
     function createTokenRowFallback(token) {
-      
-      const locale = window.i18n?.getLocale?.() || 'en';
-      const status = getTokenStatus(token);
-      const createdAt = new Date(token.created_at).toLocaleString(locale);
-      const lastUsed = token.last_used_at ? new Date(token.last_used_at).toLocaleString(locale) : t('tokens.neverUsed');
-      const expiresAt = token.expires_at ? new Date(token.expires_at).toLocaleString(locale) : t('tokens.expiryNever');
-
-      // 计算统计信息
-      const successCount = token.success_count || 0;
-      const failureCount = token.failure_count || 0;
-      const totalCount = successCount + failureCount;
-
-      // 预构建HTML片段
-      const callsHtml = buildCallsHtml(successCount, failureCount, totalCount);
-      const successRate = totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(1) : 0;
-      const successRateHtml = buildSuccessRateHtml(successRate, totalCount);
-      const rpmHtml = buildRpmHtml(token);
-      const tokensHtml = buildTokensHtml(token);
-      const costHtml = buildCostHtml(token.total_cost_usd);
-      const streamAvgHtml = buildResponseTimeHtml(token.stream_avg_ttfb, token.stream_count);
-      const nonStreamAvgHtml = buildResponseTimeHtml(token.non_stream_avg_rt, token.non_stream_count);
-
-      const maskedToken = token.token.length > 8
-        ? token.token.substring(0, 4) + '****' + token.token.slice(-4)
-        : token.token;
+      const data = buildTokenRowData(token);
 
       return `
-        <tr data-token-id="${token.id}">
-          <td style="font-weight: 500;">${escapeHtml(token.description)}</td>
+        <tr data-token-id="${data.id}">
+          <td style="font-weight: 500;">${escapeHtml(data.description)}</td>
           <td>
-            <div><span class="token-display token-display-${status.class}">${escapeHtml(maskedToken)}</span></div>
-            <div style="font-size: 12px; color: var(--neutral-500); margin-top: 4px;">${createdAt}${t('tokens.createdSuffix')} · ${expiresAt}</div>
+            <div><span class="token-display token-display-${data.status.class}">${escapeHtml(data.maskedToken)}</span></div>
+            <div style="font-size: 12px; color: var(--neutral-500); margin-top: 4px;">${data.createdAt}${data.createdLabel} · ${data.expiresAt}</div>
           </td>
-          <td style="text-align: center;">${callsHtml}</td>
-          <td style="text-align: center;">${successRateHtml}</td>
-          <td style="text-align: center;">${rpmHtml}</td>
-          <td style="text-align: center;">${tokensHtml}</td>
-          <td style="text-align: center;">${costHtml}</td>
-          <td style="text-align: center;">${streamAvgHtml}</td>
-          <td style="text-align: center;">${nonStreamAvgHtml}</td>
-          <td style="color: var(--neutral-600);">${lastUsed}</td>
+          <td style="text-align: center;">${data.callsHtml}</td>
+          <td style="text-align: center;">${data.successRateHtml}</td>
+          <td style="text-align: center;">${data.rpmHtml}</td>
+          <td style="text-align: center;">${data.tokensHtml}</td>
+          <td style="text-align: center;">${data.costHtml}</td>
+          <td style="text-align: center;">${data.streamAvgHtml}</td>
+          <td style="text-align: center;">${data.nonStreamAvgHtml}</td>
+          <td style="color: var(--neutral-600);">${data.lastUsed}</td>
           <td style="white-space: nowrap;">
-            <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-token="${escapeHtml(token.token)}">${t('common.copy')}</button>
+            <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-token="${escapeHtml(data.token)}">${t('common.copy')}</button>
             <button class="btn btn-secondary btn-edit" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;">${t('common.edit')}</button>
             <button class="btn btn-danger btn-delete" style="padding: 4px 12px; font-size: 13px;">${t('common.delete')}</button>
           </td>
@@ -481,18 +523,15 @@
       }
       const expiryType = document.getElementById('tokenExpiry').value;
       let expiresAt = null;
-      if (expiryType !== 'never') {
-        if (expiryType === 'custom') {
-          const customDate = document.getElementById('customExpiry').value;
-          if (!customDate) {
-            window.showNotification(t('tokens.msg.selectExpiry'), 'error');
-            return;
-          }
-          expiresAt = new Date(customDate).getTime();
-        } else {
-          const days = parseInt(expiryType);
-          expiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
+      if (expiryType === 'custom') {
+        const customDate = document.getElementById('customExpiry').value;
+        if (!customDate) {
+          window.showNotification(t('tokens.msg.selectExpiry'), 'error');
+          return;
         }
+        expiresAt = new Date(customDate).getTime();
+      } else {
+        expiresAt = calculateExpiryMs(expiryType);
       }
       const isActive = document.getElementById('tokenActive').checked;
       const costLimitUSD = parseFloat(document.getElementById('tokenCostLimitUSD').value) || 0;
@@ -588,18 +627,15 @@
       const expiryType = document.getElementById('editTokenExpiry').value;
       const costLimitUSD = parseFloat(document.getElementById('editCostLimitUSD').value) || 0;
       let expiresAt = null;
-      if (expiryType !== 'never') {
-        if (expiryType === 'custom') {
-          const customDate = document.getElementById('editCustomExpiry').value;
-          if (!customDate) {
-            window.showNotification(t('tokens.msg.selectExpiry'), 'error');
-            return;
-          }
-          expiresAt = new Date(customDate).getTime();
-        } else {
-          const days = parseInt(expiryType);
-          expiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
+      if (expiryType === 'custom') {
+        const customDate = document.getElementById('editCustomExpiry').value;
+        if (!customDate) {
+          window.showNotification(t('tokens.msg.selectExpiry'), 'error');
+          return;
         }
+        expiresAt = new Date(customDate).getTime();
+      } else {
+        expiresAt = calculateExpiryMs(expiryType);
       }
       try {
         await fetchDataWithAuth(`${API_BASE}/auth-tokens/${id}`, {

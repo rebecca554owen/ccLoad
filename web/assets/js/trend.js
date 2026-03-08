@@ -2,18 +2,49 @@
     const t = window.t;
 
     window.trendData = null;
-    window.currentRange = 'today'; // 默认"本日"
-    window.currentTrendType = 'first_byte'; // 默认显示首字响应趋势 (count/rpm/first_byte/duration/tokens/cost)
-    window.currentChannelType = 'all'; // 当前选中的渠道类型
-    window.currentModel = ''; // 当前选中的模型（空字符串表示全部模型）
-    window.currentAuthToken = ''; // 当前选中的令牌（空字符串表示全部令牌）
-    window.currentChannelId = ''; // 当前选中的渠道ID
-    window.currentChannelName = ''; // 当前选中的渠道名称
+    window.currentRange = 'today';
+    window.currentTrendType = 'first_byte';
+    window.currentChannelType = 'all';
+    window.currentModel = '';
+    window.currentAuthToken = '';
+    window.currentChannelId = '';
+    window.currentChannelName = '';
     window.chartInstance = null;
     window.channels = [];
-    window.visibleChannels = new Set(); // 可见渠道集合
-    window.availableModels = []; // 可用模型列表
-    window.authTokens = []; // 令牌列表
+    window.visibleChannels = new Set();
+    window.availableModels = [];
+    window.authTokens = [];
+
+    // 趋势类型配置
+    const TREND_TYPE_CONFIG = {
+      count: { color: '#10b981', areaColor: 'rgba(16, 185, 129, 0.22)', label: 'totalSuccess' },
+      first_byte: { color: '#0ea5e9', areaColor: 'rgba(14, 165, 233, 0.18)', label: 'avgFirstByteTime' },
+      duration: { color: '#a855f7', areaColor: 'rgba(168, 85, 247, 0.16)', label: 'avgDuration' },
+      cost: { color: '#f97316', areaColor: 'rgba(249, 115, 22, 0.16)', label: 'totalCost' },
+      rpm: { color: '#3b82f6', areaColor: 'rgba(59, 130, 246, 0.16)', label: 'rpm' }
+    };
+
+    // 趋势颜色常量
+    const TREND_COLORS = {
+      success: '#10b981',
+      error: '#ef4444',
+      firstByte: '#0ea5e9',
+      duration: '#a855f7',
+      cost: '#f97316',
+      rpm: '#3b82f6',
+      inputTokens: '#3b82f6',
+      outputTokens: '#10b981',
+      cacheRead: '#f97316',
+      cacheCreate: '#a855f7'
+    };
+
+    // 阈值常量
+    const THRESHOLDS = {
+      zoomPoints: 120,
+      zoomPointsLatency: 60,
+      xAxisMaxLabels: 10,
+      minSamplesForStats: 5
+    };
 
     // 加载可用模型列表
     // channelType 参数：渠道类型筛选，空字符串或 'all' 表示全部
@@ -21,7 +52,7 @@
     async function loadModels(channelType, range) {
       try {
         // 使用传入的时间范围，或者当前选择的时间范围，或者默认 today
-        const timeRange = range || window.currentRange || 'today';
+        const timeRange = range || TrendApp.currentRange || 'today';
 
         // 构建 API URL，支持渠道类型和时间范围筛选
         let url = `/admin/models?range=${encodeURIComponent(timeRange)}`;
@@ -32,14 +63,14 @@
         const rawModels = (await fetchDataWithAuth(url)) || [];
 
         // 去重：使用 Set 确保模型名称唯一
-        window.availableModels = [...new Set(rawModels)];
+        TrendApp.availableModels = [...new Set(rawModels)];
 
         // 填充模型选择器
         const modelSelect = document.getElementById('f_model');
         if (modelSelect) {
           // 保留"全部模型"选项
           modelSelect.innerHTML = `<option value="">${t('trend.allModels')}</option>`;
-          window.availableModels.forEach(model => {
+          TrendApp.availableModels.forEach(model => {
             const option = document.createElement('option');
             option.value = model;
             option.textContent = model;
@@ -47,16 +78,16 @@
           });
 
           // 恢复之前选择的模型（如果仍在列表中）
-          if (window.currentModel && window.availableModels.includes(window.currentModel)) {
-            modelSelect.value = window.currentModel;
+          if (TrendApp.currentModel && TrendApp.availableModels.includes(TrendApp.currentModel)) {
+            modelSelect.value = TrendApp.currentModel;
           } else {
             // 模型不在新列表中，重置为"全部"
-            window.currentModel = '';
+            TrendApp.currentModel = '';
             modelSelect.value = '';
           }
         }
       } catch (error) {
-        console.error('加载模型列表失败:', error);
+        // 静默处理模型加载错误
       }
     }
 
@@ -66,31 +97,16 @@
 
         // 从 DOM 元素读取当前选择的时间范围和模型
         const rangeSelect = document.getElementById('f_hours');
-        const currentRange = rangeSelect ? rangeSelect.value : (window.currentRange || 'today');
-        window.currentRange = currentRange; // 同步到全局变量
+        const currentRange = rangeSelect?.value || window.currentRange || 'today';
+        window.currentRange = currentRange;
 
-        const modelSelect = document.getElementById('f_model');
-        if (modelSelect) {
-          window.currentModel = modelSelect.value || '';
-        }
-
-        const tokenSelect = document.getElementById('f_auth_token');
-        if (tokenSelect) {
-          window.currentAuthToken = tokenSelect.value || '';
-        }
-
-        // 读取渠道ID和渠道名筛选
-        const idInput = document.getElementById('f_id');
-        if (idInput) {
-          window.currentChannelId = idInput.value.trim() || '';
-        }
-        const nameInput = document.getElementById('f_name');
-        if (nameInput) {
-          window.currentChannelName = nameInput.value.trim() || '';
-        }
+        window.currentModel = document.getElementById('f_model')?.value || '';
+        window.currentAuthToken = document.getElementById('f_auth_token')?.value || '';
+        window.currentChannelId = document.getElementById('f_id')?.value?.trim() || '';
+        window.currentChannelName = document.getElementById('f_name')?.value?.trim() || '';
 
         const hours = window.getRangeHours ? getRangeHours(currentRange) : 24;
-        window.currentHours = hours; // 同步到全局变量，供 renderChart 使用
+        window.currentHours = hours;
         const bucketMin = computeBucketMin(hours);
 
         // 并行加载趋势数据和渠道列表
@@ -133,40 +149,26 @@
         // 默认不显示任何渠道，只显示总数
         if (window.visibleChannels.size === 0) {
           // 首次访问：不默认显示任何渠道
-          console.log('初始化渠道显示状态（首次访问）- 默认仅显示总数');
           // 不添加任何渠道到 visibleChannels，保持为空集合
         } else {
-          // 修复：验证并清理localStorage中过时的渠道选择
-          console.log('验证现有渠道选择状态...', Array.from(window.visibleChannels));
+          // 验证并清理 localStorage 中过时的渠道选择
           const validChannels = new Set();
 
           // 检查每个已保存渠道是否在当前数据中存在
           window.visibleChannels.forEach(channelName => {
             if (hasChannelData(channelName, window.trendData)) {
               validChannels.add(channelName);
-            } else {
-              console.log(`清理过时渠道: ${channelName}（数据中不存在）`);
             }
+            // 过时渠道自动清理，无需日志
           });
 
-          // 更新visibleChannels为验证后的集合
+          // 更新 visibleChannels 为验证后的集合
           window.visibleChannels = validChannels;
           persistChannelState();
-          console.log('更新后的可见渠道:', Array.from(window.visibleChannels));
         }
-        
-        // 添加调试信息显示
-        const debugSince = metrics.res.headers.get('X-Debug-Since');
-        const debugPoints = metrics.res.headers.get('X-Debug-Points');
-        const debugTotal = metrics.res.headers.get('X-Debug-Total');
 
-        console.log('趋势数据调试信息:', {
-          since: debugSince,
-          points: debugPoints,
-          total: debugTotal,
-          dataLength: trendData.length,
-          channelsCount: window.channels.length
-        });
+        // 获取调试头信息用于显示
+        const debugTotal = metrics.res.headers.get('X-Debug-Total');
 
         updateChannelFilter();
         renderChart();
@@ -182,7 +184,6 @@
         }
 
       } catch (error) {
-        console.error('加载趋势数据失败:', error);
         try { if (window.showError) window.showError(t('trend.loadDataFailed')); } catch(_){}
         renderTrendError();
       }
@@ -967,16 +968,28 @@
       if (window.chartResizeObserver) return;
       if (typeof ResizeObserver === 'undefined') return;
 
-      let raf = 0;
+      window._chartRafId = 0;
       window.chartResizeObserver = new ResizeObserver(() => {
         if (!window.chartInstance) return;
-        if (raf) cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(() => {
+        if (window._chartRafId) cancelAnimationFrame(window._chartRafId);
+        window._chartRafId = requestAnimationFrame(() => {
           try { window.chartInstance.resize(); } catch (_) {}
         });
       });
 
       window.chartResizeObserver.observe(chartDom);
+
+      // 页面卸载时清理 ResizeObserver
+      window.addEventListener('beforeunload', () => {
+        if (window._chartRafId) {
+          cancelAnimationFrame(window._chartRafId);
+          window._chartRafId = 0;
+        }
+        if (window.chartResizeObserver) {
+          window.chartResizeObserver.disconnect();
+          window.chartResizeObserver = null;
+        }
+      }, { once: true });
     }
 
 function shouldShowZoom(points, hours, trendType) {

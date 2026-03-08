@@ -1,6 +1,47 @@
 // URL 表格管理（与 API Key 表格一致的交互模式）
+
+// 常量定义
+const URL_BUTTON_TEXT = {
+  deleteSelected: 'channels.deleteSelected',
+  deleteSelectedCount: 'channels.deleteSelectedCount'
+};
+
+const TEST_BUTTON_HTML = {
+  loading: '<span style="font-size: 10px;">⏳</span>'
+};
+
+/**
+ * 通用索引调整函数
+ * @param {Set} selectedIndices - 选中的索引集合
+ * @param {number} deletedIndex - 被删除的索引
+ * @returns {Set} 调整后的新集合
+ */
+function adjustIndicesAfterDelete(selectedIndices, deletedIndex) {
+  const nextSelected = new Set();
+  selectedIndices.forEach(i => {
+    if (i < deletedIndex) {
+      nextSelected.add(i);
+    } else if (i > deletedIndex) {
+      nextSelected.add(i - 1);
+    }
+  });
+  return nextSelected;
+}
+
+/**
+ * 显示错误通知
+ */
+function showErrorNotification(messageKey, params = {}) {
+  const message = window.t(messageKey, params);
+  if (window.showNotification) {
+    window.showNotification(message, 'error');
+  } else {
+    alert(message);
+  }
+}
+
 function parseChannelURLs(input) {
-  if (!input || !input.trim()) return [];
+  if (!input?.trim()) return [];
 
   return input
     .split('\n')
@@ -10,7 +51,7 @@ function parseChannelURLs(input) {
 
 function getValidInlineURLs() {
   return inlineURLTableData
-    .map(url => (url || '').trim())
+    .map(url => url?.trim())
     .filter(Boolean);
 }
 
@@ -37,8 +78,8 @@ function updateURLBatchDeleteButton() {
   const textEl = btn.querySelector('span');
   if (textEl) {
     textEl.textContent = count > 0
-      ? window.t('channels.deleteSelectedCount', { count })
-      : window.t('channels.deleteSelected');
+      ? window.t(URL_BUTTON_TEXT.deleteSelectedCount, { count })
+      : window.t(URL_BUTTON_TEXT.deleteSelected);
   }
 }
 
@@ -167,16 +208,7 @@ function deleteInlineURL(index) {
   }
 
   inlineURLTableData.splice(index, 1);
-
-  const nextSelected = new Set();
-  selectedURLIndices.forEach(i => {
-    if (i < index) {
-      nextSelected.add(i);
-    } else if (i > index) {
-      nextSelected.add(i - 1);
-    }
-  });
-  selectedURLIndices = nextSelected;
+  selectedURLIndices = adjustIndicesAfterDelete(selectedURLIndices, index);
 
   renderInlineURLTable();
   markChannelFormDirty();
@@ -243,7 +275,7 @@ async function testInlineURL(index, buttonElement) {
   if (!buttonElement) return;
   const originalHTML = buttonElement.innerHTML;
   buttonElement.disabled = true;
-  buttonElement.innerHTML = '<span style="font-size: 10px;">⏳</span>';
+  buttonElement.innerHTML = TEST_BUTTON_HTML.loading;
 
   try {
     const testResult = await fetchDataWithAuth(`/admin/channels/${editingChannelId}/test-url`, {
@@ -265,11 +297,11 @@ async function testInlineURL(index, buttonElement) {
       window.showNotification(window.t('channels.urlTestSuccess', { index: index + 1 }), 'success');
     } else {
       const errorMsg = testResult.error || window.t('common.failed');
-      window.showNotification(window.t('channels.urlTestFailed', { index: index + 1, error: errorMsg }), 'error');
+      showErrorNotification('channels.urlTestFailed', { index: index + 1, error: errorMsg });
     }
   } catch (error) {
     console.error('URL test failed', error);
-    window.showNotification(window.t('channels.urlTestRequestFailed', { index: index + 1, error: error.message }), 'error');
+    showErrorNotification('channels.urlTestRequestFailed', { index: index + 1, error: error.message });
   } finally {
     buttonElement.disabled = false;
     buttonElement.innerHTML = originalHTML;

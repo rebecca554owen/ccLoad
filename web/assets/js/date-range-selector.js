@@ -14,6 +14,11 @@
 
   const t = window.t;
 
+  // 时间常量
+  const HOURS_PER_DAY = 24;
+  const HOURS_PER_WEEK = 168;  // 24 * 7
+  const HOURS_PER_MONTH = 720; // 24 * 30
+
   // 时间范围预设 (key → i18n key)
   // key与后端GetTimeRange()支持的range参数一致
   const DATE_RANGE_KEYS = [
@@ -25,6 +30,11 @@
     { value: 'this_month', i18nKey: 'index.timeRange.thisMonth', fallback: 'This Month' },
     { value: 'last_month', i18nKey: 'index.timeRange.lastMonth', fallback: 'Last Month' }
   ];
+
+  // fallback 和 i18nKey 对应关系
+  const RANGE_FALLBACK_MAP = Object.fromEntries(
+    DATE_RANGE_KEYS.map(r => [r.i18nKey, r.fallback])
+  );
 
 
   /**
@@ -91,15 +101,15 @@
    */
   window.getRangeHours = function(rangeKey) {
     const hoursMap = {
-      'today': 24,
-      'yesterday': 24,
-      'day_before_yesterday': 24,
-      'this_week': 168,
-      'last_week': 168,
-      'this_month': 720,
-      'last_month': 720
+      'today': HOURS_PER_DAY,
+      'yesterday': HOURS_PER_DAY,
+      'day_before_yesterday': HOURS_PER_DAY,
+      'this_week': HOURS_PER_WEEK,
+      'last_week': HOURS_PER_WEEK,
+      'this_month': HOURS_PER_MONTH,
+      'last_month': HOURS_PER_MONTH
     };
-    return hoursMap[rangeKey] || 24;
+    return hoursMap[rangeKey] || HOURS_PER_DAY;
   };
 
 })(window);

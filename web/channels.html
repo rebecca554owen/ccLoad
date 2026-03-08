@@ -27,15 +27,19 @@
   <script defer src="/web/assets/js/channels-test.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/channels-sort.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/channels-init.js?v=__VERSION__"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('ccload_theme') || 'light';
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
 </head>
 
 <body>
   <div class="app-container">
-    <main class="main-content">
+    <main class="main-content mt-6">
       <div class="content-area">
-        <header class="mb-2">
-        </header>
-        <header class="mb-2">
+        <header class="mt-6 mb-6">
           <div class="glass-card" style="padding: var(--space-6);">
             <div
               style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
@@ -91,11 +95,9 @@
 
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterModel">模型</label>
-              <div class="filter-combobox-wrapper" style="min-width: 100px;">
-                <input id="modelFilter" class="filter-select filter-combobox" type="text" autocomplete="off"
-                  spellcheck="false" />
-                <div id="modelFilterDropdown" class="filter-dropdown" role="listbox" aria-label="模型"></div>
-              </div>
+              <select id="modelFilter" class="filter-select" style="min-width: 100px;">
+                <option value="all" data-i18n="channels.allModels">所有模型</option>
+              </select>
             </div>
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterSearch">搜索渠道</label>
@@ -119,6 +121,11 @@
             </div>
 
             <div class="channel-toolbar-actions">
+              <label id="visibleSelectionToggle" class="channel-selection-toggle"
+                data-i18n-title="channels.batchSelectVisible" title="全选">
+                <input id="visibleSelectionCheckbox" type="checkbox" onchange="toggleVisibleChannelsSelection()">
+                <span id="visibleSelectionToggleText" data-i18n="channels.batchSelectVisible">全选</span>
+              </label>
               <button id="btn_sort" type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;"
                 data-i18n="channels.sortBtn">排序</button>
               <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;"
@@ -127,7 +134,7 @@
           </div>
         </div>
 
-        <section>
+        <section class="mb-6">
           <div id="channels-container" class="grid grid-cols-1 gap-6"></div>
         </section>
 
@@ -675,7 +682,7 @@
               <strong data-i18n="channels.usageInstructions">使用说明：</strong>
               <ul style="margin: 6px 0 0 0; padding-left: 16px; line-height: 1.6;">
                 <li><span data-i18n="channels.commaSeparated">支持逗号分隔：</span><code
-                    style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px;">key1,key2,key3</code>
+                    class="opacity-60">key1,key2,key3</code>
                 </li>
                 <li data-i18n="channels.newlineSeparated">支持换行分隔：每行一个Key</li>
                 <li data-i18n="channels.autoDedup">自动去除空格、空行和重复Key</li>
@@ -789,7 +796,7 @@
               <strong data-i18n="channels.usageInstructions">使用说明：</strong>
               <ul style="margin: 6px 0 0 0; padding-left: 2px; line-height: 1.6;">
                 <li><span data-i18n="channels.commaSeparatedModel">支持逗号分隔：</span><code
-                    style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px;">model1,model2,model3</code>
+                    class="opacity-60">model1,model2,model3</code>
                 </li>
                 <li data-i18n="channels.newlineSeparatedModel">支持换行分隔：每行一个模型</li>
                 <li data-i18n="channels.autoDedupModel">自动去除空格、空行和重复模型</li>
@@ -866,7 +873,7 @@
         </div>
       </td>
       <td style="padding: 6px 10px;">
-        <input type="{{inputType}}" value="{{key}}" class="inline-key-input modal-inline-input" data-index="{{index}}"
+        <input type="{{inputType}}" value="{{key}}" class="inline-key-input" data-index="{{index}}"
           style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px; transition: all 0.2s;">
       </td>
       <td style="padding: 6px 10px;">{{{cooldownHtml}}}</td>
@@ -884,7 +891,7 @@
 
   <template id="tpl-cooldown-badge">
     <span
-      style="color: #dc2626; font-size: 12px; font-weight: 500; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); padding: 2px 8px; border-radius: 4px; border: 1px solid #fca5a5; white-space: nowrap;"
+      class="badge badge-warning"
       data-i18n-template="channels.cooldownBadge" data-i18n-time="{{text}}">⚠️ 冷却中·{{text}}</span>
   </template>
 
@@ -933,7 +940,7 @@
         </div>
       </td>
       <td style="padding: 6px 10px;">
-        <input type="text" value="{{url}}" class="inline-url-input modal-inline-input" data-index="{{index}}"
+        <input type="text" value="{{url}}" class="inline-url-input" data-index="{{index}}"
           onchange="updateInlineURL({{index}}, this.value)" placeholder="https://api.example.com"
           style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;">
       </td>
@@ -968,32 +975,30 @@
     </tr>
   </template>
 
-  <!-- 渠道表格行模板 -->
+  <!-- 渠道卡片模板 -->
   <template id="tpl-channel-card">
-    <tr class="{{rowClasses}}" id="channel-{{id}}" data-channel-id="{{id}}">
-      <td class="ch-col-checkbox">
-        <input type="checkbox" class="channel-select-checkbox" data-channel-id="{{id}}"
-          data-i18n-title="channels.selectChannel" title="选择渠道">
-      </td>
-      <td class="ch-col-name">
-        <div class="ch-name-line">
-          <div class="ch-name-main">{{{typeBadge}}}<strong>{{name}}</strong><span class="ch-id-text">(ID: {{id}})</span>{{{disabledBadge}}}</div>
-          <div class="ch-name-statuses">{{{cooldownBadge}}}</div>
+    <div class="{{cardClasses}}" id="channel-{{id}}" data-channel-id="{{id}}">
+      <div class="flex justify-between items-center">
+        <div style="flex: 1;">
+          <div class="section-title">
+            <input type="checkbox" class="channel-select-checkbox" data-channel-id="{{id}}"
+              style="margin-right: 8px; vertical-align: middle;" data-i18n-title="channels.selectChannel" title="选择渠道">
+            {{name}} {{{typeBadge}}}
+            <span style="color: var(--neutral-500); font-size: 0.875rem; font-weight: 400;">(ID: {{id}})</span>
+            <span
+              style="color: var(--neutral-600); font-size: 1rem; font-weight: 400; display: inline-block; max-width: 1100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"
+              title="{{modelsText}}"><span data-i18n="channels.modelPrefix">模型:</span> {{modelsText}}</span>
+          </div>
+          <div class="text-sm" style="color: var(--neutral-600); margin-top: 4px;">
+            <div class="channel-meta-line">
+              <span><span data-i18n="channels.urlLabel">URL:</span> {{url}} | <span
+                  data-i18n="channels.priorityLabel">优先级:</span> {{priority}}{{{effectivePriorityHtml}}} |
+                {{statusText}}{{{cooldownBadge}}}</span>
+              {{{statsHtml}}}
+            </div>
+          </div>
         </div>
-        <div class="ch-url-line" title="{{url}}">{{url}}</div>
-        {{{healthHtml}}}
-      </td>
-      <td class="ch-col-models">
-        <span class="ch-models-text" title="{{modelsText}}">{{modelsText}}</span>
-      </td>
-      <td class="ch-col-priority">
-        {{{effectivePriorityHtml}}}
-      </td>
-      <td class="ch-col-duration">{{{durationHtml}}}</td>
-      <td class="ch-col-usage">{{{usageHtml}}}</td>
-      <td class="ch-col-cost">{{{costHtml}}}</td>
-      <td class="ch-col-actions">
-        <div class="ch-action-group">
+        <div class="channel-actions">
           <button class="btn-icon channel-action-btn" data-action="edit" data-channel-id="{{id}}"
             data-i18n-title="common.edit" title="编辑" data-i18n="common.edit">编辑</button>
           <button class="btn-icon channel-action-btn" data-action="test" data-channel-id="{{id}}"
@@ -1001,12 +1006,15 @@
             data-i18n="common.test">测试</button>
           <button class="btn-icon channel-action-btn" data-action="toggle" data-channel-id="{{id}}"
             data-enabled="{{enabled}}" title="{{toggleTitle}}">{{toggleText}}</button>
+          <button class="btn-icon channel-action-btn" data-action="copy" data-channel-id="{{id}}"
+            data-channel-name="{{name}}" data-i18n-title="channels.copyChannelTitle" title="复制渠道"
+            data-i18n="common.copy">复制</button>
           <button class="btn-icon btn-danger channel-action-btn" data-action="delete" data-channel-id="{{id}}"
             data-channel-name="{{name}}" data-i18n-title="common.delete" title="删除"
             data-i18n="common.delete">删除</button>
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   </template>
 
   <!-- 重定向规则行模板 -->
@@ -1021,7 +1029,7 @@
       </td>
       <td style="padding: 4px 10px;">
         <div style="display: flex; align-items: center; gap: 4px;">
-          <input type="text" class="redirect-from-input modal-inline-input" data-index="{{index}}" value="{{from}}"
+          <input type="text" class="redirect-from-input" data-index="{{index}}" value="{{from}}"
             placeholder="claude-3-opus-20240229"
             style="flex: 1; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
           <button type="button" class="lowercase-btn" data-index="{{index}}"
@@ -1036,7 +1044,7 @@
         </div>
       </td>
       <td style="padding: 4px 10px;">
-        <input type="text" class="redirect-to-input modal-inline-input" data-index="{{index}}" value="{{to}}"
+        <input type="text" class="redirect-to-input" data-index="{{index}}" value="{{to}}"
           placeholder="{{toPlaceholder}}"
           style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
       </td>

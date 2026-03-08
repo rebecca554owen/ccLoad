@@ -6,6 +6,28 @@ if (window.i18n) window.i18n.translatePage();
 
 let originalSettings = {}; // 保存原始值用于比较
 
+// 常量
+const RESTART_MARKER = '[需重启]';
+
+/**
+ * 获取输入框的值
+ * @param {string} id - 元素ID
+ * @returns {string|undefined}
+ */
+function getInputValue(id) {
+  return document.getElementById(id)?.value;
+}
+
+/**
+ * 通用错误处理
+ * @param {Error} err - 错误对象
+ * @param {string} context - 错误上下文
+ */
+function handleError(err, context) {
+  console.error(`${context}:`, err);
+  showError(t(`settings.msg.${context}Failed`) + ': ' + err.message);
+}
+
 function getSettingGroupInfo(key) {
   const k = String(key || '').toLowerCase();
 
@@ -76,8 +98,7 @@ async function loadSettings() {
     if (!Array.isArray(data)) throw new Error(t('settings.msg.invalidResponse'));
     renderSettings(data);
   } catch (err) {
-    console.error('Failed to load settings:', err);
-    showError(t('settings.msg.loadFailed') + ': ' + err.message);
+    handleError(err, 'load');
   }
 }
 
@@ -139,23 +160,22 @@ function initSettingsEventDelegation() {
 function renderInput(setting) {
   const safeKey = escapeHtml(setting.key);
   const safeValue = escapeHtml(setting.value);
-  const baseStyle = 'padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-bg-secondary); color: var(--color-text); font-size: 13px;';
 
   switch (setting.value_type) {
     case 'bool':
       const isTrue = setting.value === 'true' || setting.value === '1';
       return `
-        <label style="margin-right: 16px; cursor: pointer;">
+        <label class="setting-radio-label">
           <input type="radio" name="${safeKey}" value="true" ${isTrue ? 'checked' : ''}> ${t('common.enable')}
         </label>
-        <label style="cursor: pointer;">
+        <label class="setting-radio-label">
           <input type="radio" name="${safeKey}" value="false" ${!isTrue ? 'checked' : ''}> ${t('common.disable')}
         </label>`;
     case 'int':
     case 'duration':
-      return `<input type="number" id="${safeKey}" value="${safeValue}" style="${baseStyle} width: 100px; text-align: right;">`;
+      return `<input type="number" id="${safeKey}" value="${safeValue}" class="setting-input setting-input-number">`;
     default:
-      return `<input type="text" id="${safeKey}" value="${safeValue}" style="${baseStyle} width: 280px;">`;
+      return `<input type="text" id="${safeKey}" value="${safeValue}" class="setting-input">`;
   }
 }
 
@@ -179,8 +199,11 @@ function markChanged(input) {
   }
 }
 
-async function saveAllSettings() {
-  // 收集所有变更
+/**
+ * 收集设置变更
+ * @returns {{updates: Object, needsRestartKeys: Array}|null}
+ */
+function collectSettingChanges() {
   const updates = {};
   const needsRestartKeys = [];
   const processedRadioGroups = new Set();
@@ -200,7 +223,7 @@ async function saveAllSettings() {
         processedRadioGroups.add(key);
         const checkedRadio = document.querySelector(`input[name="${key}"]:checked`);
         currentValue = checkedRadio ? checkedRadio.value : '';
-        input = radios[0]; // 用于获取 row
+        input = radios[0];
       } else {
         continue;
       }
@@ -208,34 +231,48 @@ async function saveAllSettings() {
 
     if (currentValue !== originalSettings[key]) {
       updates[key] = currentValue;
-      // 检查是否需要重启（从 DOM 中读取 description）
-      const row = input.closest('tr');
-      if (row?.querySelector('td')?.textContent?.includes('[需重启]')) {
+      // 检查是否需要重启
+      const row = input?.closest('tr');
+      if (row?.querySelector('td')?.textContent?.includes(RESTART_MARKER)) {
         needsRestartKeys.push(key);
       }
     }
   }
+
+  return { updates, needsRestartKeys };
+}
+
+/**
+ * 提交设置更新
+ * @param {Object} updates - 更新的设置
+ * @param {Array} needsRestartKeys - 需要重启的key列表
+ */
+async function submitSettingsUpdate(updates, needsRestartKeys) {
+  await fetchDataWithAuth('/admin/settings/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  });
+
+  let msg = t('settings.msg.savedCount', { count: Object.keys(updates).length });
+  if (needsRestartKeys.length > 0) {
+    msg += `\n\n${t('settings.msg.restartRequired')}:\n${needsRestartKeys.join(', ')}`;
+  }
+  showSuccess(msg);
+}
+
+async function saveAllSettings() {
+  const { updates, needsRestartKeys } = collectSettingChanges();
 
   if (Object.keys(updates).length === 0) {
     window.showNotification(t('settings.msg.noChanges'), 'info');
     return;
   }
 
-  // 使用批量更新接口（单次请求，事务保护）
   try {
-    await fetchDataWithAuth('/admin/settings/batch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    });
-    let msg = t('settings.msg.savedCount', { count: Object.keys(updates).length });
-    if (needsRestartKeys.length > 0) {
-      msg += `\n\n${t('settings.msg.restartRequired')}:\n${needsRestartKeys.join(', ')}`;
-    }
-    showSuccess(msg);
+    await submitSettingsUpdate(updates, needsRestartKeys);
   } catch (err) {
-    console.error('保存异常:', err);
-    showError(t('settings.msg.saveFailed') + ': ' + err.message);
+    handleError(err, 'save');
   }
 
   loadSettings();
@@ -249,8 +286,7 @@ async function resetSetting(key) {
     showSuccess(t('settings.msg.resetSuccess', { key }));
     loadSettings();
   } catch (err) {
-    console.error('重置异常:', err);
-    showError(t('settings.msg.resetFailed') + ': ' + err.message);
+    handleError(err, 'reset');
   }
 }
 

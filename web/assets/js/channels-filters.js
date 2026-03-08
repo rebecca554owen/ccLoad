@@ -1,24 +1,33 @@
 // Filter channels based on current filters
 let filteredChannels = []; // 存储筛选后的渠道列表
 let modelFilterOptions = [];
-let modelFilterCombobox = null; // 通用组件实例
+
+// 筛选常量
+const FILTER_ALL = 'all';
+const FILTER_ENABLED = 'enabled';
+const FILTER_DISABLED = 'disabled';
+const FILTER_COOLDOWN = 'cooldown';
 
 function getModelAllLabel() {
   return (window.t && window.t('channels.modelAll')) || '所有模型';
 }
 
-function modelFilterInputValueFromFilterValue(filterValue) {
-  if (!filterValue || filterValue === 'all') return getModelAllLabel();
-  return filterValue;
+/**
+ * 保存筛选条件（如果 saveChannelsFilters 函数可用）
+ */
+function saveFiltersIfAvailable() {
+  if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
 }
 
-function normalizeModelFilterOption() {
-  if (!filters || !filters.model || filters.model === 'all') return false;
-  if (modelFilterOptions.includes(filters.model)) return false;
-
-  filters.model = 'all';
-  if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-  return true;
+/**
+ * 获取筛选输入框的当前值
+ * @returns {{search: string, id: string}}
+ */
+function getFilterInputValues() {
+  return {
+    search: document.getElementById('searchInput')?.value || '',
+    id: document.getElementById('idFilter')?.value || ''
+  };
 }
 
 function filterChannels() {
@@ -27,30 +36,27 @@ function filterChannels() {
       return false;
     }
 
-    if (filters.id) {
-      const idStr = filters.id.trim();
-      if (idStr) {
-        const ids = idStr.split(',').map(id => id.trim()).filter(id => id);
-        if (ids.length > 0 && !ids.includes(String(channel.id))) {
-          return false;
-        }
+    if (filters.id?.trim()) {
+      const ids = filters.id.trim().split(',').map(id => id.trim()).filter(id => id);
+      if (ids.length > 0 && !ids.includes(String(channel.id))) {
+        return false;
       }
     }
 
-    if (filters.channelType !== 'all') {
+    if (filters.channelType !== FILTER_ALL) {
       const channelType = channel.channel_type || 'anthropic';
       if (channelType !== filters.channelType) {
         return false;
       }
     }
 
-    if (filters.status !== 'all') {
-      if (filters.status === 'enabled' && !channel.enabled) return false;
-      if (filters.status === 'disabled' && channel.enabled) return false;
-      if (filters.status === 'cooldown' && !(channel.cooldown_remaining_ms > 0)) return false;
+    if (filters.status !== FILTER_ALL) {
+      if (filters.status === FILTER_ENABLED && !channel.enabled) return false;
+      if (filters.status === FILTER_DISABLED && channel.enabled) return false;
+      if (filters.status === FILTER_COOLDOWN && !(channel.cooldown_remaining_ms > 0)) return false;
     }
 
-    if (filters.model !== 'all') {
+    if (filters.model !== FILTER_ALL) {
       // 新格式：models 是 {model, redirect_model} 对象数组
       const modelNames = Array.isArray(channel.models)
         ? channel.models.map(m => m.model || m)
@@ -93,15 +99,20 @@ function updateFilterInfo(filtered, total) {
 function updateModelOptions() {
   const modelSet = new Set();
   const typeFilter = (filters && filters.channelType) ? filters.channelType : 'all';
+
+  if (!Array.isArray(channels)) {
+    return;
+  }
+
   channels.forEach(channel => {
     if (typeFilter !== 'all') {
       const channelType = channel.channel_type || 'anthropic';
       if (channelType !== typeFilter) return;
     }
+    // 支持两种格式：新格式是对象数组 {model, redirect_model}，旧格式是字符串数组
     if (Array.isArray(channel.models)) {
-      // 新格式：models 是 {model, redirect_model} 对象数组
       channel.models.forEach(m => {
-        const modelName = m.model || m;
+        const modelName = (typeof m === 'object' && m !== null) ? (m.model || '') : String(m);
         if (modelName) modelSet.add(modelName);
       });
     }
@@ -109,16 +120,37 @@ function updateModelOptions() {
 
   modelFilterOptions = Array.from(modelSet).sort();
 
-  normalizeModelFilterOption();
-
-  // 使用通用组件刷新下拉框
-  if (modelFilterCombobox) {
-    modelFilterCombobox.setValue(filters.model, modelFilterInputValueFromFilterValue(filters.model));
-    modelFilterCombobox.refresh();
-  } else {
-    const modelFilterInput = document.getElementById('modelFilter');
-    if (modelFilterInput) {
-      modelFilterInput.value = modelFilterInputValueFromFilterValue(filters.model);
+  // 使用原生 select 更新选项
+  const selectEl = document.getElementById('modelFilter');
+  if (selectEl) {
+    const currentValue = selectEl.value;
+    const options = modelFilterOptions.map(model => ({ value: model, label: model }));
+    if (typeof window.populateSelect === 'function') {
+      window.populateSelect(selectEl, options, {
+        defaultLabel: getModelAllLabel(),
+        defaultValue: 'all',
+        restoreValue: currentValue
+      });
+    } else {
+      // Fallback
+      const fragment = document.createDocumentFragment();
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = getModelAllLabel();
+      fragment.appendChild(allOption);
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        fragment.appendChild(option);
+      });
+      selectEl.innerHTML = '';
+      selectEl.appendChild(fragment);
+      if (modelFilterOptions.includes(currentValue)) {
+        selectEl.value = currentValue;
+      } else {
+        selectEl.value = 'all';
+      }
     }
   }
 }
@@ -130,7 +162,7 @@ function setupFilterListeners() {
 
   const debouncedFilter = debounce(() => {
     filters.search = searchInput.value;
-    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    saveFiltersIfAvailable();
     filterChannels();
     updateClearButton();
   }, 300);
@@ -140,7 +172,7 @@ function setupFilterListeners() {
   clearSearchBtn.addEventListener('click', () => {
     searchInput.value = '';
     filters.search = '';
-    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    saveFiltersIfAvailable();
     filterChannels();
     updateClearButton();
     searchInput.focus();
@@ -152,66 +184,44 @@ function setupFilterListeners() {
 
   const idFilter = document.getElementById('idFilter');
   const debouncedIdFilter = debounce(() => {
-    filters.id = idFilter.value;
-    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    filters.id = idFilter?.value;
+    saveFiltersIfAvailable();
     filterChannels();
   }, 300);
-  idFilter.addEventListener('input', debouncedIdFilter);
+  idFilter?.addEventListener('input', debouncedIdFilter);
 
-  document.getElementById('statusFilter').addEventListener('change', (e) => {
+  document.getElementById('statusFilter')?.addEventListener('change', (e) => {
     filters.status = e.target.value;
-    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    saveFiltersIfAvailable();
     filterChannels();
   });
 
-  // 使用通用组件初始化模型筛选器（附着模式）
-  const modelFilterInput = document.getElementById('modelFilter');
-  if (modelFilterInput) {
-    modelFilterCombobox = createSearchableCombobox({
-      attachMode: true,
-      inputId: 'modelFilter',
-      dropdownId: 'modelFilterDropdown',
-      initialValue: filters.model,
-      initialLabel: modelFilterInputValueFromFilterValue(filters.model),
-      getOptions: () => {
-        const allLabel = getModelAllLabel();
-        return [{ value: 'all', label: allLabel }].concat(
-          modelFilterOptions.map(m => ({ value: m, label: m }))
-        );
-      },
-      onSelect: (value) => {
-        filters.model = value;
-        if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-        filterChannels();
-      }
-    });
-  }
+  // 模型筛选 - 原生 select
+  document.getElementById('modelFilter')?.addEventListener('change', (e) => {
+    filters.model = e.target.value;
+    saveFiltersIfAvailable();
+    filterChannels();
+  });
 
   // 筛选按钮：手动触发筛选
-  document.getElementById('btn_filter').addEventListener('click', () => {
-    // 收集当前输入框的值
-    filters.search = document.getElementById('searchInput').value;
-    filters.id = document.getElementById('idFilter').value;
-
-    // 保存筛选条件
-    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-
-    // 执行筛选
+  document.getElementById('btn_filter')?.addEventListener('click', () => {
+    const values = getFilterInputValues();
+    filters.search = values.search;
+    filters.id = values.id;
+    saveFiltersIfAvailable();
     filterChannels();
   });
 
   // 回车键触发筛选
   ['searchInput', 'idFilter'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          filters.search = document.getElementById('searchInput').value;
-          filters.id = document.getElementById('idFilter').value;
-          if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-          filterChannels();
-        }
-      });
-    }
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const values = getFilterInputValues();
+        filters.search = values.search;
+        filters.id = values.id;
+        saveFiltersIfAvailable();
+        filterChannels();
+      }
+    });
   });
 }

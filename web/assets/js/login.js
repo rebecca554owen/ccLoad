@@ -5,15 +5,28 @@
     const loginButton = document.getElementById('login-button');
     const passwordInput = document.getElementById('password');
 
+    // 动画持续时间常量
+    const ANIMATION_DURATION = 500;
+
+    /**
+     * 触发元素动画
+     * @param {HTMLElement} element - 目标元素
+     * @param {string} animationName - 动画名称
+     * @param {number} duration - 动画持续时间(ms)
+     */
+    function triggerAnimation(element, animationName, duration = 500) {
+      element.style.animation = 'none';
+      element.offsetHeight; // 触发重绘
+      element.style.animation = `${animationName} ${duration}ms ease-in-out`;
+    }
+
     function showError(message) {
       if (window.showError) try { window.showError(message); } catch (_) {}
       errorText.textContent = message;
       errorMessage.style.display = 'flex';
-      
+
       // 添加摇晃动画
-      errorMessage.style.animation = 'none';
-      errorMessage.offsetHeight; // 触发重绘
-      errorMessage.style.animation = 'slideInUp 0.3s ease-out';
+      triggerAnimation(errorMessage, 'slideInUp', 300);
     }
 
     function hideError() {
@@ -21,15 +34,9 @@
     }
 
     function setLoading(loading) {
-      if (loading) {
-        loginButton.classList.add('loading');
-        loginButton.disabled = true;
-        passwordInput.disabled = true;
-      } else {
-        loginButton.classList.remove('loading');
-        loginButton.disabled = false;
-        passwordInput.disabled = false;
-      }
+      loginButton.classList.toggle('loading', loading);
+      loginButton.disabled = loading;
+      passwordInput.disabled = loading;
     }
 
     function getSafeRedirectPath(redirect) {
@@ -85,13 +92,11 @@
           showError(resp.error || '密码错误，请重试');
 
           // 添加输入框摇晃动画
-          passwordInput.style.animation = 'none';
-          passwordInput.offsetHeight;
-          passwordInput.style.animation = 'shake 0.5s ease-in-out';
+          triggerAnimation(passwordInput, 'shake', ANIMATION_DURATION);
 
           setTimeout(() => {
             passwordInput.style.animation = '';
-          }, 500);
+          }, ANIMATION_DURATION);
         }
       } catch (error) {
         console.error('Login error:', error);
@@ -118,13 +123,15 @@
       showError(errorParam);
     }
 
-    // 页面加载完成后的初始化
-    document.addEventListener('DOMContentLoaded', function() {
+    /**
+     * 初始化登录页面
+     */
+    function initLoginPage() {
       if (window.i18n) window.i18n.translatePage();
       // 聚焦到密码输入框
       setTimeout(() => {
         passwordInput.focus();
-      }, 500);
+      }, ANIMATION_DURATION);
 
       // 添加输入框摇晃动画关键帧
       const style = document.createElement('style');
@@ -136,5 +143,8 @@
         }
       `;
       document.head.appendChild(style);
-    });
+    }
+
+    // 页面加载完成后的初始化
+    document.addEventListener('DOMContentLoaded', initLoginPage);
 })();

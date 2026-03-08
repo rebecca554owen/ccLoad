@@ -1,3 +1,36 @@
+// 常量定义
+const MAX_ERROR_PREVIEW = 3;
+
+/**
+ * 通用文件下载函数
+ * @param {Blob} blob - 文件Blob
+ * @param {string} filename - 文件名
+ */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * 显示成功通知
+ */
+function notifySuccess(message) {
+  if (window.showSuccess) window.showSuccess(message);
+}
+
+/**
+ * 显示错误通知
+ */
+function notifyError(message) {
+  if (window.showError) window.showError(message);
+}
+
 function setupImportExport() {
   const exportBtn = document.getElementById('exportCsvBtn');
   const importBtn = document.getElementById('importCsvBtn');
@@ -34,19 +67,12 @@ async function exportChannelsCSV(buttonEl) {
     }
 
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `channels-${formatTimestampForFilename()}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `channels-${formatTimestampForFilename()}.csv`);
 
-    if (window.showSuccess) window.showSuccess(window.t('channels.msg.exportSuccess'));
+    notifySuccess(window.t('channels.msg.exportSuccess'));
   } catch (err) {
     console.error('Export CSV failed', err);
-    if (window.showError) window.showError(err.message || window.t('channels.msg.exportFailed'));
+    notifyError(err.message || window.t('channels.msg.exportFailed'));
   } finally {
     if (buttonEl) buttonEl.disabled = false;
   }
@@ -81,22 +107,22 @@ async function handleImportCSV(event, importBtn) {
         skipped: summary.skipped || 0
       });
 
-      if (window.showSuccess) window.showSuccess(msg);
+      notifySuccess(msg);
 
       if (summary.errors && summary.errors.length) {
-        const preview = summary.errors.slice(0, 3).join('；');
-        const extra = summary.errors.length > 3 ? window.t('channels.import.moreErrors', { count: summary.errors.length }) : '';
-        if (window.showError) window.showError(window.t('channels.import.partialFailed', { preview, extra }));
+        const preview = summary.errors.slice(0, MAX_ERROR_PREVIEW).join('；');
+        const extra = summary.errors.length > MAX_ERROR_PREVIEW ? window.t('channels.import.moreErrors', { count: summary.errors.length }) : '';
+        notifyError(window.t('channels.import.partialFailed', { preview, extra }));
       }
-    } else if (window.showSuccess) {
-      window.showSuccess(window.t('channels.msg.importSuccess'));
+    } else {
+      notifySuccess(window.t('channels.msg.importSuccess'));
     }
 
     clearChannelsCache();
     await loadChannels(filters.channelType);
   } catch (err) {
     console.error('Import CSV failed', err);
-    if (window.showError) window.showError(err.message || window.t('channels.msg.importFailed'));
+    notifyError(err.message || window.t('channels.msg.importFailed'));
   } finally {
     if (importBtn) importBtn.disabled = false;
     input.value = '';

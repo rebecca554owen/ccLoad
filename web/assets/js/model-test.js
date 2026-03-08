@@ -12,15 +12,13 @@ let testMode = TEST_MODE_CHANNEL;
 let isDeletingModels = false;
 let isTestingModels = false;
 
-let channelSelectCombobox = null;
-let modelSelectCombobox = null;
+const channelSelect = document.getElementById('testChannelSelect');
+const modelSelect = document.getElementById('testModelSelect');
 
 const headRow = document.getElementById('model-test-head-row');
 const tbody = document.getElementById('model-test-tbody');
-const channelSelectorLabel = document.getElementById('channelSelectorLabel');
 const modelSelectorLabel = document.getElementById('modelSelectorLabel');
 const typeSelect = document.getElementById('testChannelType');
-const modelSelect = document.getElementById('testModelSelect');
 const fetchModelsBtn = document.getElementById('fetchModelsBtn');
 const deleteModelsBtn = document.getElementById('deleteModelsBtn');
 const runTestBtn = document.getElementById('runTestBtn');
@@ -35,9 +33,19 @@ const deletePreviewConfirmBtn = document.getElementById('deletePreviewConfirmBtn
 
 const RESULT_TABLE_COLSPAN_WITH_FIRST_BYTE = 10;
 const RESULT_TABLE_COLSPAN_NO_FIRST_BYTE = 9;
+
 const SORT_DIRECTION_ASC = 1;
 const SORT_DIRECTION_DESC = -1;
 const SORT_DIRECTION_NONE = 0;
+const SORT_CYCLE = [SORT_DIRECTION_ASC, SORT_DIRECTION_DESC, SORT_DIRECTION_NONE];
+
+const ROW_BG_SUCCESS = 'rgba(16, 185, 129, 0.1)';
+const ROW_BG_ERROR = 'rgba(239, 68, 68, 0.1)';
+const ROW_BG_ERROR_RGB = '239, 68, 68';
+
+const DEFAULT_TEST_CONTENT = 'hi';
+const DEFAULT_CONCURRENCY = 5;
+
 let sortState = { key: '', direction: SORT_DIRECTION_NONE };
 let nameFilterKeyword = '';
 
@@ -212,29 +220,21 @@ function applyNameFilter() {
   syncSelectAllCheckbox();
 }
 
+const SORT_VALUE_EXTRACTORS = {
+  name: row => row.children[1]?.textContent?.trim() || '',
+  firstByteDuration: row => parseNumericCellValue(row.querySelector('.first-byte-duration')?.textContent),
+  duration: row => parseNumericCellValue(row.querySelector('.duration')?.textContent),
+  inputTokens: row => parseNumericCellValue(row.querySelector('.input-tokens')?.textContent),
+  outputTokens: row => parseNumericCellValue(row.querySelector('.output-tokens')?.textContent),
+  cacheRead: row => parseNumericCellValue(row.querySelector('.cache-read')?.textContent),
+  cacheCreate: row => parseNumericCellValue(row.querySelector('.cache-create')?.textContent),
+  cost: row => parseNumericCellValue(row.querySelector('.cost')?.textContent),
+  response: row => row.querySelector('.response')?.textContent?.trim() || ''
+};
+
 function getRowSortValue(row, key) {
-  switch (key) {
-    case 'name':
-      return row.children[1]?.textContent?.trim() || '';
-    case 'firstByteDuration':
-      return parseNumericCellValue(row.querySelector('.first-byte-duration')?.textContent);
-    case 'duration':
-      return parseNumericCellValue(row.querySelector('.duration')?.textContent);
-    case 'inputTokens':
-      return parseNumericCellValue(row.querySelector('.input-tokens')?.textContent);
-    case 'outputTokens':
-      return parseNumericCellValue(row.querySelector('.output-tokens')?.textContent);
-    case 'cacheRead':
-      return parseNumericCellValue(row.querySelector('.cache-read')?.textContent);
-    case 'cacheCreate':
-      return parseNumericCellValue(row.querySelector('.cache-create')?.textContent);
-    case 'cost':
-      return parseNumericCellValue(row.querySelector('.cost')?.textContent);
-    case 'response':
-      return row.querySelector('.response')?.textContent?.trim() || '';
-    default:
-      return null;
-  }
+  const extractor = SORT_VALUE_EXTRACTORS[key];
+  return extractor ? extractor(row) : null;
 }
 
 function bindSortableHeaders() {
@@ -269,15 +269,11 @@ function bindSortableHeaders() {
       const key = th.dataset.sortKey || '';
       if (!key) return;
 
-      if (sortState.key !== key) {
-        sortState = { key, direction: SORT_DIRECTION_ASC };
-      } else if (sortState.direction === SORT_DIRECTION_ASC) {
-        sortState = { key, direction: SORT_DIRECTION_DESC };
-      } else if (sortState.direction === SORT_DIRECTION_DESC) {
-        sortState = { key: '', direction: SORT_DIRECTION_NONE };
-      } else {
-        sortState = { key, direction: SORT_DIRECTION_ASC };
-      }
+      const currentIndex = SORT_CYCLE.indexOf(sortState.direction);
+      const nextIndex = sortState.key !== key ? 0 : (currentIndex + 1) % SORT_CYCLE.length;
+      const nextDirection = SORT_CYCLE[nextIndex];
+
+      sortState = nextDirection === SORT_DIRECTION_NONE ? { key: '', direction: nextDirection } : { key, direction: nextDirection };
 
       applyCurrentSort();
       updateSortIndicators();
@@ -403,55 +399,44 @@ function getModelInputValue() {
 
 function setModelInputValue(value) {
   const nextValue = String(value || '').trim();
-  if (modelSelectCombobox) {
-    modelSelectCombobox.setValue(nextValue, nextValue);
-    return;
-  }
-
   if (modelSelect) {
     modelSelect.value = nextValue;
   }
 }
 
-function ensureModelSelectCombobox() {
-  if (modelSelectCombobox || !modelSelect) return;
-  if (typeof window.createSearchableCombobox !== 'function') return;
+function populateModelSelector() {
+  if (!modelSelect) return;
+  const channelType = typeSelect?.value || (channelsList[0] ? getChannelType(channelsList[0]) : 'anthropic');
+  const models = getAllModelsInType(channelType);
 
-  modelSelectCombobox = window.createSearchableCombobox({
-    attachMode: true,
-    inputId: 'testModelSelect',
-    dropdownId: 'testModelSelectDropdown',
-    initialValue: selectedModelName,
-    initialLabel: selectedModelName,
-    getOptions: () => {
-      const channelType = typeSelect.value;
-      const models = getAllModelsInType(channelType);
-      const options = models.map(name => ({ value: name, label: name }));
+  const options = models.map(name => ({ value: name, label: name }));
 
-      const typedModel = getModelInputValue();
-      const hasExactMatch = typedModel
-        ? options.some(option => String(option.value).toLowerCase() === typedModel.toLowerCase())
-        : false;
-      const hasFuzzyMatch = typedModel
-        ? options.some(option => String(option.label).toLowerCase().includes(typedModel.toLowerCase()) || String(option.value).toLowerCase().includes(typedModel.toLowerCase()))
-        : false;
+  if (typeof window.populateSelect === 'function') {
+    window.populateSelect(modelSelect, options, {
+      defaultLabel: models.length === 0 ? '无可用模型' : '请选择模型',
+      defaultValue: '',
+      restoreValue: modelSelect.value
+    });
+  } else {
+    // Fallback for standalone usage
+    const currentValue = modelSelect.value;
+    const fragment = document.createDocumentFragment();
+    // 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = models.length === 0 ? '无可用模型' : '请选择模型';
+    fragment.appendChild(defaultOption);
 
-      if (typedModel && !hasExactMatch && !hasFuzzyMatch) {
-        options.unshift({ value: typedModel, label: typedModel });
-      }
-
-      return options;
-    },
-    onSelect: (value) => {
-      selectedModelName = String(value || '').trim();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    },
-    onCancel: () => {
-      selectedModelName = getModelInputValue() || selectedModelName;
-    }
-  });
+    models.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      fragment.appendChild(option);
+    });
+    modelSelect.innerHTML = '';
+    modelSelect.appendChild(fragment);
+    if (models.includes(currentValue)) modelSelect.value = currentValue;
+  }
 }
 
 function clearProgress() {
@@ -482,20 +467,11 @@ function syncSelectAllCheckbox() {
   }
 
   const checkedCount = checkboxes.filter(cb => cb.checked).length;
-  if (checkedCount === 0) {
-    selectAllCheckbox.checked = false;
-    selectAllCheckbox.indeterminate = false;
-    return;
-  }
+  const allChecked = checkedCount === checkboxes.length;
+  const someChecked = checkedCount > 0 && !allChecked;
 
-  if (checkedCount === checkboxes.length) {
-    selectAllCheckbox.checked = true;
-    selectAllCheckbox.indeterminate = false;
-    return;
-  }
-
-  selectAllCheckbox.checked = false;
-  selectAllCheckbox.indeterminate = true;
+  selectAllCheckbox.checked = allChecked;
+  selectAllCheckbox.indeterminate = someChecked;
 }
 
 function renderEmptyRow(message) {
@@ -534,7 +510,7 @@ function renderChannelModeRows() {
   finalizeTableRender();
 }
 
-function populateModelSelector() {
+function syncSelectedModel() {
   const channelType = typeSelect.value;
   const models = getAllModelsInType(channelType);
   const typedModel = getModelInputValue();
@@ -542,7 +518,6 @@ function populateModelSelector() {
   if (models.length === 0) {
     selectedModelName = typedModel || '';
     setModelInputValue(selectedModelName);
-    modelSelectCombobox?.refresh();
     return;
   }
 
@@ -553,7 +528,6 @@ function populateModelSelector() {
   }
 
   setModelInputValue(selectedModelName);
-  modelSelectCombobox?.refresh();
 }
 
 function renderModelModeRows() {
@@ -678,17 +652,62 @@ function getSelectedTargets() {
     .filter(Boolean);
 }
 
+const RESULT_FIELDS = [
+  { selector: '.first-byte-duration', defaultValue: '-' },
+  { selector: '.duration', defaultValue: '-' },
+  { selector: '.input-tokens', defaultValue: '-' },
+  { selector: '.output-tokens', defaultValue: '-' },
+  { selector: '.cache-read', defaultValue: '-' },
+  { selector: '.cache-create', defaultValue: '-' },
+  { selector: '.cost', defaultValue: '-' }
+];
+
 function resetRowStatus(row) {
-  row.querySelector('.first-byte-duration').textContent = '-';
-  row.querySelector('.duration').textContent = '-';
-  row.querySelector('.input-tokens').textContent = '-';
-  row.querySelector('.output-tokens').textContent = '-';
-  row.querySelector('.cache-read').textContent = '-';
-  row.querySelector('.cache-create').textContent = '-';
-  row.querySelector('.cost').textContent = '-';
-  row.querySelector('.response').textContent = i18nText('modelTest.waiting', '等待中...');
-  row.querySelector('.response').title = '';
+  RESULT_FIELDS.forEach(({ selector, defaultValue }) => {
+    const el = row.querySelector(selector);
+    if (el) el.textContent = defaultValue;
+  });
+
+  const responseEl = row.querySelector('.response');
+  if (responseEl) {
+    responseEl.textContent = i18nText('modelTest.waiting', '等待中...');
+    responseEl.title = '';
+  }
+
   row.style.background = '';
+}
+
+function applyTestResultSuccess(row, data) {
+  row.style.background = ROW_BG_SUCCESS;
+  const apiResp = data.api_response || {};
+  const usage = apiResp.usage || apiResp.usageMetadata || data.usage || {};
+  row.querySelector('.input-tokens').textContent = usage.input_tokens || usage.prompt_tokens || usage.promptTokenCount || '-';
+  row.querySelector('.output-tokens').textContent = usage.output_tokens || usage.completion_tokens || usage.candidatesTokenCount || '-';
+  row.querySelector('.cache-read').textContent = usage.cache_read_input_tokens || usage.cached_tokens || '-';
+  row.querySelector('.cache-create').textContent = usage.cache_creation_input_tokens || '-';
+  row.querySelector('.cost').textContent = (typeof data.cost_usd === 'number') ? formatCost(data.cost_usd) : '-';
+
+  let respText = data.response_text;
+  if (!respText && data.api_response?.choices?.[0]?.message) {
+    const msg = data.api_response.choices[0].message;
+    respText = msg.content || msg.reasoning_content || msg.reasoning || msg.text;
+  }
+  // Anthropic format: content is array of {type, text/thinking}
+  if (!respText && Array.isArray(data.api_response?.content)) {
+    const textBlock = data.api_response.content.find(b => b.type === 'text');
+    if (textBlock) respText = textBlock.text;
+  }
+  const successText = respText || i18nText('common.success', '成功');
+  row.querySelector('.response').textContent = successText;
+  row.querySelector('.response').title = successText;
+}
+
+function applyTestResultFailure(row, data) {
+  row.style.background = ROW_BG_ERROR;
+  const errMsg = data.error || i18nText('modelTest.testFailed', '测试失败');
+  row.querySelector('.response').textContent = errMsg;
+  row.querySelector('.response').title = errMsg;
+  row.querySelector('.cost').textContent = '-';
 }
 
 function applyTestResultToRow(row, data) {
@@ -696,79 +715,59 @@ function applyTestResultToRow(row, data) {
   row.querySelector('.duration').textContent = formatDurationMs(data.duration_ms);
 
   if (data.success) {
-    row.style.background = 'rgba(16, 185, 129, 0.1)';
-    const apiResp = data.api_response || {};
-    const usage = apiResp.usage || apiResp.usageMetadata || data.usage || {};
-    row.querySelector('.input-tokens').textContent = usage.input_tokens || usage.prompt_tokens || usage.promptTokenCount || '-';
-    row.querySelector('.output-tokens').textContent = usage.output_tokens || usage.completion_tokens || usage.candidatesTokenCount || '-';
-    row.querySelector('.cache-read').textContent = usage.cache_read_input_tokens || usage.cached_tokens || '-';
-    row.querySelector('.cache-create').textContent = usage.cache_creation_input_tokens || '-';
-    row.querySelector('.cost').textContent = (typeof data.cost_usd === 'number') ? formatCost(data.cost_usd) : '-';
+    applyTestResultSuccess(row, data);
+  } else {
+    applyTestResultFailure(row, data);
+  }
+}
 
-    let respText = data.response_text;
-    if (!respText && data.api_response?.choices?.[0]?.message) {
-      const msg = data.api_response.choices[0].message;
-      respText = msg.content || msg.reasoning_content || msg.reasoning || msg.text;
-    }
-    // Anthropic format: content is array of {type, text/thinking}
-    if (!respText && Array.isArray(data.api_response?.content)) {
-      const textBlock = data.api_response.content.find(b => b.type === 'text');
-      if (textBlock) respText = textBlock.text;
-    }
-    const successText = respText || i18nText('common.success', '成功');
-    row.querySelector('.response').textContent = successText;
-    row.querySelector('.response').title = successText;
-    return;
+async function executeSingleTest(target, { streamEnabled, content, onProgress }) {
+  const { row, model, channelId, channelType } = target;
+  row.querySelector('.response').textContent = i18nText('modelTest.testing', '测试中...');
+
+  try {
+    const data = await fetchDataWithAuth(`/admin/channels/${channelId}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, stream: streamEnabled, content, channel_type: channelType })
+    });
+    applyTestResultToRow(row, data);
+  } catch (e) {
+    row.style.background = ROW_BG_ERROR;
+    row.querySelector('.first-byte-duration').textContent = '-';
+    row.querySelector('.duration').textContent = '-';
+    row.querySelector('.response').textContent = i18nText('modelTest.requestFailed', '请求失败');
+    row.querySelector('.response').title = e.message;
+    row.querySelector('.cost').textContent = '-';
   }
 
-  row.style.background = 'rgba(239, 68, 68, 0.1)';
-  const errMsg = data.error || i18nText('modelTest.testFailed', '测试失败');
-  row.querySelector('.response').textContent = errMsg;
-  row.querySelector('.response').title = errMsg;
-  row.querySelector('.cost').textContent = '-';
+  onProgress?.();
 }
 
 async function runBatchTests(targets) {
   const progressEl = document.getElementById('testProgress');
   const streamEnabled = document.getElementById('streamEnabled').checked;
-  const content = document.getElementById('modelTestContent').value.trim() || 'hi';
-  const concurrency = parseInt(document.getElementById('concurrency').value, 10) || 5;
+  const content = document.getElementById('modelTestContent').value.trim() || DEFAULT_TEST_CONTENT;
+  const concurrency = parseInt(document.getElementById('concurrency').value, 10) || DEFAULT_CONCURRENCY;
 
   let completed = 0;
   const total = targets.length;
 
   targets.forEach(({ row }) => resetRowStatus(row));
 
-  const testOne = async (target) => {
-    const { row, model, channelId, channelType } = target;
-    row.querySelector('.response').textContent = i18nText('modelTest.testing', '测试中...');
-
-    try {
-      const data = await fetchDataWithAuth(`/admin/channels/${channelId}/test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, stream: streamEnabled, content, channel_type: channelType })
-      });
-      applyTestResultToRow(row, data);
-    } catch (e) {
-      row.style.background = 'rgba(239, 68, 68, 0.1)';
-      row.querySelector('.first-byte-duration').textContent = '-';
-      row.querySelector('.duration').textContent = '-';
-      row.querySelector('.response').textContent = i18nText('modelTest.requestFailed', '请求失败');
-      row.querySelector('.response').title = e.message;
-      row.querySelector('.cost').textContent = '-';
-    }
-
-    completed++;
-    progressEl.textContent = `${i18nText('modelTest.testingProgress', '测试中')} ${completed}/${total}`;
-  };
-
   const queue = [...targets];
   const workers = Array(Math.min(concurrency, queue.length)).fill(null).map(async () => {
     while (queue.length) {
       const next = queue.shift();
       if (!next) break;
-      await testOne(next);
+      await executeSingleTest(next, {
+        streamEnabled,
+        content,
+        onProgress: () => {
+          completed++;
+          progressEl.textContent = `${i18nText('modelTest.testingProgress', '测试中')} ${completed}/${total}`;
+        }
+      });
     }
   });
 
@@ -779,7 +778,7 @@ async function runBatchTests(targets) {
   document.querySelectorAll('#model-test-tbody tr').forEach(row => {
     const checkbox = row.querySelector('.row-checkbox');
     if (!checkbox) return;
-    checkbox.checked = row.style.background.includes('239, 68, 68');
+    checkbox.checked = row.style.background.includes(ROW_BG_ERROR_RGB);
   });
 
   applyCurrentSort();
@@ -838,25 +837,23 @@ async function runModelTests() {
   }
 }
 
-function selectAllModels() {
-  getVisibleRowCheckboxes().forEach(cb => {
-    cb.checked = true;
-  });
-  syncSelectAllCheckbox();
-}
-
-function deselectAllModels() {
-  getVisibleRowCheckboxes().forEach(cb => {
-    cb.checked = false;
-  });
-  syncSelectAllCheckbox();
-}
-
-function toggleAllModels(checked) {
+function setAllModelsChecked(checked) {
   getVisibleRowCheckboxes().forEach(cb => {
     cb.checked = checked;
   });
   syncSelectAllCheckbox();
+}
+
+function selectAllModels() {
+  setAllModelsChecked(true);
+}
+
+function deselectAllModels() {
+  setAllModelsChecked(false);
+}
+
+function toggleAllModels(checked) {
+  setAllModelsChecked(checked);
 }
 
 function getSelectedModelsForDelete() {
@@ -1056,23 +1053,67 @@ function showDeletePreviewModal(previewText, onConfirmAsync) {
   });
 }
 
+function createDeleteProgressHandlers(progress) {
+  return {
+    notifyProgress: (text) => {
+      if (progress?.setProgress) progress.setProgress(text);
+    },
+    appendLog: (text) => {
+      if (progress?.appendLog) progress.appendLog(text);
+    }
+  };
+}
+
+function getChannelInfo(channelId) {
+  const channel = channelsList.find(ch => ch.id === channelId);
+  return {
+    channel,
+    channelName: channel?.name ?? i18nText('common.unknown', '未知渠道')
+  };
+}
+
+async function deleteModelsFromChannel(channelId, models) {
+  return fetchAPIWithAuth(`/admin/channels/${channelId}/models`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ models })
+  });
+}
+
+function updateChannelModelsAfterDelete(channel, modelSet) {
+  if (!channel) return;
+  channel.models = (channel.models || []).filter(entry => !modelSet.has(getModelName(entry)));
+}
+
+function logDeleteStart(appendLog, channelId, channelName) {
+  appendLog(i18nText('modelTest.deleteProgressChannelStart', `开始处理 ${channelName}(#${channelId})`, {
+    channel_name: channelName,
+    channel_id: channelId
+  }));
+}
+
+function logDeleteFailure(appendLog, channelId, channelName, error) {
+  appendLog(i18nText('modelTest.deleteProgressChannelFailed', `${channelName}(#${channelId}) 删除失败`, {
+    channel_name: channelName,
+    channel_id: channelId,
+    error: error || i18nText('common.deleteFailed', '删除失败')
+  }));
+}
+
+function logDeleteSuccess(appendLog, channelId, channelName) {
+  appendLog(i18nText('modelTest.deleteProgressChannelDone', `${channelName}(#${channelId}) 删除完成`, {
+    channel_name: channelName,
+    channel_id: channelId
+  }));
+}
+
 async function executeDeletePlan(deletePlan, progress = null) {
   const failed = [];
   let successCount = 0;
   const totalChannelCount = deletePlan.size;
   let completed = 0;
 
-  const notifyProgress = (text) => {
-    if (progress && typeof progress.setProgress === 'function') {
-      progress.setProgress(text);
-    }
-  };
-
-  const appendLog = (text) => {
-    if (progress && typeof progress.appendLog === 'function') {
-      progress.appendLog(text);
-    }
-  };
+  const { notifyProgress, appendLog } = createDeleteProgressHandlers(progress);
 
   notifyProgress(i18nText(
     'modelTest.deleteProgressRunning',
@@ -1084,27 +1125,15 @@ async function executeDeletePlan(deletePlan, progress = null) {
     const models = Array.from(modelSet);
     if (models.length === 0) continue;
 
-    const channel = channelsList.find(ch => ch.id === channelId);
-    const channelName = channel ? channel.name : i18nText('common.unknown', '未知渠道');
-    appendLog(i18nText('modelTest.deleteProgressChannelStart', `开始处理 ${channelName}(#${channelId})`, {
-      channel_name: channelName,
-      channel_id: channelId
-    }));
+    const { channel, channelName } = getChannelInfo(channelId);
+    logDeleteStart(appendLog, channelId, channelName);
 
     try {
-      const resp = await fetchAPIWithAuth(`/admin/channels/${channelId}/models`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ models })
-      });
+      const resp = await deleteModelsFromChannel(channelId, models);
 
       if (!resp.success) {
         failed.push({ channelId, error: resp.error || i18nText('common.deleteFailed', '删除失败') });
-        appendLog(i18nText('modelTest.deleteProgressChannelFailed', `${channelName}(#${channelId}) 删除失败`, {
-          channel_name: channelName,
-          channel_id: channelId,
-          error: resp.error || i18nText('common.deleteFailed', '删除失败')
-        }));
+        logDeleteFailure(appendLog, channelId, channelName, resp.error);
         completed++;
         notifyProgress(i18nText(
           'modelTest.deleteProgressRunning',
@@ -1115,23 +1144,14 @@ async function executeDeletePlan(deletePlan, progress = null) {
       }
 
       successCount++;
-      if (channel) {
-        channel.models = (channel.models || []).filter(entry => !modelSet.has(getModelName(entry)));
-      }
-      if (selectedChannel && selectedChannel.id === channelId && channel) {
+      updateChannelModelsAfterDelete(channel, modelSet);
+      if (selectedChannel?.id === channelId && channel) {
         selectedChannel = channel;
       }
-      appendLog(i18nText('modelTest.deleteProgressChannelDone', `${channelName}(#${channelId}) 删除完成`, {
-        channel_name: channelName,
-        channel_id: channelId
-      }));
+      logDeleteSuccess(appendLog, channelId, channelName);
     } catch (e) {
       failed.push({ channelId, error: e.message || i18nText('common.deleteFailed', '删除失败') });
-      appendLog(i18nText('modelTest.deleteProgressChannelFailed', `${channelName}(#${channelId}) 删除失败`, {
-        channel_name: channelName,
-        channel_id: channelId,
-        error: e.message || i18nText('common.deleteFailed', '删除失败')
-      }));
+      logDeleteFailure(appendLog, channelId, channelName, e.message);
     }
 
     completed++;
@@ -1315,35 +1335,57 @@ async function onChannelChange() {
   }
 }
 
-function renderSearchableChannelSelect() {
-  channelSelectCombobox = createSearchableCombobox({
-    container: 'testChannelSelectContainer',
-    inputId: 'testChannelSelect',
-    dropdownId: 'testChannelSelectDropdown',
-    placeholder: i18nText('modelTest.searchChannel', '搜索渠道...'),
-    minWidth: 250,
-    getOptions: () => channelsList.map(ch => ({
-      value: String(ch.id),
-      label: `[${getChannelType(ch)}] ${ch.name}`
-    })),
-    onSelect: async (value) => {
-      const channelId = parseInt(value, 10);
-      selectedChannel = channelsList.find(c => c.id === channelId) || null;
-      await onChannelChange();
-    }
-  });
+function renderChannelSelect() {
+  if (!channelSelect) return;
+
+  if (!Array.isArray(channelsList)) {
+    return;
+  }
+
+  const options = channelsList.map(ch => ({
+    value: String(ch.id),
+    label: `[${getChannelType(ch)}] ${ch.name}`
+  }));
+
+  if (typeof window.populateSelect === 'function') {
+    window.populateSelect(channelSelect, options, {
+      defaultLabel: channelsList.length === 0 ? '无可用渠道' : '请选择渠道',
+      defaultValue: ''
+    });
+  } else {
+    const fragment = document.createDocumentFragment();
+    // 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = channelsList.length === 0 ? '无可用渠道' : '请选择渠道';
+    fragment.appendChild(defaultOption);
+
+    channelsList.forEach(ch => {
+      const option = document.createElement('option');
+      option.value = String(ch.id);
+      option.textContent = `[${getChannelType(ch)}] ${ch.name}`;
+      fragment.appendChild(option);
+    });
+    channelSelect.innerHTML = '';
+    channelSelect.appendChild(fragment);
+  }
 }
 
 async function loadChannels() {
   try {
     const list = (await fetchDataWithAuth('/admin/channels')) || [];
     channelsList = list.sort((a, b) => getChannelType(a).localeCompare(getChannelType(b)) || b.priority - a.priority);
-    renderSearchableChannelSelect();
+    renderChannelSelect();
 
     const firstType = channelsList[0] ? getChannelType(channelsList[0]) : 'anthropic';
     await window.ChannelTypeManager.renderChannelTypeSelect('testChannelType', firstType);
+    // 确保 typeSelect.value 被正确设置
+    if (typeSelect && !typeSelect.value && firstType) {
+      typeSelect.value = firstType;
+    }
 
     populateModelSelector();
+    syncSelectedModel();
     renderRowsByMode();
   } catch (e) {
     console.error('加载渠道列表失败:', e);
@@ -1368,11 +1410,19 @@ async function loadDefaultTestContent() {
 }
 
 function bindEvents() {
-  ensureModelSelectCombobox();
   const streamEnabled = document.getElementById('streamEnabled');
   if (streamEnabled) {
     streamEnabled.addEventListener('change', () => {
       applyFirstByteVisibility();
+    });
+  }
+
+  // 渠道选择变更事件（只绑定一次，避免重复监听器）
+  if (channelSelect) {
+    channelSelect.addEventListener('change', async () => {
+      const channelId = parseInt(channelSelect.value, 10);
+      selectedChannel = channelsList.find(c => c.id === channelId) || null;
+      await onChannelChange();
     });
   }
 
@@ -1382,18 +1432,12 @@ function bindEvents() {
     }
 
     populateModelSelector();
+    syncSelectedModel();
     renderModelModeRows();
   });
 
-  if (!modelSelectCombobox && modelSelect) {
+  if (modelSelect) {
     modelSelect.addEventListener('change', () => {
-      selectedModelName = getModelInputValue();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    });
-
-    modelSelect.addEventListener('input', () => {
       selectedModelName = getModelInputValue();
       if (testMode === TEST_MODE_MODEL) {
         renderModelModeRows();
@@ -1420,6 +1464,7 @@ function setTestMode(mode) {
 
   if (testMode === TEST_MODE_MODEL) {
     populateModelSelector();
+    syncSelectedModel();
   } else if (selectedChannel) {
     typeSelect.value = getChannelType(selectedChannel);
   }
