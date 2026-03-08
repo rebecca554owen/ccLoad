@@ -245,11 +245,12 @@ func (s *Server) testChannelAPIWithURL(
 ) map[string]any {
 	// 仅构造测试请求必需字段，避免复制带锁 Config 结构体。
 	cfgForBuild := &model.Config{
-		ID:           cfg.ID,
-		Name:         cfg.Name,
-		ChannelType:  cfg.ChannelType,
-		URL:          selectedURL,
-		ModelEntries: append([]model.ModelEntry(nil), cfg.ModelEntries...),
+		ID:             cfg.ID,
+		Name:           cfg.Name,
+		ChannelType:    cfg.ChannelType,
+		URL:            selectedURL,
+		CustomEndpoint: cfg.CustomEndpoint,
+		ModelEntries:   append([]model.ModelEntry(nil), cfg.ModelEntries...),
 	}
 
 	// 构建请求（传递实际的API Key和重定向后的模型）

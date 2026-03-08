@@ -115,7 +115,7 @@ func (cs *ConfigScanner) ScanConfig(scanner interface {
 	if err := scanner.Scan(&c.ID, &c.Name, &c.URL, &c.Priority,
 		&c.ChannelType, &enabledInt,
 		&c.CooldownUntil, &c.CooldownDurationMs, &c.DailyCostLimit,
-		&c.CustomUserAgent, &c.KeyCount,
+		&c.CustomUserAgent, &c.CustomEndpoint, &c.KeyCount,
 		&createdAtRaw, &updatedAtRaw); err != nil {
 		return nil, err
 	}

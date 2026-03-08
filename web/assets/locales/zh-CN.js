@@ -213,6 +213,7 @@ window.I18N_LOCALES['zh-CN'] = {
   'channels.dailyCostLimitPlaceholder': '0=无限制',
   'channels.customUserAgent': 'User-Agent',
   'channels.customUserAgentPlaceholder': '留空则使用客户端透传的 UA',
+  'channels.customEndpoint': '自定义端点',
 
   // 删除确认（扁平化键名）
   'channels.confirmDeleteTitle': '确认删除',

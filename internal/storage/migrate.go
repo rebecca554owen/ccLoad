@@ -85,6 +85,10 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 			if err := ensureChannelsCustomUserAgent(ctx, db, dialect); err != nil {
 				return fmt.Errorf("migrate channels custom_user_agent: %w", err)
 			}
+			// 增量迁移：确保channels表有custom_endpoint字段（2026-03新增）
+			if err := ensureChannelsCustomEndpoint(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channels custom_endpoint: %w", err)
+			}
 		}
 
 		// 增量迁移：修复 api_keys.api_key 历史长度漂移（旧版可能为 VARCHAR(64)）
@@ -1156,31 +1160,42 @@ func ensureChannelsDailyCostLimit(ctx context.Context, db *sql.DB, dialect Diale
 	})
 }
 
-// ensureChannelsCustomUserAgent 确保channels表有custom_user_agent字段
-func ensureChannelsCustomUserAgent(ctx context.Context, db *sql.DB, dialect Dialect) error {
+// ensureChannelsColumn 确保channels表有指定字段（通用函数）
+func ensureChannelsColumn(ctx context.Context, db *sql.DB, dialect Dialect, columnName, columnDef string) error {
 	if dialect == DialectMySQL {
 		// MySQL: 检查字段是否存在
 		var count int
 		err := db.QueryRowContext(ctx,
-			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='channels' AND COLUMN_NAME='custom_user_agent'",
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='channels' AND COLUMN_NAME=?",
+			columnName,
 		).Scan(&count)
 		if err != nil {
-			return fmt.Errorf("check custom_user_agent field: %w", err)
+			return fmt.Errorf("check %s field: %w", columnName, err)
 		}
 		if count == 0 {
 			if _, err := db.ExecContext(ctx,
-				"ALTER TABLE channels ADD COLUMN custom_user_agent VARCHAR(255) NOT NULL DEFAULT ''"); err != nil {
-				return fmt.Errorf("add custom_user_agent column: %w", err)
+				fmt.Sprintf("ALTER TABLE channels ADD COLUMN %s %s", columnName, columnDef)); err != nil {
+				return fmt.Errorf("add %s column: %w", columnName, err)
 			}
-			log.Printf("[MIGRATE] Added channels.custom_user_agent column")
+			log.Printf("[MIGRATE] Added channels.%s column", columnName)
 		}
 		return nil
 	}
 
 	// SQLite: 使用通用添加列函数
 	return ensureSQLiteColumns(ctx, db, "channels", []sqliteColumnDef{
-		{name: "custom_user_agent", definition: "TEXT NOT NULL DEFAULT ''"},
+		{name: columnName, definition: columnDef},
 	})
+}
+
+// ensureChannelsCustomUserAgent 确保channels表有custom_user_agent字段
+func ensureChannelsCustomUserAgent(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	return ensureChannelsColumn(ctx, db, dialect, "custom_user_agent", "VARCHAR(255) NOT NULL DEFAULT ''")
+}
+
+// ensureChannelsCustomEndpoint 确保channels表有custom_endpoint字段
+func ensureChannelsCustomEndpoint(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	return ensureChannelsColumn(ctx, db, dialect, "custom_endpoint", "VARCHAR(255) NOT NULL DEFAULT ''")
 }
 
 // ensureAPIKeysAPIKeyLength 修复 api_keys.api_key 列定义漂移（MySQL）

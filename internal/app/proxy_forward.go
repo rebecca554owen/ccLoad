@@ -71,7 +71,7 @@ func (s *Server) buildProxyRequest(
 	baseURL string,
 ) (*http.Request, error) {
 	// 1. 构建完整 URL
-	upstreamURL := buildUpstreamURL(baseURL, requestPath, rawQuery)
+	upstreamURL := buildUpstreamURL(baseURL, requestPath, rawQuery, cfg.CustomEndpoint)
 
 	// 2. 创建带上下文的请求
 	req, err := buildUpstreamRequest(reqCtx.ctx, method, upstreamURL, body)

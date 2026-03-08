@@ -99,6 +99,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initChannelFormDirtyTracking === 'function') {
     initChannelFormDirtyTracking();
   }
+  // 初始化渠道类型变更事件委托（用于自定义端点提示）
+  if (typeof initChannelTypeDelegation === 'function') {
+    initChannelTypeDelegation();
+  }
   if (typeof updateBatchChannelSelectionUI === 'function') {
     updateBatchChannelSelectionUI();
   }

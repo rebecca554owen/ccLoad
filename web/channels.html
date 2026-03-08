@@ -303,10 +303,18 @@
  <tbody id="inlineUrlTableBody">
  <!-- URL行动态渲染 -->
  </tbody>
- </table>
- </div>
- </div>
- </div>
+  </table>
+  </div>
+
+  <!-- 自定义端点：在API URL表格下方 -->
+  <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+  <div style="width: 70px; font-size: 13px; color: var(--neutral-700);"
+  data-i18n="channels.customEndpoint">自定义端点</div>
+  <input type="text" id="channelCustomEndpoint" value=""
+  style="flex: 1; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;">
+  </div>
+  </div>
+  </div>
 
  <div class="form-group">
  <!-- API Key标签行：包含标签、Key计数和操作按钮 -->
@@ -527,13 +535,15 @@
  placeholder="0=无限制">
  <span style="color: var(--neutral-500); font-size: 12px;">$</span>
  </div>
- </div>
- <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
  <label class="form-label" for="channelCustomUserAgent" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.customUserAgent">User-Agent</label>
  <input type="text" id="channelCustomUserAgent" class="form-input" value=""
  style="flex: 1; min-width: 200px;" data-i18n-placeholder="channels.customUserAgentPlaceholder"
  placeholder="留空则使用客户端透传的 UA">
+ </div>
+ <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
  <div style="margin-left: auto; display: flex; gap: 12px;">
  <button type="button" class="btn btn-secondary" onclick="closeModal()"
  data-i18n="common.cancel">取消</button>

@@ -25,6 +25,7 @@ type ChannelRequest struct {
 	Enabled           bool               `json:"enabled"`
 	DailyCostLimit    float64            `json:"daily_cost_limit"`     // 每日成本限额（美元），0表示无限制
 	CustomUserAgent   string             `json:"custom_user_agent"`    // 自定义 User-Agent（可选）
+	CustomEndpoint    string             `json:"custom_endpoint"`      // 自定义端点（可选）
 }
 
 func validateChannelBaseURL(raw string) (string, error) {
@@ -174,6 +175,7 @@ func (cr *ChannelRequest) ToConfig() *model.Config {
 		Enabled:         cr.Enabled,
 		DailyCostLimit:  cr.DailyCostLimit,
 		CustomUserAgent: strings.TrimSpace(cr.CustomUserAgent),
+		CustomEndpoint:  strings.TrimSpace(cr.CustomEndpoint),
 	}
 }
 

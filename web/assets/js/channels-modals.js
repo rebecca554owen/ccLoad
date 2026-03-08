@@ -2,14 +2,55 @@
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DEFAULT_COOLDOWN_MS = 2 * 60 * 1000;
 
+// 渠道类型对应的默认端点
+const DEFAULT_ENDPOINTS = {
+  anthropic: '/v1/messages',
+  codex: '/v1/responses',
+  openai: '/v1/chat/completions',
+  gemini: '/v1beta/models/gemini-pro:generateContent'
+};
+
 // 表单字段配置
 const FORM_FIELDS = [
   { id: 'channelName', key: 'name' },
   { id: 'channelPriority', key: 'priority', transform: v => parseInt(v) || 0 },
   { id: 'channelDailyCostLimit', key: 'daily_cost_limit', transform: v => parseFloat(v) || 0 },
   { id: 'channelCustomUserAgent', key: 'custom_user_agent' },
+  { id: 'channelCustomEndpoint', key: 'custom_endpoint' },
   { id: 'channelEnabled', key: 'enabled', isCheckbox: true }
 ];
+
+/**
+ * 更新默认端点提示（更新placeholder）
+ */
+function updateDefaultEndpointHint() {
+  const channelType = document.querySelector('input[name="channelType"]:checked')?.value || 'anthropic';
+  const defaultEndpoint = DEFAULT_ENDPOINTS[channelType] || '';
+  const input = document.getElementById('channelCustomEndpoint');
+  if (input && defaultEndpoint) {
+    input.placeholder = `例如 ${defaultEndpoint}，留空使用默认`;
+  }
+}
+
+/**
+ * 渠道类型变更事件处理器 - 使用事件委托
+ * 在模态框容器上监听，避免重复绑定
+ */
+function handleChannelTypeChange(event) {
+  if (event.target.name === 'channelType') {
+    updateDefaultEndpointHint();
+  }
+}
+
+/**
+ * 初始化渠道类型事件监听（使用事件委托，只需调用一次）
+ */
+function initChannelTypeDelegation() {
+  const modal = document.getElementById('channelModal');
+  if (modal) {
+    modal.addEventListener('change', handleChannelTypeChange);
+  }
+}
 
 /**
  * 重置模态框状态
@@ -122,6 +163,9 @@ async function setupModalForEdit(channel) {
   const channelType = channel.channel_type || 'anthropic';
   await window.ChannelTypeManager.renderChannelTypeRadios('channelTypeRadios', channelType);
 
+  // 更新默认端点提示（事件委托已在初始化时设置）
+  updateDefaultEndpointHint();
+
   const keyStrategy = channel.key_strategy || 'sequential';
   const strategyRadio = document.querySelector(`input[name="keyStrategy"][value="${keyStrategy}"]`);
   if (strategyRadio) {
@@ -157,6 +201,8 @@ function showAddModal() {
   resetFormControls();
   document.getElementById('modalTitle').textContent = window.t('channels.addChannel');
   renderAllTables();
+  // 更新默认端点提示（事件委托已在初始化时设置）
+  updateDefaultEndpointHint();
   showModal();
 }
 
@@ -251,6 +297,7 @@ function buildFormData(validURLs, validKeys, models) {
     priority: parseInt(document.getElementById('channelPriority').value) || 0,
     daily_cost_limit: parseFloat(document.getElementById('channelDailyCostLimit').value) || 0,
     custom_user_agent: document.getElementById('channelCustomUserAgent').value.trim(),
+    custom_endpoint: document.getElementById('channelCustomEndpoint').value.trim(),
     models: models,
     enabled: document.getElementById('channelEnabled').checked
   };
@@ -733,6 +780,7 @@ function setFormValuesForCopy(channel, copiedName) {
   document.getElementById('channelPriority').value = channel.priority;
   document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
   document.getElementById('channelCustomUserAgent').value = channel.custom_user_agent || '';
+  document.getElementById('channelCustomEndpoint').value = channel.custom_endpoint || '';
   document.getElementById('channelEnabled').checked = true;
 
   const channelType = channel.channel_type || 'anthropic';

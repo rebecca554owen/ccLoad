@@ -213,6 +213,7 @@ window.I18N_LOCALES['en'] = {
   'channels.dailyCostLimitPlaceholder': '0=No limit',
   'channels.customUserAgent': 'User-Agent',
   'channels.customUserAgentPlaceholder': 'Empty=Use client passthrough UA',
+  'channels.customEndpoint': 'Custom Endpoint',
 
   // Delete Confirmation (flattened keys)
   'channels.confirmDeleteTitle': 'Confirm Delete',
