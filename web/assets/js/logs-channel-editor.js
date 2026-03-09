@@ -153,7 +153,7 @@
       } else if (keyExportModal && keyExportModal.classList.contains('show')) {
         closeKeyExportModal();
       } else if (channelModal && channelModal.classList.contains('show')) {
-        closeModal();
+        closeChannelModal();
       }
     });
   }

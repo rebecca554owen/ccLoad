@@ -28,48 +28,46 @@
 </head>
 <body>
   <div class="app-container">
-    
-
-    <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <!-- 页面标题 -->
+        <div class="page-shell">
         <header class="page-section">
+          <div class="glass-card page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <p class="page-eyebrow">Logs</p>
+                <h1 class="page-title" data-i18n="logs.title">请求日志</h1>
+                <p class="page-subtitle" data-i18n="logs.adjustFilter">请调整筛选条件或检查时间范围</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <!-- Filter Bar -->
         <section class="page-section">
-        <div class="filter-bar glass-panel">
+        <div class="filter-bar glass-panel page-toolbar-card">
           <div class="filter-controls logs-filter-controls">
-            <!-- 渠道类型筛选 -->
             <div class="filter-group logs-filter-group logs-filter-group--compact logs-filter-group--select-sm">
               <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
               <select id="f_channel_type" class="form-select">
-                <!-- 动态加载渠道类型选项 -->
               </select>
             </div>
 
-            <!-- 时间范围筛选 -->
             <div class="filter-group logs-filter-group logs-filter-group--compact logs-filter-group--select-sm">
               <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
               <select id="f_hours" class="form-select">
-                <!-- 动态生成选项 by date-range-selector.js -->
               </select>
             </div>
 
-            <!-- 渠道ID筛选 -->
             <div class="filter-group logs-filter-group logs-filter-group--compact logs-filter-group--input-xs">
               <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
               <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID...">
             </div>
 
-            <!-- 渠道名筛选 -->
             <div class="filter-group logs-filter-group logs-filter-group--compact logs-filter-group--input-md">
               <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
               <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
-            <!-- 模型筛选（合并重复字段） -->
             <div class="filter-group logs-filter-group logs-filter-group--compact logs-filter-group--input-md">
               <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
               <input type="text" id="f_model" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
@@ -93,16 +91,13 @@
               <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
               <select id="f_auth_token" class="form-select">
                 <option value="" data-i18n="stats.allTokens">全部令牌</option>
-                <!-- 动态加载令牌列表 -->
               </select>
             </div>
 
-            <!-- 统计信息 -->
             <div class="filter-info logs-filter-info">
               <span data-i18n="logs.showPrefix">显示</span><span id="displayedCount">0</span>/<span id="totalCount">0</span><span data-i18n="logs.recordsSuffix">条</span>
             </div>
 
-            <!-- 操作按钮组 -->
             <div class="logs-filter-actions">
               <button id="btn_filter" type="button" class="btn btn-primary btn-md" data-i18n="common.filter">筛选</button>
             </div>
@@ -110,13 +105,9 @@
         </div>
         </section>
 
-        <!-- 日志列表 -->
         <section class="page-section">
-          <div class="glass-card" style="animation-delay: 0.2s;">
-           
-            
-            <!-- 日志表格 -->
-            <div class="table-container">
+          <div class="glass-card page-content-card page-content-card--flush" style="animation-delay: 0.2s;">
+            <div class="table-container logs-table-shell">
               <table class="modern-table logs-table">
                 <thead>
                   <tr>
@@ -145,12 +136,13 @@
                 </tbody>
               </table>
             </div>
+            <div id="logsActiveCards" class="logs-cards logs-cards-active"></div>
+            <div id="logsCards" class="logs-cards"></div>
           </div>
         </section>
 
-        <!-- 底部分页控制 -->
         <section class="page-section">
-          <div class="glass-card" style="padding: var(--space-2);">
+          <div class="glass-card page-footer-card">
             <div class="flex justify-center items-center">
               <div class="pagination-controls logs-pagination-controls">
                 <button id="logs_prev2" class="btn btn-secondary btn-sm" onclick="prevLogsPage()">
@@ -186,6 +178,7 @@
             </div>
           </div>
         </section>
+        </div>
       </div>
     </main>
   </div>

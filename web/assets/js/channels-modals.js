@@ -284,10 +284,6 @@ function closeChannelModal() {
   resetChannelFormDirty();
 }
 
-function closeModal() {
-  closeChannelModal();
-}
-
 /**
  * 验证表单数据
  */
@@ -508,6 +504,10 @@ async function saveChannel(event) {
 
     const isNewChannel = !editingChannelId;
     const newChannelType = formData.channel_type;
+    const savedChannelId = editingChannelId
+      || resp.id
+      || (resp.data && (resp.data.id || resp.data.channel_id || (resp.data.channel && resp.data.channel.id)))
+      || null;
 
     resetChannelFormDirty(); // 保存成功，重置dirty状态（避免closeModal弹确认框）
     closeChannelModal();
@@ -1201,82 +1201,35 @@ function createRedirectRow(redirect, index) {
   const targets = redirect.targets;
   const targetModelPlaceholder = window.t('channels.targetModelPlaceholder');
   const targetWeightLabel = window.t('channels.targetWeight');
+  const targetsHtml = targets.map((target, targetIndex) => {
+    const addTargetHtml = targetIndex === targets.length - 1
+      ? '<button type="button" class="add-target-btn model-target-add model-target-inline-add" data-index="' + index + '" data-i18n-title="channels.addTarget" title="添加目标">+</button>'
+      : '<span class="model-target-inline-spacer" aria-hidden="true"></span>';
+    const targetRow = TemplateEngine.render('tpl-redirect-target-row', {
+      modelIndex: index,
+      targetIndex: targetIndex,
+      targetModel: target.target_model || '',
+      targetPlaceholder: targetModelPlaceholder,
+      targetWeightLabel: targetWeightLabel,
+      weight: parseInt(target.weight, 10) || 1,
+      addTargetHtml: addTargetHtml
+    });
+    return targetRow ? targetRow.outerHTML : '';
+  }).join('');
 
-  const row = document.createElement('tr');
-  row.style.borderBottom = '1px solid var(--neutral-200)';
-  row.dataset.index = index;
-  row.dataset.type = 'main-row';
-
-  row.innerHTML = `
-    <td class="redirect-row-index-cell">
-      <div class="redirect-row-index-wrap">
-        <input type="checkbox" class="model-checkbox" data-index="${index}"
-          onchange="toggleModelSelection(${index}, this.checked)" style="width: 16px; height: 16px;">
-        <span class="redirect-row-index-text">${index + 1}</span>
-      </div>
-    </td>
-    <td class="redirect-row-model-cell">
-      <div class="model-source-cell">
-        <input type="text" class="redirect-from-input model-source-input" data-index="${index}" value="${escapeHtml(modelName)}"
-          placeholder="claude-sonnet-4-6"
-          >
-        <button type="button" class="lowercase-btn model-source-action" data-index="${index}"
-          data-i18n-title="channels.toLowercase" title="转为小写">
-          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1.5 10.5L3.5 4H5L7 10.5M2.5 8.5H6M8.5 10.5V7.5C8.5 6.5 9.5 6 10.5 6C11.5 6 12.5 6.5 12.5 7.5V10.5M8.5 8.5H12.5"
-              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-      </div>
-    </td>
-    <td class="redirect-row-target-cell">
-      <div class="model-target-cell">
-        ${targets.map((target, targetIndex) => `
-          <div class="model-target-row">
-            <input type="text" class="target-model-input model-target-input" data-model-index="${index}" data-target-index="${targetIndex}"
-              value="${escapeHtml(target.target_model || '')}"
-              placeholder="${escapeHtml(targetModelPlaceholder)}">
-            <div class="model-target-weight-wrap">
-              <span class="model-target-weight-label">${targetWeightLabel}</span>
-              <input type="number" class="target-weight-input model-target-weight-input" data-model-index="${index}" data-target-index="${targetIndex}"
-                value="${parseInt(target.weight) || 1}" min="1">
-            </div>
-            ${targetIndex === targets.length - 1 ? `
-              <button type="button" class="add-target-btn model-target-add model-target-inline-add" data-index="${index}"
-                data-i18n-title="channels.addTarget" title="添加目标">
-                +
-              </button>
-            ` : '<span class="model-target-inline-spacer" aria-hidden="true"></span>'}
-            <button type="button" class="target-delete-btn model-target-delete" data-model-index="${index}" data-target-index="${targetIndex}"
-              data-i18n-title="channels.deleteThisTarget" title="删除此目标">
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
-                  stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-          </div>
-        `).join('')}
-      </div>
-    </td>
-  `;
+  const row = TemplateEngine.render('tpl-redirect-row', {
+    index: index,
+    displayIndex: index + 1,
+    model: modelName,
+    targetsHtml: targetsHtml
+  });
+  if (!row) return null;
 
   const checkbox = row.querySelector('.model-checkbox');
   if (checkbox) {
     checkbox.checked = selectedModelIndices.has(index);
   }
   return row;
-}
-
-/**
- * HTML 转义辅助函数
- * @param {string} text - 需要转义的文本
- * @returns {string} 转义后的文本
- */
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 /**

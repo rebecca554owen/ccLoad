@@ -228,9 +228,9 @@
  <button type="button" class="close-btn" aria-label="关闭" onclick="closeChannelModal()">&times;</button>
  </div>
  <form id="channelForm" onsubmit="saveChannel(event)">
- <div class="form-group channel-model-config-group">
+ <div class="form-group channel-model-config-group modal-stack">
  <!-- 渠道名称和类型在第一行 -->
- <div class="channel-modal-name-row" style="display: flex; gap: 20px; align-items: center;">
+ <div class="channel-modal-name-row modal-inline-row" style="display: flex; gap: 20px; align-items: center;">
  <div class="channel-modal-name-field" style="display: flex; align-items: center; gap: 8px; flex: 1;">
  <label class="form-label" style="margin: 0; white-space: nowrap;" data-i18n="channels.channelName">渠道名称
  *</label>
@@ -247,18 +247,18 @@
  </div>
  </div>
 
- <div class="form-group">
+ <div class="form-group modal-section">
  <!-- API URL和Key策略在第二行 -->
  <div>
  <div
- class="channel-section-toolbar"
+ class="channel-section-toolbar modal-section-header"
  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
  <label class="form-label" style="margin: 0; font-size: 13px; color: var(--neutral-700);">
  <span data-i18n="channels.apiUrl">API URL *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
  id="inlineUrlCount">0</span> <span data-i18n="channels.urlCountSuffix">个URL</span></span>
  </label>
- <div class="channel-section-toolbar-actions" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+ <div class="channel-section-toolbar-actions modal-section-actions" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
  <button type="button" class="btn btn-secondary btn-sm" onclick="addInlineURL()"
  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
  data-i18n-title="channels.addUrlTitle" title="添加URL">
@@ -284,7 +284,7 @@
  <!-- 隐藏字段：与后端保持兼容，提交时按换行拼接 -->
  <input type="hidden" id="channelUrl" required>
 
- <div class="inline-table-container">
+ <div class="inline-table-container modal-inline-table">
  <table class="inline-table">
  <thead>
  <tr>
@@ -310,8 +310,8 @@
   </div>
 
   <!-- 自定义端点：在API URL表格下方 -->
-  <div class="channel-custom-endpoint-row" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-  <div style="width: 70px; font-size: 13px; color: var(--neutral-700);"
+  <div class="channel-custom-endpoint-row modal-inline-row" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+  <div class="modal-inline-label" style="width: 70px; font-size: 13px; color: var(--neutral-700);"
   data-i18n="channels.customEndpoint">自定义端点</div>
   <input type="text" id="channelCustomEndpoint" class="form-input modal-inline-input" value=""
   style="flex: 1; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
@@ -319,9 +319,9 @@
   </div>
   </div>
 
- <div class="form-group">
+ <div class="form-group modal-section">
  <!-- API Key标签行：包含标签、Key计数和操作按钮 -->
- <div class="channel-model-toolbar">
+ <div class="channel-model-toolbar modal-section-header">
  <label class="form-label" style="margin: 0;">
  <span data-i18n="channels.apiKey">API Key *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
@@ -342,7 +342,7 @@
  <span data-i18n="channels.keyStrategyRoundRobin">轮询</span>
  </label>
  </div>
- <div class="channel-key-toolbar-actions" style="display: flex; gap: 6px;">
+ <div class="channel-key-toolbar-actions modal-section-actions" style="display: flex; gap: 6px;">
  <button type="button" class="btn btn-secondary btn-sm" onclick="openKeyImportModal()"
  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -400,7 +400,7 @@
  <input type="hidden" id="channelApiKey" required>
 
  <!-- Key表格容器（最多显示5行+滚动） -->
- <div class="inline-table-container">
+ <div class="inline-table-container modal-inline-table">
  <table class="inline-table">
  <thead>
  <tr>
@@ -429,16 +429,16 @@
  </table>
  </div>
  </div>
- <div class="form-group">
+ <div class="form-group modal-section">
  <!-- 模型配置标签行：包含标签、添加按钮组和删除按钮 -->
- <div class="channel-section-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+ <div class="channel-section-toolbar modal-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
  <label class="form-label" style="margin: 0;">
  <span data-i18n="channels.modelConfig">模型配置 *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
  id="redirectCount">0</span> <span data-i18n="channels.modelCountSuffix">个模型</span></span>
  </label>
  <div class="channel-model-toolbar-controls" style="display: flex; align-items: center; gap: 12px;">
- <div class="channel-model-toolbar-actions" style="display: flex; gap: 6px;">
+ <div class="channel-model-toolbar-actions modal-section-actions" style="display: flex; gap: 6px;">
  <button type="button" class="btn btn-secondary btn-sm" onclick="addCommonModels()"
  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
  data-i18n-title="channels.addCommonModelsTitle" title="添加当前渠道类型的常用模型">
@@ -493,7 +493,7 @@
  </div>
 
  <!-- 模型表格容器 -->
- <div class="inline-table-container tall channel-model-table-container">
+ <div class="inline-table-container modal-inline-table tall channel-model-table-container">
  <table class="inline-table">
  <thead>
  <tr>
@@ -518,18 +518,18 @@
  </table>
  </div>
  </div>
- <div class="form-group channel-modal-footer-group">
- <div class="channel-modal-meta-row" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+ <div class="form-group channel-modal-footer-group modal-stack">
+ <div class="channel-modal-meta-row modal-inline-row" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
  <label class="form-label" style="margin: 0;">
  <input type="checkbox" id="channelEnabled" checked> <span data-i18n="channels.enableChannel">启用渠道</span>
  </label>
- <div class="channel-modal-meta-field" style="display: flex; align-items: center; gap: 8px;">
+ <div class="channel-modal-meta-field modal-inline-row" style="display: flex; align-items: center; gap: 8px;">
  <label class="form-label" for="channelPriority" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.priority">优先级</label>
  <input type="number" id="channelPriority" class="form-input" value="0" min="-99999" max="99999"
  style="width: 100px; min-width: 100px;">
  </div>
- <div class="channel-modal-meta-field" style="display: flex; align-items: center; gap: 8px;">
+ <div class="channel-modal-meta-field modal-inline-row" style="display: flex; align-items: center; gap: 8px;">
  <label class="form-label" for="channelDailyCostLimit" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.dailyCostLimit">每日限额</label>
  <input type="number" id="channelDailyCostLimit" class="form-input" value="0" min="0" step="0.01"
@@ -538,7 +538,7 @@
  <span style="color: var(--neutral-500); font-size: 12px;">$</span>
  </div>
   </div>
-  <div class="channel-modal-user-agent-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+  <div class="channel-modal-user-agent-row modal-inline-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
  <label class="form-label" for="channelCustomUserAgent" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.customUserAgent">User-Agent</label>
  <input type="text" id="channelCustomUserAgent" class="form-input" value=""
@@ -946,26 +946,25 @@
  <tr style="border-bottom: 1px solid var(--neutral-200);">
  <td style="padding: 6px 10px;">
  <div style="display: flex; align-items: center; gap: 8px;">
- <input type="checkbox" class="url-checkbox" data-index="{{index}}"
- onchange="toggleURLSelection({{index}}, this.checked)" style="width: 16px; height: 16px;">
+ <input type="checkbox" class="url-checkbox" data-index="{{index}}" style="width: 16px; height: 16px;">
  <span style="color: var(--neutral-600); font-weight: 500; font-size: 13px;">{{displayIndex}}</span>
  </div>
  </td>
  <td style="padding: 6px 10px;">
  <input type="text" value="{{url}}" class="inline-url-input form-input modal-inline-input" data-index="{{index}}"
- onchange="updateInlineURL({{index}}, this.value)" placeholder="https://api.example.com"
+ placeholder="https://api.example.com"
  style="width: 100%; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
  </td>
  <td style="padding: 6px 10px; text-align: center;">
  <div style="display: flex; gap: 6px; justify-content: center;">
- <button type="button" class="model-source-action" onclick="testInlineURL({{index}}, this)" data-i18n-title="channels.testThisUrl"
+ <button type="button" class="model-source-action url-action-btn" data-action="test" data-index="{{index}}" data-i18n-title="channels.testThisUrl"
  title="测试此URL"
  style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
  </svg>
  </button>
- <button type="button" class="model-target-delete" onclick="deleteInlineURL({{index}})" data-i18n-title="channels.deleteThisUrl"
+ <button type="button" class="model-target-delete url-action-btn" data-action="delete" data-index="{{index}}" data-i18n-title="channels.deleteThisUrl"
  title="删除此URL"
  style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1028,22 +1027,20 @@
  </template>
 
  <!-- 重定向规则行模板 -->
- <template id="tpl-redirect-row">
- <tr style="border-bottom: 1px solid var(--neutral-200);">
- <td style="padding: 4px 10px;">
- <div style="display: flex; align-items: center; gap: 8px;">
+<template id="tpl-redirect-row">
+ <tr class="redirect-row-main" data-index="{{index}}" data-type="main-row">
+ <td class="redirect-row-index-cell">
+ <div class="redirect-row-index-wrap">
  <input type="checkbox" class="model-checkbox" data-index="{{index}}"
  onchange="toggleModelSelection({{index}}, this.checked)" style="width: 16px; height: 16px;">
- <span style="color: var(--neutral-600); font-weight: 500; font-size: 13px;">{{displayIndex}}</span>
+ <span class="redirect-row-index-text">{{displayIndex}}</span>
  </div>
  </td>
- <td style="padding: 4px 10px;">
- <div style="display: flex; align-items: center; gap: 4px;">
- <input type="text" class="redirect-from-input form-input modal-inline-input" data-index="{{index}}" value="{{from}}"
- placeholder="claude-3-opus-20240229"
- style="flex: 1; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
- <button type="button" class="lowercase-btn" data-index="{{index}}"
- style="width: 24px; height: 24px; border-radius: 4px; padding: 0; flex-shrink: 0;"
+ <td class="redirect-row-model-cell">
+ <div class="model-source-cell">
+ <input type="text" class="redirect-from-input model-source-input" data-index="{{index}}" value="{{model}}"
+ placeholder="claude-sonnet-4-6">
+ <button type="button" class="lowercase-btn model-source-action" data-index="{{index}}"
  data-i18n-title="channels.toLowercase" title="转为小写">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
@@ -1053,29 +1050,39 @@
  </button>
  </div>
  </td>
- <td style="padding: 4px 10px;">
- <input type="text" class="redirect-to-input form-input modal-inline-input" data-index="{{index}}" value="{{to}}"
- placeholder="{{toPlaceholder}}"
- style="width: 100%; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+ <td class="redirect-row-target-cell">
+ <div class="model-target-cell">
+ {{{targetsHtml}}}
+ </div>
  </td>
- <td style="padding: 4px 10px; text-align: center;">
- <button type="button" class="redirect-delete-btn" data-index="{{index}}"
- style="width: 28px; height: 28px; border-radius: 6px; padding: 0;"
- data-i18n-title="channels.deleteThisModel" title="删除此模型">
+ </tr>
+ </template>
+
+ <template id="tpl-redirect-target-row">
+ <div class="model-target-row">
+ <input type="text" class="target-model-input model-target-input" data-model-index="{{modelIndex}}" data-target-index="{{targetIndex}}"
+ value="{{targetModel}}"
+ placeholder="{{targetPlaceholder}}">
+ <div class="model-target-weight-wrap">
+ <span class="model-target-weight-label">{{targetWeightLabel}}</span>
+ <input type="number" class="target-weight-input model-target-weight-input" data-model-index="{{modelIndex}}" data-target-index="{{targetIndex}}"
+ value="{{weight}}" min="1">
+ </div>
+ {{{addTargetHtml}}}
+ <button type="button" class="target-delete-btn model-target-delete" data-model-index="{{modelIndex}}" data-target-index="{{targetIndex}}"
+ data-i18n-title="channels.deleteThisTarget" title="删除此目标">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
- <path
- d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
+ <path d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
  stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
  </svg>
  </button>
- </td>
- </tr>
+ </div>
  </template>
 
  <!-- 重定向规则空状态模板 -->
  <template id="tpl-redirect-empty">
  <tr>
- <td colspan="4" style="padding: 20px; text-align: center; color: var(--neutral-500);">
+ <td colspan="3" style="padding: 20px; text-align: center; color: var(--neutral-500);">
  {{message}}
  </td>
  </tr>

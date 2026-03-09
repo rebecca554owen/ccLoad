@@ -159,6 +159,7 @@ function renderInlineURLTable() {
   updateInlineURLCount();
   syncInlineURLInput();
   updateURLStatsHeader();
+  initURLTableEventDelegation();
 
   tbody.innerHTML = '';
   inlineURLTableData.forEach((_, index) => {
@@ -168,6 +169,48 @@ function renderInlineURLTable() {
 
   updateSelectAllURLsCheckbox();
   updateURLBatchDeleteButton();
+}
+
+function initURLTableEventDelegation() {
+  const tbody = document.getElementById('inlineUrlTableBody');
+  if (!tbody || tbody.dataset.delegated) return;
+
+  tbody.dataset.delegated = 'true';
+
+  tbody.addEventListener('change', (e) => {
+    const checkbox = e.target.closest('.url-checkbox');
+    if (checkbox) {
+      const index = parseInt(checkbox.dataset.index, 10);
+      if (!Number.isInteger(index)) return;
+      toggleURLSelection(index, checkbox.checked);
+      return;
+    }
+
+    const input = e.target.closest('.inline-url-input');
+    if (input) {
+      const index = parseInt(input.dataset.index, 10);
+      if (!Number.isInteger(index)) return;
+      updateInlineURL(index, input.value);
+    }
+  });
+
+  tbody.addEventListener('click', (e) => {
+    const actionButton = e.target.closest('.url-action-btn');
+    if (!actionButton) return;
+
+    const index = parseInt(actionButton.dataset.index, 10);
+    if (!Number.isInteger(index)) return;
+
+    const action = actionButton.dataset.action;
+    if (action === 'test') {
+      testInlineURL(index, actionButton);
+      return;
+    }
+
+    if (action === 'delete') {
+      deleteInlineURL(index);
+    }
+  });
 }
 
 function setInlineURLTableData(rawURL) {

@@ -84,6 +84,8 @@ function maskIP(ip) {
 
 function clearActiveRequestsRows() {
   document.querySelectorAll('tr.pending-row').forEach(el => el.remove());
+  const activeCards = document.getElementById('logsActiveCards');
+  if (activeCards) activeCards.innerHTML = '';
 }
 
 function buildChannelTrigger(channelId, channelName, baseURL = '') {
@@ -422,6 +424,49 @@ function createActiveRequestRow(req, totalCols) {
   return row;
 }
 
+function buildActiveRequestCard(req) {
+  const startMs = toUnixMs(req.start_time);
+  const durationDisplay = buildActiveRequestDurationDisplay(req, startMs);
+  const { text: infoDisplay, color: infoColor } = buildActiveRequestInfo(req.bytes_received);
+  const channelDisplay = req.channel_id && req.channel_name
+    ? buildChannelTrigger(req.channel_id, req.channel_name, req.base_url || '')
+    : '<span style="color: var(--neutral-500);">选择中...</span>';
+  const keyDisplay = req.api_key_used
+    ? `<code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(req.api_key_used)}</code>`
+    : '<span style="color: var(--neutral-500);">-</span>';
+
+  return `
+    <article class="logs-card logs-card-pending">
+      <div class="logs-card-header">
+        <div class="logs-card-title">
+          <div class="logs-card-time">${formatTime(req.start_time)}</div>
+          <div class="logs-card-channel">${channelDisplay}</div>
+          <div class="logs-card-model"><span class="model-tag">${escapeHtml(req.model || '-')}</span></div>
+        </div>
+        <div><span class="status-pending">进行中</span></div>
+      </div>
+      <div class="logs-card-grid">
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colIP')}</div>
+          <div class="logs-card-value"><span title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</span></div>
+        </div>
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colApiKey')}</div>
+          <div class="logs-card-value">${keyDisplay}</div>
+        </div>
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colTiming')}</div>
+          <div class="logs-card-value">${durationDisplay} ${getStreamFlagHtml(req.is_streaming)}</div>
+        </div>
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colMessage')}</div>
+          <div class="logs-card-value"><span style="color: ${infoColor};">${escapeHtml(infoDisplay)}</span></div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 // 渲染进行中的请求（插入到表格顶部）
 function renderActiveRequests(activeRequests) {
   // 移除旧的进行中行
@@ -432,17 +477,22 @@ function renderActiveRequests(activeRequests) {
   const tbody = document.getElementById('tbody');
   const firstRow = tbody.firstChild;
   const totalCols = getTableColspan();
+  const activeCards = document.getElementById('logsActiveCards');
 
   // 使用 DocumentFragment 批量构建，减少 DOM 操作
   const fragment = document.createDocumentFragment();
+  const cardParts = new Array(activeRequests.length);
 
-  for (const req of activeRequests) {
+  for (let i = 0; i < activeRequests.length; i++) {
+    const req = activeRequests[i];
     const row = createActiveRequestRow(req, totalCols);
     fragment.appendChild(row);
+    cardParts[i] = buildActiveRequestCard(req);
   }
 
   // 一次性插入所有 pending 行
   tbody.insertBefore(fragment, firstRow);
+  if (activeCards) activeCards.innerHTML = cardParts.join('');
 }
 
 // ✅ 动态计算列数（避免硬编码维护成本）
@@ -451,12 +501,34 @@ function getTableColspan() {
   return headerCells.length || 13; // fallback到13列（向后兼容）
 }
 
+function renderLogsCards(markup) {
+  const cards = document.getElementById('logsCards');
+  if (cards) cards.innerHTML = markup;
+}
+
+function buildLogsCardStateMarkup(icon, title, description, iconStyle = '') {
+  return `
+    <div class="logs-card logs-card-empty">
+      <svg class="w-12 h-12 opacity-50" ${iconStyle} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        ${icon}
+      </svg>
+      <div class="opacity-75" style="font-weight: var(--font-medium); margin-bottom: var(--space-1);">${title}</div>
+      <div>${description}</div>
+    </div>
+  `;
+}
+
 function renderLogsLoading() {
   const tbody = document.getElementById('tbody');
   const colspan = getTableColspan();
   const loadingRow = TemplateEngine.render('tpl-log-loading', { colspan });
   tbody.innerHTML = '';
   if (loadingRow) tbody.appendChild(loadingRow);
+  renderLogsCards(buildLogsCardStateMarkup(
+    '<circle cx="12" cy="12" r="9" stroke-width="1.5" opacity="0.2"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke-width="1.8" stroke-linecap="round"></path>',
+    t('logs.loading'),
+    t('common.loading')
+  ));
 }
 
 function renderLogsError() {
@@ -465,6 +537,188 @@ function renderLogsError() {
   const errorRow = TemplateEngine.render('tpl-log-error', { colspan });
   tbody.innerHTML = '';
   if (errorRow) tbody.appendChild(errorRow);
+  renderLogsCards(buildLogsCardStateMarkup(
+    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.864-.833-2.634 0L4.18 16.5c-.77.833.192 2.5 1.732 2.5z"/>',
+    t('logs.loadFailed'),
+    t('logs.checkNetwork'),
+    'style="color: var(--error-400);"'
+  ));
+}
+
+function buildLogViewModel(entry) {
+  const clientIPDisplay = entry.client_ip ?
+    `<span title="${escapeHtml(entry.client_ip)}">${escapeHtml(maskIP(entry.client_ip))}</span>` :
+    '<span style="color: var(--neutral-400);">-</span>';
+  const configInfo = entry.channel_name ||
+    (entry.channel_id ? `渠道 #${entry.channel_id}` :
+      (entry.message === 'exhausted backends' ? '系统（所有渠道失败）' :
+        entry.message === 'no available upstream (all cooled or none)' ? '系统（无可用渠道）' : '系统'));
+  let channelTooltip = '';
+  if (entry.base_url) {
+    channelTooltip = ` title="${escapeHtml(entry.base_url)}"`;
+  }
+  const configDisplay = entry.channel_id ?
+    buildChannelTrigger(entry.channel_id, entry.channel_name || '', entry.base_url || '') :
+    `<span style="color: var(--neutral-500);"${channelTooltip}>${escapeHtml(configInfo)}</span>`;
+  const statusClass = (entry.status_code >= 200 && entry.status_code < 300) ? 'status-success' : 'status-error';
+  const statusCode = entry.status_code;
+
+  let modelDisplay;
+  if (entry.model) {
+    if (entry.actual_model && entry.actual_model !== entry.model) {
+      modelDisplay = `<span class="model-tag model-redirected" title="请求模型: ${escapeHtml(entry.model)}&#10;实际模型: ${escapeHtml(entry.actual_model)}"><span class="model-text">${escapeHtml(entry.model)}</span><sup class="redirect-badge">↪</sup></span>`;
+    } else {
+      modelDisplay = `<span class="model-tag">${escapeHtml(entry.model)}</span>`;
+    }
+  } else {
+    modelDisplay = '<span style="color: var(--neutral-500);">-</span>';
+  }
+
+  const hasDuration = entry.duration !== undefined && entry.duration !== null;
+  const durationDisplay = hasDuration ?
+    `<span style="color: var(--neutral-700);">${entry.duration.toFixed(2)}</span>` :
+    '<span style="color: var(--neutral-500);">-</span>';
+  const streamFlag = getStreamFlagHtml(entry.is_streaming);
+
+  let responseTimingDisplay;
+  if (entry.is_streaming) {
+    const hasFirstByte = entry.first_byte_time !== undefined && entry.first_byte_time !== null;
+    const firstByteDisplay = hasFirstByte ?
+      `<span style="color: var(--success-600);">${entry.first_byte_time.toFixed(2)}</span>` :
+      '<span style="color: var(--neutral-500);">-</span>';
+    responseTimingDisplay = `<span style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap;">${firstByteDisplay}<span style="color: var(--neutral-400);">/</span>${durationDisplay}</span>${streamFlag}`;
+  } else {
+    responseTimingDisplay = `<span style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap;">${durationDisplay}</span>${streamFlag}`;
+  }
+
+  let apiKeyDisplay = '';
+  if (entry.api_key_used && entry.channel_id && entry.model) {
+    const sc = entry.status_code || 0;
+    const showTestBtn = sc !== 200;
+    const showDeleteBtn = sc === 401 || sc === 403;
+    const keyHashAttr = escapeHtml(entry.api_key_hash || '').replace(/"/g, '&quot;');
+    const testBtnIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M13 2L4 14H11L9 22L20 10H13L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const deleteBtnIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M3 6H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6V4H16V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6L18 20H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    let buttons = '';
+    if (showTestBtn) {
+      buttons += `<button class="test-key-btn" data-action="test" data-channel-id="${entry.channel_id}" data-channel-name="${escapeHtml(entry.channel_name || '').replace(/"/g, '&quot;')}" data-api-key="${escapeHtml(entry.api_key_used).replace(/"/g, '&quot;')}" data-api-key-hash="${keyHashAttr}" data-model="${escapeHtml(entry.model).replace(/"/g, '&quot;')}" title="测试此 API Key">${testBtnIcon}</button>`;
+    }
+    if (showDeleteBtn) {
+      buttons += `<button class="test-key-btn" style="color: var(--error-600);" data-action="delete" data-channel-id="${entry.channel_id}" data-channel-name="${escapeHtml(entry.channel_name || '').replace(/"/g, '&quot;')}" data-api-key="${escapeHtml(entry.api_key_used).replace(/"/g, '&quot;')}" data-api-key-hash="${keyHashAttr}" title="删除此 API Key">${deleteBtnIcon}</button>`;
+    }
+    apiKeyDisplay = `<div style="display: flex; align-items: center; gap: 4px; justify-content: center;"><code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(entry.api_key_used)}</code><span style="display: inline-flex; align-items: center; gap: 1px;">${buttons}</span></div>`;
+  } else if (entry.api_key_used) {
+    apiKeyDisplay = `<code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(entry.api_key_used)}</code>`;
+  } else {
+    apiKeyDisplay = '<span style="color: var(--neutral-500);">-</span>';
+  }
+
+  const tokenValue = (value, color) => {
+    if (value === undefined || value === null || value === 0) return '';
+    return `<span class="token-metric-value" style="color: ${color};">${value.toLocaleString()}</span>`;
+  };
+  const inputTokensDisplay = tokenValue(entry.input_tokens, 'var(--neutral-700)');
+  const outputTokensDisplay = tokenValue(entry.output_tokens, 'var(--neutral-700)');
+  const cacheReadDisplay = tokenValue(entry.cache_read_input_tokens, 'var(--success-600)');
+
+  let cacheCreationDisplay = '';
+  const total = entry.cache_creation_input_tokens || 0;
+  const cache5m = entry.cache_5m_input_tokens || 0;
+  const cache1h = entry.cache_1h_input_tokens || 0;
+  if (total > 0) {
+    const model = (entry.model || '').toLowerCase();
+    const isClaudeOrCodex = model.includes('claude') || model.includes('codex');
+    let badge = '';
+    if (isClaudeOrCodex && (cache5m > 0 || cache1h > 0)) {
+      if (cache5m > 0 && cache1h === 0) {
+        badge = ' <sup style="color: var(--primary-500); font-size: 0.75em; font-weight: 600;">5m</sup>';
+      } else if (cache1h > 0 && cache5m === 0) {
+        badge = ' <sup style="color: var(--warning-600); font-size: 0.75em; font-weight: 600;">1h</sup>';
+      } else if (cache5m > 0 && cache1h > 0) {
+        badge = ' <sup style="color: var(--primary-500); font-size: 0.75em; font-weight: 600;">5m</sup><sup style="color: var(--warning-600); font-size: 0.75em; font-weight: 600;">+1h</sup>';
+      }
+    }
+    cacheCreationDisplay = `<span class="token-metric-value" style="color: var(--primary-600);">${total.toLocaleString()}${badge}</span>`;
+  }
+
+  let tierBadge = '';
+  if (entry.service_tier === 'priority') {
+    tierBadge = ' <sup style="color: var(--error-600); font-size: 0.7em; font-weight: 600;">2x</sup>';
+  } else if (entry.service_tier === 'flex') {
+    tierBadge = ' <sup style="color: var(--success-600); font-size: 0.7em; font-weight: 600;">0.5x</sup>';
+  } else if (entry.service_tier === 'fast') {
+    tierBadge = ' <sup style="color: var(--error-600); font-size: 0.7em; font-weight: 600;">\u26A16x</sup>';
+  }
+  const costDisplay = entry.cost ?
+    `<span style="color: var(--warning-600); font-weight: 500;">${formatCost(entry.cost)}${tierBadge}</span>` : '';
+
+  return {
+    timeText: formatTime(entry.time),
+    clientIPDisplay,
+    configDisplay,
+    modelDisplay,
+    statusClass,
+    statusCode,
+    responseTimingDisplay,
+    apiKeyDisplay,
+    inputTokensDisplay,
+    outputTokensDisplay,
+    cacheReadDisplay,
+    cacheCreationDisplay,
+    costDisplay,
+    messageDisplay: escapeHtml(entry.message || '')
+  };
+}
+
+function buildLogCardHtml(view) {
+  return `
+    <article class="logs-card">
+      <div class="logs-card-header">
+        <div class="logs-card-title">
+          <div class="logs-card-time">${view.timeText}</div>
+          <div class="logs-card-channel">${view.configDisplay}</div>
+          <div class="logs-card-model">${view.modelDisplay}</div>
+        </div>
+        <div><span class="${view.statusClass}">${view.statusCode}</span></div>
+      </div>
+      <div class="logs-card-grid">
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colIP')}</div>
+          <div class="logs-card-value">${view.clientIPDisplay}</div>
+        </div>
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colApiKey')}</div>
+          <div class="logs-card-value">${view.apiKeyDisplay}</div>
+        </div>
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colTiming')}</div>
+          <div class="logs-card-value">${view.responseTimingDisplay}</div>
+        </div>
+        <div class="logs-card-field">
+          <div class="logs-card-label">${t('logs.colCost')}</div>
+          <div class="logs-card-value">${view.costDisplay || '<span style="color: var(--neutral-500);">-</span>'}</div>
+        </div>
+        <div class="logs-card-field logs-card-field--full">
+          <div class="logs-card-label">${t('logs.colMessage')}</div>
+          <div class="logs-card-value">${view.messageDisplay || '<span style="color: var(--neutral-500);">-</span>'}</div>
+        </div>
+      </div>
+      <div class="logs-card-metrics">
+        <div class="logs-card-metric">
+          <div class="logs-card-metric-label">${t('logs.colInput')}</div>
+          <div class="logs-card-metric-value">${view.inputTokensDisplay || '-'}</div>
+        </div>
+        <div class="logs-card-metric">
+          <div class="logs-card-metric-label">${t('logs.colOutput')}</div>
+          <div class="logs-card-metric-value">${view.outputTokensDisplay || '-'}</div>
+        </div>
+        <div class="logs-card-metric">
+          <div class="logs-card-metric-label">${t('logs.colCacheRead')}</div>
+          <div class="logs-card-metric-value">${view.cacheReadDisplay || view.cacheCreationDisplay || '-'}</div>
+        </div>
+      </div>
+    </article>
+  `;
 }
 
 function renderLogs(data) {
@@ -475,164 +729,39 @@ function renderLogs(data) {
     const emptyRow = TemplateEngine.render('tpl-log-empty', { colspan });
     tbody.innerHTML = '';
     if (emptyRow) tbody.appendChild(emptyRow);
+    renderLogsCards(buildLogsCardStateMarkup(
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
+      t('logs.noData'),
+      t('logs.adjustFilter')
+    ));
     return;
   }
 
-  // 性能优化：直接拼接 HTML 字符串，避免逐行调用 TemplateEngine.render
-  const htmlParts = new Array(data.length);
+  const rowParts = new Array(data.length);
+  const cardParts = new Array(data.length);
 
   for (let i = 0; i < data.length; i++) {
-    const entry = data[i];
-    // === 预处理数据：构建复杂HTML片段 ===
-
-    // 0. 客户端IP显示（掩码处理，hover显示完整IP）
-    const clientIPDisplay = entry.client_ip ?
-      `<span title="${escapeHtml(entry.client_ip)}">${escapeHtml(maskIP(entry.client_ip))}</span>` :
-      '<span style="color: var(--neutral-400);">-</span>';
-
-    // 1. 渠道信息显示（鼠标移上去时显示URL）
-    const configInfo = entry.channel_name ||
-      (entry.channel_id ? `渠道 #${entry.channel_id}` :
-        (entry.message === 'exhausted backends' ? '系统（所有渠道失败）' :
-          entry.message === 'no available upstream (all cooled or none)' ? '系统（无可用渠道）' : '系统'));
-    // 预先计算URL用于tooltip
-    let channelTooltip = '';
-    if (entry.base_url) {
-      channelTooltip = ` title="${escapeHtml(entry.base_url)}"`;
-    }
-    const configDisplay = entry.channel_id ?
-      buildChannelTrigger(entry.channel_id, entry.channel_name || '', entry.base_url || '') :
-      `<span style="color: var(--neutral-500);"${channelTooltip}>${escapeHtml(configInfo)}</span>`;
-
-    // 2. 状态码样式
-    const statusClass = (entry.status_code >= 200 && entry.status_code < 300) ?
-      'status-success' : 'status-error';
-    const statusCode = entry.status_code;
-
-    // 3. 模型显示（支持重定向角标）
-    let modelDisplay;
-    if (entry.model) {
-      if (entry.actual_model && entry.actual_model !== entry.model) {
-        // 有重定向：显示角标 + tooltip
-        modelDisplay = `<span class="model-tag model-redirected" title="请求模型: ${escapeHtml(entry.model)}&#10;实际模型: ${escapeHtml(entry.actual_model)}">
-              <span class="model-text">${escapeHtml(entry.model)}</span>
-              <sup class="redirect-badge">↪</sup>
-            </span>`;
-      } else {
-        modelDisplay = `<span class="model-tag">${escapeHtml(entry.model)}</span>`;
-      }
-    } else {
-      modelDisplay = '<span style="color: var(--neutral-500);">-</span>';
-    }
-
-    // 4. 响应时间显示(流式/非流式)
-    const hasDuration = entry.duration !== undefined && entry.duration !== null;
-    const durationDisplay = hasDuration ?
-      `<span style="color: var(--neutral-700);">${entry.duration.toFixed(2)}</span>` :
-      '<span style="color: var(--neutral-500);">-</span>';
-
-    const streamFlag = getStreamFlagHtml(entry.is_streaming);
-
-    let responseTimingDisplay;
-    if (entry.is_streaming) {
-      const hasFirstByte = entry.first_byte_time !== undefined && entry.first_byte_time !== null;
-      const firstByteDisplay = hasFirstByte ?
-        `<span style="color: var(--success-600);">${entry.first_byte_time.toFixed(2)}</span>` :
-        '<span style="color: var(--neutral-500);">-</span>';
-      responseTimingDisplay = `<span style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap;">${firstByteDisplay}<span style="color: var(--neutral-400);">/</span>${durationDisplay}</span>${streamFlag}`;
-    } else {
-      responseTimingDisplay = `<span style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap;">${durationDisplay}</span>${streamFlag}`;
-    }
-
-    // 5. API Key显示(含按钮组)
-    let apiKeyDisplay = '';
-    if (entry.api_key_used && entry.channel_id && entry.model) {
-      const sc = entry.status_code || 0;
-      const showTestBtn = sc !== 200;
-      const showDeleteBtn = sc === 401 || sc === 403;
-      const keyHashAttr = escapeHtml(entry.api_key_hash || '').replace(/"/g, '&quot;');
-
-      const testBtnIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M13 2L4 14H11L9 22L20 10H13L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-      const deleteBtnIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M3 6H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6V4H16V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6L18 20H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-      let buttons = '';
-      if (showTestBtn) {
-        buttons += `<button class="test-key-btn" data-action="test" data-channel-id="${entry.channel_id}" data-channel-name="${escapeHtml(entry.channel_name || '').replace(/"/g, '&quot;')}" data-api-key="${escapeHtml(entry.api_key_used).replace(/"/g, '&quot;')}" data-api-key-hash="${keyHashAttr}" data-model="${escapeHtml(entry.model).replace(/"/g, '&quot;')}" title="测试此 API Key">${testBtnIcon}</button>`;
-      }
-      if (showDeleteBtn) {
-        buttons += `<button class="test-key-btn" style="color: var(--error-600);" data-action="delete" data-channel-id="${entry.channel_id}" data-channel-name="${escapeHtml(entry.channel_name || '').replace(/"/g, '&quot;')}" data-api-key="${escapeHtml(entry.api_key_used).replace(/"/g, '&quot;')}" data-api-key-hash="${keyHashAttr}" title="删除此 API Key">${deleteBtnIcon}</button>`;
-      }
-
-      apiKeyDisplay = `<div style="display: flex; align-items: center; gap: 4px; justify-content: center;"><code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(entry.api_key_used)}</code><span style="display: inline-flex; align-items: center; gap: 1px;">${buttons}</span></div>`;
-    } else if (entry.api_key_used) {
-      apiKeyDisplay = `<code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(entry.api_key_used)}</code>`;
-    } else {
-      apiKeyDisplay = '<span style="color: var(--neutral-500);">-</span>';
-    }
-
-    // 6. Token统计显示(0值为空)
-    const tokenValue = (value, color) => {
-      if (value === undefined || value === null || value === 0) return '';
-      return `<span class="token-metric-value" style="color: ${color};">${value.toLocaleString()}</span>`;
-    };
-    const inputTokensDisplay = tokenValue(entry.input_tokens, 'var(--neutral-700)');
-    const outputTokensDisplay = tokenValue(entry.output_tokens, 'var(--neutral-700)');
-    const cacheReadDisplay = tokenValue(entry.cache_read_input_tokens, 'var(--success-600)');
-
-    // 缓存建列
-    let cacheCreationDisplay = '';
-    const total = entry.cache_creation_input_tokens || 0;
-    const cache5m = entry.cache_5m_input_tokens || 0;
-    const cache1h = entry.cache_1h_input_tokens || 0;
-
-    if (total > 0) {
-      const model = (entry.model || '').toLowerCase();
-      const isClaudeOrCodex = model.includes('claude') || model.includes('codex');
-
-      let badge = '';
-      if (isClaudeOrCodex && (cache5m > 0 || cache1h > 0)) {
-        if (cache5m > 0 && cache1h === 0) {
-          badge = ' <sup style="color: var(--primary-500); font-size: 0.75em; font-weight: 600;">5m</sup>';
-        } else if (cache1h > 0 && cache5m === 0) {
-          badge = ' <sup style="color: var(--warning-600); font-size: 0.75em; font-weight: 600;">1h</sup>';
-        } else if (cache5m > 0 && cache1h > 0) {
-          badge = ' <sup style="color: var(--primary-500); font-size: 0.75em; font-weight: 600;">5m</sup><sup style="color: var(--warning-600); font-size: 0.75em; font-weight: 600;">+1h</sup>';
-        }
-      }
-      cacheCreationDisplay = `<span class="token-metric-value" style="color: var(--primary-600);">${total.toLocaleString()}${badge}</span>`;
-    }
-
-    // 7. 成本显示
-    let tierBadge = '';
-    if (entry.service_tier === 'priority') {
-      tierBadge = ' <sup style="color: var(--error-600); font-size: 0.7em; font-weight: 600;">2x</sup>';
-    } else if (entry.service_tier === 'flex') {
-      tierBadge = ' <sup style="color: var(--success-600); font-size: 0.7em; font-weight: 600;">0.5x</sup>';
-    } else if (entry.service_tier === 'fast') {
-      tierBadge = ' <sup style="color: var(--error-600); font-size: 0.7em; font-weight: 600;">\u26A16x</sup>';
-    }
-    const costDisplay = entry.cost ?
-      `<span style="color: var(--warning-600); font-weight: 500;">${formatCost(entry.cost)}${tierBadge}</span>` : '';
-
-    // === 直接拼接行 HTML ===
-    htmlParts[i] = `<tr>
-          <td style="white-space: nowrap;">${formatTime(entry.time)}</td>
-          <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);">${clientIPDisplay}</td>
-          <td style="text-align: center; white-space: nowrap;">${apiKeyDisplay}</td>
-          <td class="config-info">${configDisplay}</td>
-          <td>${modelDisplay}</td>
-          <td><span class="${statusClass}">${statusCode}</span></td>
-          <td style="text-align: right; white-space: nowrap;">${responseTimingDisplay}</td>
-          <td style="text-align: right; white-space: nowrap;">${inputTokensDisplay}</td>
-          <td style="text-align: right; white-space: nowrap;">${outputTokensDisplay}</td>
-          <td style="text-align: right; white-space: nowrap;">${cacheReadDisplay}</td>
-          <td style="text-align: right; white-space: nowrap;">${cacheCreationDisplay}</td>
-          <td style="text-align: right; white-space: nowrap;">${costDisplay}</td>
-          <td style="max-width: 300px; word-break: break-word;">${escapeHtml(entry.message || '')}</td>
+    const view = buildLogViewModel(data[i]);
+    rowParts[i] = `<tr>
+          <td style="white-space: nowrap;">${view.timeText}</td>
+          <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);">${view.clientIPDisplay}</td>
+          <td style="text-align: center; white-space: nowrap;">${view.apiKeyDisplay}</td>
+          <td class="config-info">${view.configDisplay}</td>
+          <td>${view.modelDisplay}</td>
+          <td><span class="${view.statusClass}">${view.statusCode}</span></td>
+          <td style="text-align: right; white-space: nowrap;">${view.responseTimingDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${view.inputTokensDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${view.outputTokensDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${view.cacheReadDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${view.cacheCreationDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${view.costDisplay}</td>
+          <td style="max-width: 300px; word-break: break-word;">${view.messageDisplay}</td>
         </tr>`;
+    cardParts[i] = buildLogCardHtml(view);
   }
 
-  // 一次性替换 tbody 内容
-  tbody.innerHTML = htmlParts.join('');
+  tbody.innerHTML = rowParts.join('');
+  renderLogsCards(cardParts.join(''));
 }
 
 function updatePagination() {
