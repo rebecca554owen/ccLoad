@@ -839,6 +839,7 @@ window.I18N_LOCALES['zh-CN'] = {
   'settings.msg.invalidResponse': '响应格式错误',
   'settings.msg.noChanges': '没有需要保存的更改',
   'settings.msg.savedCount': '已保存 {count} 项配置',
+  'settings.msg.serviceRestarting': '服务即将重启，请稍后刷新页面。',
   'settings.msg.restartRequired': '以下配置需要重启服务才能生效',
   'settings.msg.confirmReset': '确定要重置 "{key}" 为默认值吗?',
   'settings.msg.resetSuccess': '配置 {key} 已重置为默认值',

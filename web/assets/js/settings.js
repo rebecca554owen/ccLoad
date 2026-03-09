@@ -255,6 +255,7 @@ async function submitSettingsUpdate(updates, needsRestartKeys) {
   });
 
   let msg = t('settings.msg.savedCount', { count: Object.keys(updates).length });
+  msg += `\n\n${t('settings.msg.serviceRestarting')}`;
   if (needsRestartKeys.length > 0) {
     msg += `\n\n${t('settings.msg.restartRequired')}:\n${needsRestartKeys.join(', ')}`;
   }
@@ -274,8 +275,6 @@ async function saveAllSettings() {
   } catch (err) {
     handleError(err, 'save');
   }
-
-  loadSettings();
 }
 
 async function resetSetting(key) {
@@ -283,8 +282,7 @@ async function resetSetting(key) {
 
   try {
     await fetchDataWithAuth(`/admin/settings/${key}/reset`, { method: 'POST' });
-    showSuccess(t('settings.msg.resetSuccess', { key }));
-    loadSettings();
+    showSuccess(`${t('settings.msg.resetSuccess', { key })}\n\n${t('settings.msg.serviceRestarting')}`);
   } catch (err) {
     handleError(err, 'reset');
   }

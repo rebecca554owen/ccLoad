@@ -839,6 +839,7 @@ window.I18N_LOCALES['en'] = {
   'settings.msg.invalidResponse': 'Invalid response format',
   'settings.msg.noChanges': 'No changes to save',
   'settings.msg.savedCount': 'Saved {count} configuration(s)',
+  'settings.msg.serviceRestarting': 'The service is restarting. Refresh the page shortly.',
   'settings.msg.restartRequired': 'The following settings require a restart to take effect',
   'settings.msg.confirmReset': 'Are you sure you want to reset "{key}" to default?',
   'settings.msg.resetSuccess': 'Configuration {key} has been reset to default',
