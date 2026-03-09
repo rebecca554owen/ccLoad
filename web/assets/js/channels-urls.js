@@ -159,6 +159,7 @@ function renderInlineURLTable() {
   updateInlineURLCount();
   syncInlineURLInput();
   updateURLStatsHeader();
+  initURLSectionControls();
   initURLTableEventDelegation();
 
   tbody.innerHTML = '';
@@ -169,6 +170,26 @@ function renderInlineURLTable() {
 
   updateSelectAllURLsCheckbox();
   updateURLBatchDeleteButton();
+}
+
+function initURLSectionControls() {
+  const addButton = document.querySelector('[data-action="add-url"]');
+  if (addButton && !addButton.dataset.bound) {
+    addButton.dataset.bound = 'true';
+    addButton.addEventListener('click', addInlineURL);
+  }
+
+  const batchDeleteButton = document.getElementById('batchDeleteUrlsBtn');
+  if (batchDeleteButton && !batchDeleteButton.dataset.bound) {
+    batchDeleteButton.dataset.bound = 'true';
+    batchDeleteButton.addEventListener('click', batchDeleteSelectedURLs);
+  }
+
+  const selectAllCheckbox = document.getElementById('selectAllURLs');
+  if (selectAllCheckbox && !selectAllCheckbox.dataset.bound) {
+    selectAllCheckbox.dataset.bound = 'true';
+    selectAllCheckbox.addEventListener('change', () => toggleSelectAllURLs(selectAllCheckbox.checked));
+  }
 }
 
 function initURLTableEventDelegation() {

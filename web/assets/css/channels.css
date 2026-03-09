@@ -82,7 +82,9 @@
       color: var(--neutral-900);
     }
 
-    .content-area > header .glass-card,
+    .channels-page-header-card,
+    .channels-filter-card,
+    .channels-list-card,
     .filter-bar {
       background: rgba(255, 255, 255, 0.97);
       border-color: rgba(148, 163, 184, 0.18);
@@ -90,11 +92,42 @@
     }
 
     /* 暗色模式 */
-    [data-theme="dark"] .content-area > header .glass-card,
+    [data-theme="dark"] .channels-page-header-card,
+    [data-theme="dark"] .channels-filter-card,
+    [data-theme="dark"] .channels-list-card,
     [data-theme="dark"] .filter-bar {
       background: rgba(30, 30, 35, 0.97);
       border-color: rgba(255, 255, 255, 0.12);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .channels-page-header-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .channels-page-header-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top right, rgba(10, 132, 255, 0.12), transparent 34%),
+        radial-gradient(circle at bottom left, rgba(52, 199, 89, 0.1), transparent 30%);
+      pointer-events: none;
+    }
+
+    .channels-page-subtitle {
+      margin: 0;
+      max-width: 760px;
+    }
+
+    .channels-page-actions {
+      justify-content: flex-end;
+    }
+
+    .channels-page-action {
+      padding: 8px 16px;
+      font-size: 14px;
     }
 
     [data-theme="dark"] .page-subtitle {
@@ -126,6 +159,72 @@
     .filter-info * {
       color: var(--neutral-700);
       font-weight: 500;
+    }
+
+    .channels-filter-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .channels-filter-card .filter-controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, max-content)) minmax(220px, 1fr) auto auto;
+      gap: 14px 16px;
+      align-items: end;
+    }
+
+    .channels-filter-select {
+      min-width: 100px;
+    }
+
+    .channels-filter-select--type {
+      min-width: 120px;
+    }
+
+    .channels-filter-group--id .filter-input {
+      max-width: 100px;
+    }
+
+    .channels-search-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 140px;
+    }
+
+    .channels-search-wrap .filter-input {
+      padding-right: 36px;
+    }
+
+    .channels-search-clear {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      padding: 2px;
+      opacity: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .channels-filter-info {
+      justify-self: start;
+      align-self: center;
+      white-space: nowrap;
+    }
+
+    .channels-list-card {
+      overflow: hidden;
+    }
+
+    .channels-cards-grid {
+      padding: var(--space-4);
+    }
+
+    .channels-import-input {
+      display: none;
     }
 
     .table-container {
@@ -533,6 +632,32 @@
       margin-bottom: 6px;
     }
 
+    .channel-modal-name-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .channel-modal-name-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .channel-modal-type-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 550px;
+      min-width: 0;
+    }
+
+    .channel-custom-endpoint-row {
+      margin-top: 8px;
+    }
+
     .channel-section-toolbar {
       display: flex;
       justify-content: space-between;
@@ -550,6 +675,63 @@
     .channel-modal-meta-row,
     .channel-modal-meta-field,
     .channel-modal-user-agent-row {
+      min-width: 0;
+    }
+
+    .channel-key-toolbar-controls,
+    .channel-model-toolbar-controls,
+    .channel-modal-meta-field,
+    .channel-modal-user-agent-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .channel-key-toolbar-controls,
+    .channel-model-toolbar-controls {
+      gap: 12px;
+    }
+
+    .channel-modal-toolbar-button {
+      padding: 5px 10px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .channel-modal-icon-button {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+    }
+
+    .channel-modal-inline-label {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .channel-modal-section-label {
+      margin: 0;
+      font-size: 13px;
+      color: var(--neutral-700);
+    }
+
+    .channel-modal-section-label--nowrap {
+      white-space: nowrap;
+    }
+
+    .channel-modal-mono-input {
+      font-family: var(--font-family-mono);
+    }
+
+    .channel-modal-short-input {
+      width: 100px;
+      min-width: 100px;
+    }
+
+    .channel-modal-flex-input {
+      flex: 1 1 auto;
       min-width: 0;
     }
 
@@ -1613,8 +1795,34 @@
     }
 
     @media (max-width: 768px) {
+      .channels-page-actions {
+        width: 100%;
+      }
+
+      .channels-page-actions > *:not(#importCsvInput) {
+        flex: 1 1 calc(50% - 6px);
+        justify-content: center;
+      }
+
+      .channels-filter-card .filter-controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .channels-filter-info,
+      .channel-toolbar-actions {
+        grid-column: 1 / -1;
+      }
+
+      .channels-filter-info {
+        justify-self: start;
+      }
+
       .channel-toolbar-actions {
         justify-content: flex-start;
+      }
+
+      .channel-toolbar-actions > * {
+        flex: 1 1 calc(50% - 4px);
       }
 
       .channel-selection-toggle {
@@ -1783,9 +1991,22 @@
         flex: 1 1 calc(50% - 6px);
         justify-content: center;
       }
+
+      .channels-cards-grid {
+        padding: var(--space-3);
+      }
     }
 
     @media (max-width: 480px) {
+      .channels-filter-card .filter-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .channels-page-actions > *:not(#importCsvInput),
+      .channel-toolbar-actions > * {
+        flex-basis: 100%;
+      }
+
       .channel-section-toolbar-actions .btn,
       .channel-key-toolbar-actions .btn,
       .channel-model-toolbar-actions .btn,

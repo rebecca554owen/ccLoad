@@ -39,28 +39,31 @@
  <div class="app-container">
  <main class="main-content">
  <div class="content-area">
+ <div class="page-shell">
  <header class="page-section">
- <div class="glass-card" style="padding: var(--space-6);">
- <div
- style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
- <p class="page-subtitle" style="margin: 0;" data-i18n="channels.description">
+ <div class="glass-card page-header-card channels-page-header-card">
+ <div class="page-header-main">
+ <div class="page-header-copy">
+ <p class="page-eyebrow">Channels</p>
+ <p class="page-subtitle channels-page-subtitle" data-i18n="channels.description">
  配置API渠道、优先级和模型支持（<b>优先请求高优先级渠道，相同优先级按Key数量加权随机</b>）</p>
- <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
- <button id="exportCsvBtn" type="button" class="btn btn-secondary"
- style="padding: 8px 16px; font-size: 14px;" data-i18n-title="channels.exportCsvTitle"
+ </div>
+ <div class="page-header-actions channels-page-actions">
+ <button id="exportCsvBtn" type="button" class="btn btn-secondary channels-page-action"
+ data-i18n-title="channels.exportCsvTitle"
  title="导出渠道列表为CSV">
  <span data-i18n="channels.exportCsv">导出 CSV</span>
  </button>
- <button id="importCsvBtn" type="button" class="btn btn-secondary"
- style="padding: 8px 16px; font-size: 14px;" data-i18n-title="channels.importCsvTitle"
+ <button id="importCsvBtn" type="button" class="btn btn-secondary channels-page-action"
+ data-i18n-title="channels.importCsvTitle"
  title="从CSV导入渠道">
  <span data-i18n="channels.importCsv">导入 CSV</span>
  </button>
- <button onclick="showAddModal()" type="button" class="btn btn-primary"
- style="padding: 8px 16px; font-size: 14px;" data-i18n-title="channels.addChannelTitle" title="添加新渠道">
+ <button data-action="show-add-channel-modal" type="button" class="btn btn-primary channels-page-action"
+ data-i18n-title="channels.addChannelTitle" title="添加新渠道">
  <span data-i18n="channels.addChannel">+ 添加渠道</span>
  </button>
- <input type="file" id="importCsvInput" accept=".csv" style="display: none;" />
+ <input type="file" id="importCsvInput" class="channels-import-input" accept=".csv" />
  </div>
  </div>
  </div>
@@ -68,25 +71,25 @@
 
  <!-- Filter Bar -->
  <section class="page-section">
- <div class="filter-bar">
+ <div class="filter-bar page-toolbar-card channels-filter-card">
  <div class="filter-controls">
  <!-- 渠道类型筛选 -->
  <div class="filter-group">
  <label class="filter-label" data-i18n="channels.filterChannelType">渠道类型</label>
- <select id="channelTypeFilter" class="form-select " style="min-width: 120px;">
+ <select id="channelTypeFilter" class="form-select channels-filter-select channels-filter-select--type">
  <!-- 动态加载渠道类型选项 -->
  </select>
  </div>
 
- <div class="">
+ <div class="filter-group channels-filter-group--id">
  <label class="filter-label" data-i18n="channels.filterChannelId">渠道ID</label>
  <input type="text" id="idFilter" class="filter-input" data-i18n-placeholder="channels.filterIdPlaceholder"
- placeholder="输入ID..." style="max-width: 100px;">
+ placeholder="输入ID...">
  </div>
 
  <div class="filter-group">
  <label class="filter-label" data-i18n="channels.filterStatus">状态</label>
- <select id="statusFilter" class="form-select " style="min-width: 100px;">
+ <select id="statusFilter" class="form-select channels-filter-select">
  <option value="all" data-i18n="channels.statusAll">所有状态</option>
  <option value="enabled" data-i18n="channels.statusEnabled">已启用</option>
  <option value="disabled" data-i18n="channels.statusDisabled">已禁用</option>
@@ -96,20 +99,18 @@
 
  <div class="filter-group">
  <label class="filter-label" data-i18n="channels.filterModel">模型</label>
- <select id="modelFilter" class="form-select " style="min-width: 100px;">
+ <select id="modelFilter" class="form-select channels-filter-select">
  <option value="all" data-i18n="channels.allModels">所有模型</option>
  </select>
  </div>
  <div class="filter-group">
  <label class="filter-label" data-i18n="channels.filterSearch">搜索渠道</label>
- <div style="position: relative; flex: 1; min-width: 140px;">
+ <div class="channels-search-wrap">
  <input type="search" id="searchInput" name="channel_search" autocomplete="off" class="filter-input"
- data-i18n-placeholder="channels.searchPlaceholder" placeholder="输入渠道名称..."
- style="padding-right: 36px;">
+ data-i18n-placeholder="channels.searchPlaceholder" placeholder="输入渠道名称...">
  <button id="clearSearchBtn" type="button"
- class="icon-ghost-btn"
+ class="icon-ghost-btn channels-search-clear"
  aria-label="清空搜索"
- style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; padding: 2px; opacity: 0; display: inline-flex; align-items: center; justify-content: center;"
  data-i18n-title="common.clearSearch" title="清空搜索"
  >
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -119,14 +120,14 @@
  </button>
  </div>
  </div>
- <div class="filter-info" id="filterInfo"><span id="filteredCount">0</span> / <span id="totalCount">0</span>
+ <div class="filter-info channels-filter-info" id="filterInfo"><span id="filteredCount">0</span> / <span id="totalCount">0</span>
  <span data-i18n="channels.channelCount">个渠道</span>
  </div>
 
  <div class="channel-toolbar-actions">
  <label id="visibleSelectionToggle" class="channel-selection-toggle"
  data-i18n-title="channels.batchSelectVisible" title="全选">
- <input id="visibleSelectionCheckbox" type="checkbox" onchange="toggleVisibleChannelsSelection()">
+ <input id="visibleSelectionCheckbox" type="checkbox">
  <span id="visibleSelectionToggleText" data-i18n="channels.batchSelectVisible">全选</span>
  </label>
  <button id="btn_sort" type="button" class="btn btn-secondary btn-md"
@@ -139,8 +140,11 @@
  </section>
 
  <section class="page-section">
- <div id="channels-container" class="cards-grid"></div>
+ <div class="glass-card page-content-card page-content-card--flush channels-list-card">
+ <div id="channels-container" class="cards-grid channels-cards-grid"></div>
+ </div>
  </section>
+ </div>
 
  <div id="batchFloatingMenu" class="channel-batch-float" aria-hidden="true">
  <div class="channel-batch-float__content">
@@ -153,7 +157,7 @@
  <span class="channel-batch-divider" aria-hidden="true"></span>
  <button id="batchEnableChannelsBtn" type="button"
  class="btn btn-sm channel-batch-action channel-batch-action--enable"
- onclick="batchEnableSelectedChannels()" disabled>
+ data-action="batch-enable-channels" disabled>
  <span class="channel-batch-action__icon" aria-hidden="true">
  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M4.5 10.3L8.15 13.95L15.35 6.75" stroke="currentColor" stroke-width="2.2"
@@ -164,7 +168,7 @@
  </button>
  <button id="batchDisableChannelsBtn" type="button"
  class="btn btn-sm channel-batch-action channel-batch-action--disable"
- onclick="batchDisableSelectedChannels()" disabled>
+ data-action="batch-disable-channels" disabled>
  <span class="channel-batch-action__icon" aria-hidden="true">
  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
  <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8" />
@@ -175,7 +179,7 @@
  </button>
  <button id="batchRefreshMergeBtn" type="button"
  class="btn btn-sm channel-batch-action channel-batch-action--refresh"
- onclick="batchRefreshSelectedChannelsMerge()" disabled>
+ data-action="batch-refresh-merge" disabled>
  <span class="channel-batch-action__icon" aria-hidden="true">
  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M15.9 7.5A6.6 6.6 0 0 0 4.2 7.1" stroke="currentColor" stroke-width="1.8"
@@ -192,7 +196,7 @@
  </button>
  <button id="batchRefreshReplaceBtn" type="button"
  class="btn btn-sm channel-batch-action channel-batch-action--refresh"
- onclick="batchRefreshSelectedChannelsReplace()" disabled>
+ data-action="batch-refresh-replace" disabled>
  <span class="channel-batch-action__icon" aria-hidden="true">
  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M15.9 7.5A6.6 6.6 0 0 0 4.2 7.1" stroke="currentColor" stroke-width="1.8"
@@ -208,7 +212,7 @@
  <span data-i18n="channels.batchRefreshReplace">模型覆盖刷新</span>
  </button>
  <button id="batchFloatingMenuCloseBtn" type="button" class="channel-batch-close"
- onclick="clearSelectedChannels()" data-i18n-title="common.close" title="关闭" disabled>
+ data-action="clear-selected-channels" data-i18n-title="common.close" title="关闭" disabled>
  <svg width="26" height="26" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
  aria-hidden="true" focusable="false">
  <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
@@ -225,20 +229,20 @@
  <div class="modal-content">
  <div class="modal-header">
  <h2 class="modal-title" id="modalTitle" data-i18n="channels.modalAddTitle">添加渠道</h2>
- <button type="button" class="close-btn" aria-label="关闭" onclick="closeChannelModal()">&times;</button>
+ <button type="button" class="close-btn" aria-label="关闭" data-action="close-channel-modal">&times;</button>
  </div>
  <form id="channelForm" onsubmit="saveChannel(event)">
  <div class="form-group channel-model-config-group modal-stack">
  <!-- 渠道名称和类型在第一行 -->
- <div class="channel-modal-name-row modal-inline-row" style="display: flex; gap: 20px; align-items: center;">
- <div class="channel-modal-name-field" style="display: flex; align-items: center; gap: 8px; flex: 1;">
- <label class="form-label" style="margin: 0; white-space: nowrap;" data-i18n="channels.channelName">渠道名称
+ <div class="channel-modal-name-row modal-inline-row">
+ <div class="channel-modal-name-field">
+ <label class="form-label channel-modal-inline-label" data-i18n="channels.channelName">渠道名称
  *</label>
  <input type="text" id="channelName" name="channel_name" autocomplete="off" class="form-input" required style="flex: 1;">
  </div>
 
- <div class="channel-modal-type-group" style="display: flex; align-items: center; gap: 8px; flex: 0 0 550px;">
- <label style="margin: 0; font-size: 13px; white-space: nowrap; color: var(--neutral-700);"
+ <div class="channel-modal-type-group">
+ <label class="channel-modal-section-label channel-modal-section-label--nowrap"
  data-i18n="channels.channelType">渠道类型</label>
  <div class="channel-type-radios" style="display: flex; gap: 6px;" id="channelTypeRadios">
  <!-- 动态加载渠道类型 -->
@@ -253,14 +257,13 @@
  <div
  class="channel-section-toolbar modal-section-header"
  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
- <label class="form-label" style="margin: 0; font-size: 13px; color: var(--neutral-700);">
+ <label class="form-label channel-modal-section-label">
  <span data-i18n="channels.apiUrl">API URL *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
  id="inlineUrlCount">0</span> <span data-i18n="channels.urlCountSuffix">个URL</span></span>
  </label>
  <div class="channel-section-toolbar-actions modal-section-actions" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
- <button type="button" class="btn btn-secondary btn-sm" onclick="addInlineURL()"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+ <button type="button" class="btn btn-secondary btn-sm channel-modal-toolbar-button" data-action="add-url"
  data-i18n-title="channels.addUrlTitle" title="添加URL">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M8 3.5V12.5M3.5 8H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -268,9 +271,9 @@
  </svg>
  <span data-i18n="channels.addUrl">添加URL</span>
  </button>
- <button type="button" id="batchDeleteUrlsBtn" onclick="batchDeleteSelectedURLs()" disabled
- data-i18n-title="channels.batchDeleteUrlsTitle" title="批量删除选中的URL" class="btn btn-secondary btn-sm"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
+ <button type="button" id="batchDeleteUrlsBtn" data-action="batch-delete-urls" disabled
+ data-i18n-title="channels.batchDeleteUrlsTitle" title="批量删除选中的URL" class="btn btn-secondary btn-sm channel-modal-toolbar-button"
+ style="opacity: 0.5;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -290,7 +293,7 @@
  <tr>
  <th style="width: 70px;">
  <div style="display: flex; align-items: center; gap: 6px;">
- <input type="checkbox" id="selectAllURLs" onchange="toggleSelectAllURLs(this.checked)"
+ <input type="checkbox" id="selectAllURLs"
  style="width: 16px; height: 16px;" data-i18n-title="common.selectAll" title="全选/取消全选">
  <span>#</span>
  </div>
@@ -310,11 +313,10 @@
   </div>
 
   <!-- 自定义端点：在API URL表格下方 -->
-  <div class="channel-custom-endpoint-row modal-inline-row" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-  <div class="modal-inline-label" style="width: 70px; font-size: 13px; color: var(--neutral-700);"
+  <div class="channel-custom-endpoint-row modal-inline-row">
+  <div class="modal-inline-label"
   data-i18n="channels.customEndpoint">自定义端点</div>
-  <input type="text" id="channelCustomEndpoint" class="form-input modal-inline-input" value=""
-  style="flex: 1; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+  <input type="text" id="channelCustomEndpoint" class="form-input modal-inline-input channel-modal-flex-input channel-modal-mono-input" value="">
   </div>
   </div>
   </div>
@@ -329,8 +331,8 @@
  id="virtualScrollHint" style="display: none; color: var(--primary-600); font-weight: 600;"
  data-i18n="channels.virtualScrollEnabled">· 虚拟滚动已启用</span></span>
  </label>
- <div class="channel-key-toolbar-controls" style="display: flex; align-items: center; gap: 12px;">
- <label style="margin: 0; font-size: 13px; white-space: nowrap; color: var(--neutral-700);"
+ <div class="channel-key-toolbar-controls">
+ <label class="channel-modal-section-label channel-modal-section-label--nowrap"
  data-i18n="channels.keyStrategy">Key 策略</label>
  <div class="key-strategy-radios" style="display: flex; gap: 6px; margin-right: 8px;" id="keyStrategyRadios">
  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 13px;">
@@ -343,8 +345,7 @@
  </label>
  </div>
  <div class="channel-key-toolbar-actions modal-section-actions" style="display: flex; gap: 6px;">
- <button type="button" class="btn btn-secondary btn-sm" onclick="openKeyImportModal()"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+ <button type="button" class="btn btn-secondary btn-sm channel-modal-toolbar-button" data-action="open-key-import">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M8 3.5V12M8 12L5 9M8 12L11 9" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -352,9 +353,9 @@
  </svg>
  <span data-i18n="channels.importKeys">导入</span>
  </button>
- <button type="button" id="exportKeysBtn" class="btn btn-secondary btn-sm" onclick="openKeyExportModal()"
+ <button type="button" id="exportKeysBtn" class="btn btn-secondary btn-sm channel-modal-toolbar-button" data-action="open-key-export"
  disabled
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
+ style="opacity: 0.5;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M8 12.5V4M8 4L5 7M8 4L11 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
  stroke-linejoin="round" />
@@ -362,10 +363,9 @@
  </svg>
  <span data-i18n="channels.exportKeys">导出</span>
  </button>
- <button type="button" id="toggleInlineKeyBtn" onclick="toggleInlineKeyVisibility()"
- class="icon-ghost-btn"
+ <button type="button" id="toggleInlineKeyBtn" data-action="toggle-key-visibility"
+ class="icon-ghost-btn channel-modal-icon-button"
  aria-label="显示或隐藏 API Key"
- style="width: 26px; height: 26px; padding: 0;"
  data-i18n-title="channels.toggleKeyVisibility" title="显示/隐藏API Key">
  <svg id="inlineEyeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
  xmlns="http://www.w3.org/2000/svg">
@@ -383,9 +383,9 @@
  </svg>
  </button>
  </div>
- <button type="button" id="batchDeleteKeysBtn" onclick="batchDeleteSelectedKeys()" disabled
- data-i18n-title="channels.batchDeleteKeysTitle" title="批量删除选中的Keys" class="btn btn-secondary btn-sm"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
+ <button type="button" id="batchDeleteKeysBtn" data-action="batch-delete-keys" disabled
+ data-i18n-title="channels.batchDeleteKeysTitle" title="批量删除选中的Keys" class="btn btn-secondary btn-sm channel-modal-toolbar-button"
+ style="opacity: 0.5;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -406,14 +406,14 @@
  <tr>
  <th style="width: 70px;">
  <div style="display: flex; align-items: center; gap: 6px;">
- <input type="checkbox" id="selectAllKeys" onchange="toggleSelectAllKeys(this.checked)"
+ <input type="checkbox" id="selectAllKeys"
  style="width: 16px; height: 16px;" data-i18n-title="common.selectAll" title="全选/取消全选">
  <span>#</span>
  </div>
  </th>
  <th data-i18n="channels.tableApiKey">API Key</th>
  <th style="width: 200px;">
- <select id="keyStatusFilter" class="form-select model-select" onchange="filterKeysByStatus(this.value)"
+ <select id="keyStatusFilter" class="form-select model-select"
  style="width: 100%;">
  <option value="all" data-i18n="channels.keyStatusAll">全部</option>
  <option value="normal" data-i18n="channels.keyStatusNormal">正常</option>
@@ -437,10 +437,9 @@
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
  id="redirectCount">0</span> <span data-i18n="channels.modelCountSuffix">个模型</span></span>
  </label>
- <div class="channel-model-toolbar-controls" style="display: flex; align-items: center; gap: 12px;">
+ <div class="channel-model-toolbar-controls">
  <div class="channel-model-toolbar-actions modal-section-actions" style="display: flex; gap: 6px;">
- <button type="button" class="btn btn-secondary btn-sm" onclick="addCommonModels()"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+ <button type="button" class="btn btn-secondary btn-sm channel-modal-toolbar-button" data-action="add-common-models"
  data-i18n-title="channels.addCommonModelsTitle" title="添加当前渠道类型的常用模型">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M8 1L10 5.5L15 6L11.5 9.5L12.5 14.5L8 12L3.5 14.5L4.5 9.5L1 6L6 5.5L8 1Z"
@@ -448,8 +447,7 @@
  </svg>
  <span data-i18n="channels.commonModels">常用模型</span>
  </button>
- <button type="button" class="btn btn-secondary btn-sm" onclick="fetchModelsFromAPI()"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+ <button type="button" class="btn btn-secondary btn-sm channel-modal-toolbar-button" data-action="fetch-models"
  data-i18n-title="channels.fetchModelsTitle" title="从渠道API获取可用模型列表">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
@@ -458,8 +456,7 @@
  </svg>
  <span data-i18n="channels.fetchModels">获取模型</span>
  </button>
- <button type="button" class="btn btn-secondary btn-sm" onclick="addRedirectRow()"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+ <button type="button" class="btn btn-secondary btn-sm channel-modal-toolbar-button" data-action="add-model"
  data-i18n-title="channels.addModelManualTitle" title="手动添加模型">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M8 3.5V12.5M3.5 8H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -468,10 +465,10 @@
  <span data-i18n="channels.addModel">添加模型</span>
  </button>
  </div>
- <button type="button" id="batchLowercaseModelsBtn" onclick="batchLowercaseSelectedModels()" disabled
+ <button type="button" id="batchLowercaseModelsBtn" data-action="batch-lowercase-models" disabled
  data-i18n-title="channels.batchLowercaseModelsTitle" title="批量转换选中模型为小写"
- class="btn btn-secondary btn-sm"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
+ class="btn btn-secondary btn-sm channel-modal-toolbar-button"
+ style="opacity: 0.5;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M1.5 10.5L3.5 4H5L7 10.5M2.5 8.5H6M8.5 10.5V7.5C8.5 6.5 9.5 6 10.5 6C11.5 6 12.5 6.5 12.5 7.5V10.5M8.5 8.5H12.5"
@@ -479,9 +476,9 @@
  </svg>
  <span data-i18n="channels.lowercaseSelected">转小写</span>
  </button>
- <button type="button" id="batchDeleteModelsBtn" onclick="batchDeleteSelectedModels()" disabled
- data-i18n-title="channels.batchDeleteModelsTitle" title="批量删除选中的模型" class="btn btn-secondary btn-sm"
- style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
+ <button type="button" id="batchDeleteModelsBtn" data-action="batch-delete-models" disabled
+ data-i18n-title="channels.batchDeleteModelsTitle" title="批量删除选中的模型" class="btn btn-secondary btn-sm channel-modal-toolbar-button"
+ style="opacity: 0.5;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -499,7 +496,7 @@
  <tr>
  <th style="width: 70px;">
  <div style="display: flex; align-items: center; gap: 6px;">
- <input type="checkbox" id="selectAllModels" onchange="toggleSelectAllModels(this.checked)"
+ <input type="checkbox" id="selectAllModels"
  style="width: 16px; height: 16px;" data-i18n-title="common.selectAll" title="全选/取消全选">
  <span>#</span>
  </div>
@@ -507,7 +504,7 @@
  <th style="width: 35%;">
  <input type="text" id="modelFilterInput" class="table-filter-input form-input"
  data-i18n-placeholder="channels.searchModelPlaceholder" placeholder="搜索模型名称..."
- oninput="filterModelsByKeyword(this.value)">
+ >
  </th>
  <th style="width: calc(60% - 70px); text-align: right;" data-i18n="channels.redirectTarget">重定向目标（可多目标）</th>
  </tr>
@@ -523,31 +520,28 @@
  <label class="form-label" style="margin: 0;">
  <input type="checkbox" id="channelEnabled" checked> <span data-i18n="channels.enableChannel">启用渠道</span>
  </label>
- <div class="channel-modal-meta-field modal-inline-row" style="display: flex; align-items: center; gap: 8px;">
- <label class="form-label" for="channelPriority" style="margin: 0; white-space: nowrap;"
+ <div class="channel-modal-meta-field modal-inline-row">
+ <label class="form-label channel-modal-inline-label" for="channelPriority"
  data-i18n="channels.priority">优先级</label>
- <input type="number" id="channelPriority" class="form-input" value="0" min="-99999" max="99999"
- style="width: 100px; min-width: 100px;">
+ <input type="number" id="channelPriority" class="form-input channel-modal-short-input" value="0" min="-99999" max="99999">
  </div>
- <div class="channel-modal-meta-field modal-inline-row" style="display: flex; align-items: center; gap: 8px;">
- <label class="form-label" for="channelDailyCostLimit" style="margin: 0; white-space: nowrap;"
+ <div class="channel-modal-meta-field modal-inline-row">
+ <label class="form-label channel-modal-inline-label" for="channelDailyCostLimit"
  data-i18n="channels.dailyCostLimit">每日限额</label>
- <input type="number" id="channelDailyCostLimit" class="form-input" value="0" min="0" step="0.01"
- style="width: 100px; min-width: 100px;" data-i18n-placeholder="channels.dailyCostLimitPlaceholder"
+ <input type="number" id="channelDailyCostLimit" class="form-input channel-modal-short-input" value="0" min="0" step="0.01" data-i18n-placeholder="channels.dailyCostLimitPlaceholder"
  placeholder="0=无限制">
  <span style="color: var(--neutral-500); font-size: 12px;">$</span>
  </div>
   </div>
-  <div class="channel-modal-user-agent-row modal-inline-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
- <label class="form-label" for="channelCustomUserAgent" style="margin: 0; white-space: nowrap;"
+  <div class="channel-modal-user-agent-row modal-inline-row" style="margin-bottom: 12px;">
+ <label class="form-label channel-modal-inline-label" for="channelCustomUserAgent"
  data-i18n="channels.customUserAgent">User-Agent</label>
- <input type="text" id="channelCustomUserAgent" class="form-input" value=""
- style="flex: 1; min-width: 200px;" data-i18n-placeholder="channels.customUserAgentPlaceholder"
+ <input type="text" id="channelCustomUserAgent" class="form-input channel-modal-flex-input" value="" data-i18n-placeholder="channels.customUserAgentPlaceholder"
  placeholder="留空则使用客户端透传的 UA">
  </div>
  <div class="channel-modal-footer">
  <div class="channel-modal-footer-actions">
- <button type="button" class="btn btn-secondary" onclick="closeChannelModal()"
+ <button type="button" class="btn btn-secondary" data-action="close-channel-modal"
  data-i18n="common.cancel">取消</button>
  <button type="submit" id="channelSaveBtn" class="btn btn-primary" data-i18n="common.save">保存</button>
  </div>
@@ -565,8 +559,8 @@
  data-i18n="channels.confirmDeleteMsgSuffix">吗？</span></p>
  <p style="color: var(--error-600); font-size: 0.875rem;" data-i18n="channels.deleteWarning">此操作不可恢复！</p>
  <div class="confirm-actions">
- <button class="btn btn-secondary" onclick="closeDeleteModal()" data-i18n="common.cancel">取消</button>
- <button class="btn btn-danger" onclick="confirmDelete()" data-i18n="common.delete">删除</button>
+ <button class="btn btn-secondary" data-action="close-delete-modal" data-i18n="common.cancel">取消</button>
+ <button class="btn btn-danger" data-action="confirm-delete-channel" data-i18n="common.delete">删除</button>
  </div>
  </div>
  </div>
@@ -577,11 +571,11 @@
  <div class="modal-header">
  <h2 class="modal-title" id="testModalTitle"><span data-i18n="channels.testChannelTitle">测试渠道</span> - <span
  id="testChannelName"></span></h2>
- <button type="button" class="close-btn" aria-label="关闭" onclick="closeTestModal()">&times;</button>
+ <button type="button" class="close-btn" aria-label="关闭" data-action="close-test-modal">&times;</button>
  </div>
  <div class="form-group">
  <label class="form-label" for="testChannelType" data-i18n="channels.channelType">渠道类型</label>
- <select id="testChannelType" class="form-select" onchange="updateTestURL()">
+ <select id="testChannelType" class="form-select">
  <!-- 动态加载渠道类型 -->
  </select>
  </div>
@@ -658,10 +652,10 @@
  </div>
 
  <div class="form-actions">
- <button type="button" class="btn btn-secondary" onclick="closeTestModal()" data-i18n="common.close">关闭</button>
- <button type="button" id="runTestBtn" class="btn btn-primary" onclick="runChannelTest()"
+ <button type="button" class="btn btn-secondary" data-action="close-test-modal" data-i18n="common.close">关闭</button>
+ <button type="button" id="runTestBtn" class="btn btn-primary" data-action="run-channel-test"
  data-i18n="channels.singleTest">单个测试</button>
- <button type="button" id="batchTestBtn" class="btn btn-primary btn-md" onclick="runBatchTest()" style="display: none;"
+ <button type="button" id="batchTestBtn" class="btn btn-primary btn-md" data-action="run-batch-test" style="display: none;"
  data-i18n="channels.batchTestAllKeys">批量测试所有Key</button>
  </div>
  </div>
@@ -672,7 +666,7 @@
  <div class="modal-content" style="max-width: 600px;">
  <div class="modal-header">
  <h2 class="modal-title" id="keyImportModalTitle" data-i18n="channels.importKeysTitle">批量导入 API Keys</h2>
- <button type="button" class="close-btn" aria-label="关闭" onclick="closeKeyImportModal()">
+ <button type="button" class="close-btn" aria-label="关闭" data-action="close-key-import-modal">
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -723,9 +717,9 @@
  </div>
  </div>
  <div class="form-actions">
- <button type="button" class="btn btn-secondary" onclick="closeKeyImportModal()"
+ <button type="button" class="btn btn-secondary" data-action="close-key-import-modal"
  data-i18n="common.cancel">取消</button>
- <button type="button" class="btn btn-primary" onclick="confirmInlineKeyImport()"
+ <button type="button" class="btn btn-primary" data-action="confirm-inline-key-import"
  data-i18n="channels.confirmImport">确认导入</button>
  </div>
  </div>
@@ -736,7 +730,7 @@
  <div class="modal-content" style="max-width: 500px;">
  <div class="modal-header">
  <h2 class="modal-title" id="keyExportModalTitle" data-i18n="channels.exportKeysTitle">导出 API Keys</h2>
- <button type="button" class="close-btn" aria-label="关闭" onclick="closeKeyExportModal()">
+ <button type="button" class="close-btn" aria-label="关闭" data-action="close-key-export-modal">
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -749,11 +743,11 @@
  <label class="form-label" data-i18n="channels.exportSeparator">分隔方式</label>
  <div style="display: flex; gap: 20px; margin-top: 8px;">
  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
- <input type="radio" name="exportSeparator" value="newline" checked onchange="updateExportPreview()">
+ <input type="radio" name="exportSeparator" value="newline" checked>
  <span data-i18n="channels.separatorNewline">换行分隔</span>
  </label>
  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
- <input type="radio" name="exportSeparator" value="comma" onchange="updateExportPreview()">
+ <input type="radio" name="exportSeparator" value="comma">
  <span data-i18n="channels.separatorComma">逗号分隔</span>
  </label>
  </div>
@@ -766,10 +760,10 @@
  </div>
  </div>
  <div class="form-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
- <button type="button" class="btn btn-secondary" onclick="closeKeyExportModal()"
+ <button type="button" class="btn btn-secondary" data-action="close-key-export-modal"
  data-i18n="common.cancel">取消</button>
- <button type="button" class="btn btn-secondary" onclick="copyExportKeys()" data-i18n="common.copy">复制</button>
- <button type="button" class="btn btn-primary" onclick="downloadExportKeys()"
+ <button type="button" class="btn btn-secondary" data-action="copy-export-keys" data-i18n="common.copy">复制</button>
+ <button type="button" class="btn btn-primary" data-action="download-export-keys"
  data-i18n="channels.exportToFile">导出文件</button>
  </div>
  </div>
@@ -780,7 +774,7 @@
  <div class="modal-content" style="max-width: 600px;">
  <div class="modal-header">
  <h2 class="modal-title" id="modelImportModalTitle" data-i18n="channels.importModelsTitle">批量添加模型</h2>
- <button type="button" class="close-btn" aria-label="关闭" onclick="closeModelImportModal()">
+ <button type="button" class="close-btn" aria-label="关闭" data-action="close-model-import-modal">
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -831,9 +825,9 @@
  </div>
  </div>
  <div class="form-actions">
- <button type="button" class="btn btn-secondary" onclick="closeModelImportModal()"
+ <button type="button" class="btn btn-secondary" data-action="close-model-import-modal"
  data-i18n="common.cancel">取消</button>
- <button type="button" class="btn btn-primary" onclick="confirmModelImport()"
+ <button type="button" class="btn btn-primary" data-action="confirm-model-import"
  data-i18n="channels.confirmAdd">确认添加</button>
  </div>
  </div>
@@ -844,7 +838,7 @@
  <div class="modal-content" style="max-width: 800px; max-height: 85vh; display: flex; flex-direction: column;">
  <div class="modal-header">
  <h2 class="modal-title" id="sortModalTitle" data-i18n="channels.sortModalTitle">渠道排序</h2>
- <button type="button" class="close-btn" aria-label="关闭" onclick="closeSortModal()">&times;</button>
+ <button type="button" class="close-btn" aria-label="关闭" data-action="close-sort-modal">&times;</button>
  </div>
  <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
  <!-- 排序列表容器 -->
@@ -864,9 +858,9 @@
  <span data-i18n="channels.sortHint">拖动卡片调整顺序 · 保存后相邻优先级相差10</span>
  </div>
  <div style="display: flex; gap: 12px;">
- <button type="button" class="btn btn-secondary" onclick="closeSortModal()"
+ <button type="button" class="btn btn-secondary" data-action="close-sort-modal"
  data-i18n="common.cancel">取消</button>
- <button type="button" class="btn btn-primary" onclick="saveSortOrder()"
+ <button type="button" class="btn btn-primary" data-action="save-sort-order"
  data-i18n="channels.saveSortOrder">保存排序</button>
  </div>
  </div>
@@ -1031,8 +1025,7 @@
  <tr class="redirect-row-main" data-index="{{index}}" data-type="main-row">
  <td class="redirect-row-index-cell">
  <div class="redirect-row-index-wrap">
- <input type="checkbox" class="model-checkbox" data-index="{{index}}"
- onchange="toggleModelSelection({{index}}, this.checked)" style="width: 16px; height: 16px;">
+ <input type="checkbox" class="model-checkbox" data-index="{{index}}" style="width: 16px; height: 16px;">
  <span class="redirect-row-index-text">{{displayIndex}}</span>
  </div>
  </td>

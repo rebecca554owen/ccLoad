@@ -400,6 +400,8 @@ function renderInlineKeyTable() {
   const hiddenInput = document.getElementById('channelApiKey');
   hiddenInput.value = inlineKeyTableData.join(',');
 
+  initKeySectionControls();
+
   // 初始化事件委托
   initKeyTableEventDelegation();
 
@@ -447,6 +449,34 @@ function renderInlineKeyTable() {
   // Translate dynamically rendered elements
   if (window.i18n && window.i18n.translatePage) {
     window.i18n.translatePage();
+  }
+}
+
+function initKeySectionControls() {
+  const bindings = [
+    ['[data-action="open-key-import"]', 'click', openKeyImportModal],
+    ['[data-action="open-key-export"]', 'click', openKeyExportModal],
+    ['[data-action="toggle-key-visibility"]', 'click', toggleInlineKeyVisibility],
+    ['[data-action="batch-delete-keys"]', 'click', batchDeleteSelectedKeys]
+  ];
+
+  bindings.forEach(([selector, eventName, handler]) => {
+    const element = document.querySelector(selector);
+    if (!element || element.dataset.bound) return;
+    element.dataset.bound = 'true';
+    element.addEventListener(eventName, handler);
+  });
+
+  const selectAllCheckbox = document.getElementById('selectAllKeys');
+  if (selectAllCheckbox && !selectAllCheckbox.dataset.bound) {
+    selectAllCheckbox.dataset.bound = 'true';
+    selectAllCheckbox.addEventListener('change', () => toggleSelectAllKeys(selectAllCheckbox.checked));
+  }
+
+  const statusFilter = document.getElementById('keyStatusFilter');
+  if (statusFilter && !statusFilter.dataset.bound) {
+    statusFilter.dataset.bound = 'true';
+    statusFilter.addEventListener('change', () => filterKeysByStatus(statusFilter.value));
   }
 }
 
@@ -811,6 +841,30 @@ function setupKeyImportPreview() {
   });
 }
 
+function initKeyModalControls() {
+  const bindings = [
+    ['[data-action="close-key-import-modal"]', 'click', closeKeyImportModal],
+    ['[data-action="confirm-inline-key-import"]', 'click', confirmInlineKeyImport],
+    ['[data-action="close-key-export-modal"]', 'click', closeKeyExportModal],
+    ['[data-action="copy-export-keys"]', 'click', copyExportKeys],
+    ['[data-action="download-export-keys"]', 'click', downloadExportKeys]
+  ];
+
+  bindings.forEach(([selector, eventName, handler]) => {
+    document.querySelectorAll(selector).forEach((element) => {
+      if (element.dataset.bound) return;
+      element.dataset.bound = 'true';
+      element.addEventListener(eventName, handler);
+    });
+  });
+
+  document.querySelectorAll('input[name="exportSeparator"]').forEach((element) => {
+    if (element.dataset.bound) return;
+    element.dataset.bound = 'true';
+    element.addEventListener('change', updateExportPreview);
+  });
+}
+
 // ============================================================
 // Key 导出功能
 // ============================================================
@@ -912,3 +966,5 @@ function downloadExportKeys() {
   downloadFile(text, 'api-keys.txt');
   closeKeyExportModal();
 }
+
+document.addEventListener('DOMContentLoaded', initKeyModalControls);

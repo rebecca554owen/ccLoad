@@ -71,6 +71,22 @@ function closeTestModal() {
   testingChannelId = null;
 }
 
+function initTestModalControls() {
+  const bindings = [
+    ['[data-action="close-test-modal"]', 'click', closeTestModal],
+    ['[data-action="run-channel-test"]', 'click', runChannelTest],
+    ['[data-action="run-batch-test"]', 'click', runBatchTest]
+  ];
+
+  bindings.forEach(([selector, eventName, handler]) => {
+    document.querySelectorAll(selector).forEach((element) => {
+      if (element.dataset.bound) return;
+      element.dataset.bound = 'true';
+      element.addEventListener(eventName, handler);
+    });
+  });
+}
+
 function resetTestModal() {
   document.getElementById('testProgress').classList.remove('show');
   document.getElementById('batchTestProgress').style.display = 'none';
@@ -341,6 +357,8 @@ async function runBatchTest() {
   clearChannelsCache();
   await loadChannels(filters.channelType);
 }
+
+document.addEventListener('DOMContentLoaded', initTestModalControls);
 
 function displayBatchTestResult(successCount, failedCount, totalCount, failedKeys) {
   const testResultDiv = document.getElementById('testResult');

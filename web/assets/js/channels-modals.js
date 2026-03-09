@@ -529,6 +529,24 @@ function closeDeleteModal() {
   deletingChannelId = null;
 }
 
+function initChannelModalAuxControls() {
+  const bindings = [
+    ['[data-action="close-channel-modal"]', 'click', closeChannelModal],
+    ['[data-action="close-delete-modal"]', 'click', closeDeleteModal],
+    ['[data-action="confirm-delete-channel"]', 'click', confirmDelete],
+    ['[data-action="close-model-import-modal"]', 'click', closeModelImportModal],
+    ['[data-action="confirm-model-import"]', 'click', confirmModelImport]
+  ];
+
+  bindings.forEach(([selector, eventName, handler]) => {
+    document.querySelectorAll(selector).forEach((element) => {
+      if (element.dataset.bound) return;
+      element.dataset.bound = 'true';
+      element.addEventListener(eventName, handler);
+    });
+  });
+}
+
 async function confirmDelete() {
   if (!deletingChannelId) return;
 
@@ -1259,6 +1277,14 @@ function initRedirectTableEventDelegation() {
 
   // 处理输入框变更
   tbody.addEventListener('change', (e) => {
+    const modelCheckbox = e.target.closest('.model-checkbox');
+    if (modelCheckbox) {
+      const index = parseInt(modelCheckbox.dataset.index, 10);
+      if (!Number.isInteger(index)) return;
+      toggleModelSelection(index, modelCheckbox.checked);
+      return;
+    }
+
     // 模型名称输入
     const fromInput = e.target.closest('.redirect-from-input');
     if (fromInput) {
@@ -1536,6 +1562,35 @@ function filterModelsByKeyword(keyword) {
   renderRedirectTable();
 }
 
+function initModelSectionControls() {
+  const bindings = [
+    ['[data-action="add-common-models"]', 'click', addCommonModels],
+    ['[data-action="fetch-models"]', 'click', fetchModelsFromAPI],
+    ['[data-action="add-model"]', 'click', addRedirectRow],
+    ['[data-action="batch-lowercase-models"]', 'click', batchLowercaseSelectedModels],
+    ['[data-action="batch-delete-models"]', 'click', batchDeleteSelectedModels]
+  ];
+
+  bindings.forEach(([selector, eventName, handler]) => {
+    const element = document.querySelector(selector);
+    if (!element || element.dataset.bound) return;
+    element.dataset.bound = 'true';
+    element.addEventListener(eventName, handler);
+  });
+
+  const selectAllCheckbox = document.getElementById('selectAllModels');
+  if (selectAllCheckbox && !selectAllCheckbox.dataset.bound) {
+    selectAllCheckbox.dataset.bound = 'true';
+    selectAllCheckbox.addEventListener('change', () => toggleSelectAllModels(selectAllCheckbox.checked));
+  }
+
+  const filterInput = document.getElementById('modelFilterInput');
+  if (filterInput && !filterInput.dataset.bound) {
+    filterInput.dataset.bound = 'true';
+    filterInput.addEventListener('input', () => filterModelsByKeyword(filterInput.value));
+  }
+}
+
 function renderRedirectTable() {
   const tbody = document.getElementById('redirectTableBody');
   const countSpan = document.getElementById('redirectCount');
@@ -1543,6 +1598,8 @@ function renderRedirectTable() {
   // 计数所有有效模型（只要有模型名称就算）
   const validCount = redirectTableData.filter(r => r.model && r.model.trim()).length;
   countSpan.textContent = validCount;
+
+  initModelSectionControls();
 
   // 初始化事件委托（仅一次）
   initRedirectTableEventDelegation();

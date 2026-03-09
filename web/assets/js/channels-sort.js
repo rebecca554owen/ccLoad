@@ -299,6 +299,19 @@ document.addEventListener('DOMContentLoaded', function() {
     sortBtn.addEventListener('click', showSortModal);
   }
 
+  const closeButtons = document.querySelectorAll('[data-action="close-sort-modal"]');
+  closeButtons.forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = 'true';
+    button.addEventListener('click', closeSortModal);
+  });
+
+  const saveButton = document.querySelector('[data-action="save-sort-order"]');
+  if (saveButton && !saveButton.dataset.bound) {
+    saveButton.dataset.bound = 'true';
+    saveButton.addEventListener('click', saveSortOrder);
+  }
+
   // 点击模态框背景关闭
   const sortModal = document.getElementById('sortModal');
   if (sortModal) {

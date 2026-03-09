@@ -85,6 +85,30 @@ function loadChannelsFilters() {
   return null;
 }
 
+function initChannelPageControls() {
+  const bindings = [
+    ['[data-action="show-add-channel-modal"]', 'click', showAddModal],
+    ['[data-action="batch-enable-channels"]', 'click', batchEnableSelectedChannels],
+    ['[data-action="batch-disable-channels"]', 'click', batchDisableSelectedChannels],
+    ['[data-action="batch-refresh-merge"]', 'click', batchRefreshSelectedChannelsMerge],
+    ['[data-action="batch-refresh-replace"]', 'click', batchRefreshSelectedChannelsReplace],
+    ['[data-action="clear-selected-channels"]', 'click', clearSelectedChannels]
+  ];
+
+  bindings.forEach(([selector, eventName, handler]) => {
+    const element = document.querySelector(selector);
+    if (!element || element.dataset.bound) return;
+    element.dataset.bound = 'true';
+    element.addEventListener(eventName, handler);
+  });
+
+  const visibleSelectionCheckbox = document.getElementById('visibleSelectionCheckbox');
+  if (visibleSelectionCheckbox && !visibleSelectionCheckbox.dataset.bound) {
+    visibleSelectionCheckbox.dataset.bound = 'true';
+    visibleSelectionCheckbox.addEventListener('change', toggleVisibleChannelsSelection);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Translate static elements first
   if (window.i18n && window.i18n.translatePage) {
@@ -92,12 +116,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (window.initTopbar) initTopbar('channels');
+  initChannelPageControls();
   setupFilterListeners();
   setupImportExport();
   setupKeyImportPreview();
   setupModelImportPreview();
   if (typeof initChannelFormDirtyTracking === 'function') {
     initChannelFormDirtyTracking();
+  }
+  if (typeof initChannelModalAuxControls === 'function') {
+    initChannelModalAuxControls();
   }
   // 初始化渠道类型变更事件委托（用于自定义端点提示）
   if (typeof initChannelTypeDelegation === 'function') {
