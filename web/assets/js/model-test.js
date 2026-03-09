@@ -956,7 +956,7 @@ function showDeletePreviewModal(previewText, onConfirmAsync) {
     deletePreviewProgress.style.display = 'none';
     deletePreviewRuntimeLog.style.display = 'none';
     deletePreviewRuntimeLog.textContent = '';
-    deletePreviewModal.classList.add('show');
+    window.openModal(deletePreviewModal, { initialFocus: deletePreviewConfirmBtn });
 
     let settled = false;
     let busy = false;
@@ -983,7 +983,7 @@ function showDeletePreviewModal(previewText, onConfirmAsync) {
 
     const cleanup = () => {
       setBusy(false);
-      deletePreviewModal.classList.remove('show');
+      window.closeModal(deletePreviewModal, { restoreFocus: false });
       deletePreviewConfirmBtn.removeEventListener('click', onConfirm);
       deletePreviewCancelBtn.removeEventListener('click', onCancel);
       deletePreviewCloseBtn.removeEventListener('click', onCancel);

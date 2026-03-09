@@ -168,11 +168,12 @@ const MODAL_CLOSE_ORDER = [
   { id: 'sortModal', closeFn: 'closeSortModal' },
   { id: 'deleteModal', closeFn: 'closeDeleteModal' },
   { id: 'testModal', closeFn: 'closeTestModal' },
-  { id: 'channelModal', closeFn: 'closeModal' }
+  { id: 'channelModal', closeFn: 'closeChannelModal' }
 ];
 
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
+  if (typeof window.getTopModal === 'function' && window.getTopModal()) return;
 
   for (const { id, closeFn } of MODAL_CLOSE_ORDER) {
     const modal = document.getElementById(id);

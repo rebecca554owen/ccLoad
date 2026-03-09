@@ -17,25 +17,25 @@
 
     // 趋势类型配置
     const TREND_TYPE_CONFIG = {
-      count: { color: '#10b981', areaColor: 'rgba(16, 185, 129, 0.22)', label: 'totalSuccess' },
-      first_byte: { color: '#0ea5e9', areaColor: 'rgba(14, 165, 233, 0.18)', label: 'avgFirstByteTime' },
-      duration: { color: '#a855f7', areaColor: 'rgba(168, 85, 247, 0.16)', label: 'avgDuration' },
+      count: { color: '#30D158', areaColor: 'rgba(48, 209, 88, 0.22)', label: 'totalSuccess' },
+      first_byte: { color: '#32ADE6', areaColor: 'rgba(50, 173, 230, 0.18)', label: 'avgFirstByteTime' },
+      duration: { color: '#5ac8fa', areaColor: 'rgba(90, 200, 250, 0.16)', label: 'avgDuration' },
       cost: { color: '#f97316', areaColor: 'rgba(249, 115, 22, 0.16)', label: 'totalCost' },
-      rpm: { color: '#3b82f6', areaColor: 'rgba(59, 130, 246, 0.16)', label: 'rpm' }
+      rpm: { color: '#0A84FF', areaColor: 'rgba(10, 132, 255, 0.16)', label: 'rpm' }
     };
 
     // 趋势颜色常量
     const TREND_COLORS = {
-      success: '#10b981',
-      error: '#ef4444',
-      firstByte: '#0ea5e9',
-      duration: '#a855f7',
-      cost: '#f97316',
-      rpm: '#3b82f6',
-      inputTokens: '#3b82f6',
-      outputTokens: '#10b981',
+      success: '#30D158',
+      error: '#FF453A',
+      firstByte: '#32ADE6',
+      duration: '#5AC8FA',
+      cost: '#FF7A1A',
+      rpm: '#0A84FF',
+      inputTokens: '#0A84FF',
+      outputTokens: '#30D158',
       cacheRead: '#f97316',
-      cacheCreate: '#a855f7'
+      cacheCreate: '#5AC8FA'
     };
 
     // 阈值常量
@@ -275,18 +275,18 @@
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
           itemStyle: {
-            color: '#10b981'
+            color: '#30D158'
           },
           lineStyle: {
             width: 2,
-            color: '#10b981',
+            color: '#30D158',
             cap: 'round',
             join: 'round'
           },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(16, 185, 129, 0.22)' },
-              { offset: 1, color: 'rgba(16, 185, 129, 0.00)' }
+              { offset: 0, color: 'rgba(48, 209, 88, 0.22)' },
+              { offset: 1, color: 'rgba(48, 209, 88, 0.00)' }
             ])
           },
           data: window.trendData.map(point => {
@@ -306,18 +306,18 @@
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
           itemStyle: {
-            color: '#ef4444'
+            color: '#FF453A'
           },
           lineStyle: {
             width: 2,
-            color: '#ef4444',
+            color: '#FF453A',
             cap: 'round',
             join: 'round'
           },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(239, 68, 68, 0.12)' },
-              { offset: 1, color: 'rgba(239, 68, 68, 0.00)' }
+              { offset: 0, color: 'rgba(255, 69, 58, 0.12)' },
+              { offset: 1, color: 'rgba(255, 69, 58, 0.00)' }
             ])
           },
           data: window.trendData.map(point => {
@@ -338,18 +338,18 @@
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
           itemStyle: {
-            color: '#0ea5e9'
+            color: '#32ADE6'
           },
           lineStyle: {
             width: 2,
-            color: '#0ea5e9',
+            color: '#32ADE6',
             cap: 'round',
             join: 'round'
           },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(14, 165, 233, 0.18)' },
-              { offset: 1, color: 'rgba(14, 165, 233, 0.00)' }
+              { offset: 0, color: 'rgba(50, 173, 230, 0.18)' },
+              { offset: 1, color: 'rgba(50, 173, 230, 0.00)' }
             ])
           },
           data: window.trendData.map(point => {
@@ -370,18 +370,18 @@
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
           itemStyle: {
-            color: '#a855f7'
+            color: '#5AC8FA'
           },
           lineStyle: {
             width: 2,
-            color: '#a855f7',
+            color: '#5AC8FA',
             cap: 'round',
             join: 'round'
           },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(168, 85, 247, 0.16)' },
-              { offset: 1, color: 'rgba(168, 85, 247, 0.00)' }
+              { offset: 0, color: 'rgba(90, 200, 250, 0.16)' },
+              { offset: 1, color: 'rgba(90, 200, 250, 0.00)' }
             ])
           },
           data: window.trendData.map(point => {
@@ -401,8 +401,8 @@
           sampling: 'lttb',
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
-          itemStyle: { color: '#3b82f6' },
-          lineStyle: { width: 2, color: '#3b82f6', cap: 'round', join: 'round' },
+          itemStyle: { color: '#0A84FF' },
+          lineStyle: { width: 2, color: '#0A84FF', cap: 'round', join: 'round' },
           data: window.trendData.map(point => point.input_tokens || 0)
         });
         series.push({
@@ -415,8 +415,8 @@
           sampling: 'lttb',
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
-          itemStyle: { color: '#10b981' },
-          lineStyle: { width: 2, color: '#10b981', cap: 'round', join: 'round' },
+          itemStyle: { color: '#30D158' },
+          lineStyle: { width: 2, color: '#30D158', cap: 'round', join: 'round' },
           data: window.trendData.map(point => point.output_tokens || 0)
         });
         series.push({
@@ -443,8 +443,8 @@
           sampling: 'lttb',
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
-          itemStyle: { color: '#a855f7' },
-          lineStyle: { width: 2, color: '#a855f7', cap: 'round', join: 'round' },
+          itemStyle: { color: '#5AC8FA' },
+          lineStyle: { width: 2, color: '#5AC8FA', cap: 'round', join: 'round' },
           data: window.trendData.map(point => point.cache_creation_tokens || 0)
         });
       } else if (trendType === 'cost') {
@@ -492,12 +492,12 @@
           sampling: 'lttb',
           connectNulls: false,
           emphasis: { focus: 'series', showSymbol: true },
-          itemStyle: { color: '#3b82f6' },
-          lineStyle: { width: 2, color: '#3b82f6', cap: 'round', join: 'round' },
+          itemStyle: { color: '#0A84FF' },
+          lineStyle: { width: 2, color: '#0A84FF', cap: 'round', join: 'round' },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(59, 130, 246, 0.16)' },
-              { offset: 1, color: 'rgba(59, 130, 246, 0.00)' }
+              { offset: 0, color: 'rgba(10, 132, 255, 0.16)' },
+              { offset: 1, color: 'rgba(10, 132, 255, 0.00)' }
             ])
           },
           data: window.trendData.map(point => {
@@ -944,10 +944,10 @@
             height: 20,
             borderColor: '#e5e7eb',
             backgroundColor: 'rgba(148, 163, 184, 0.10)',
-            fillerColor: 'rgba(59, 130, 246, 0.16)',
+            fillerColor: 'rgba(10, 132, 255, 0.16)',
             handleStyle: {
-              color: '#3b82f6',
-              borderColor: '#3b82f6'
+              color: '#0A84FF',
+              borderColor: '#0A84FF'
             },
             textStyle: {
               color: '#6b7280',
@@ -1191,24 +1191,24 @@ function shouldShowZoom(points, hours, trendType) {
     }
 
     // 生成渠道颜色（避免与总体趋势线颜色冲突）
-    // 总体趋势线保留颜色: #10b981(绿), #ef4444(红), #0ea5e9(天蓝), #a855f7(紫), #f97316(橙)
+    // 总体趋势线保留颜色: 蓝/绿/青/橙/红，渠道线避免与总体线过度冲突
     function generateChannelColors(channels) {
       const colors = [
-        '#3b82f6', // 蓝色
-        '#06b6d4', // 青色
-        '#14b8a6', // 绿松色
-        '#84cc16', // 黄绿色
-        '#eab308', // 黄色
-        '#fb923c', // 浅橙色
-        '#ec4899', // 粉色
-        '#6366f1', // 靛蓝色
-        '#8b5cf6', // 淡紫色
-        '#22c55e', // 亮绿色
-        '#f43f5e', // 玫红色
-        '#0891b2', // 深青色
-        '#65a30d', // 橄榄绿
-        '#ca8a04', // 金黄色
-        '#dc2626'  // 深红色
+        '#0A84FF',
+        '#5AC8FA',
+        '#32ADE6',
+        '#40C8AE',
+        '#9AD94F',
+        '#E7B416',
+        '#FFB340',
+        '#FF7A1A',
+        '#30D158',
+        '#58C77A',
+        '#64D2FF',
+        '#2C9ED1',
+        '#7D8A9C',
+        '#C77700',
+        '#D92F24'
       ];
 
       const channelColors = {};

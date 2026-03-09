@@ -14,27 +14,6 @@
     let selectedModelsForAdd = new Set();    // 模型选择对话框中已选的模型
     let currentVisibleModels = [];            // 当前可见的模型列表（用于全选功能）
 
-    // 对话框栈，用于 ESC 键层级关闭
-    const modalStack = [];
-
-    /** 注册全局 ESC 键处理 */
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modalStack.length > 0) {
-        const topModal = modalStack[modalStack.length - 1];
-        topModal.close();
-      }
-    });
-
-    /** 压入对话框栈 */
-    function pushModal(closeFunc) {
-      modalStack.push({ close: closeFunc });
-    }
-
-    /** 弹出对话框栈 */
-    function popModal() {
-      modalStack.pop();
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
       // 初始化时间范围选择器
       window.initTimeRangeSelector((range) => {
@@ -508,11 +487,11 @@
       document.getElementById('tokenCostLimitUSD').value = 0;
       document.getElementById('tokenActive').checked = true;
       document.getElementById('customExpiryContainer').style.display = 'none';
-      document.getElementById('createModal').style.display = 'block';
+      window.openModal('createModal', { initialFocus: '#tokenDescription' });
     }
 
     function closeCreateModal() {
-      document.getElementById('createModal').style.display = 'none';
+      window.closeModal('createModal');
     }
 
     async function createToken() {
@@ -566,7 +545,7 @@
 
         closeCreateModal();
         document.getElementById('newTokenValue').value = data.token;
-        document.getElementById('tokenResultModal').style.display = 'block';
+        window.openModal('tokenResultModal', { initialFocus: '#newTokenValue' });
         loadTokens();
         window.showNotification(t('tokens.msg.createSuccess'), 'success');
       } catch (error) {
@@ -589,7 +568,7 @@
     }
 
     function closeTokenResultModal() {
-      document.getElementById('tokenResultModal').style.display = 'none';
+      window.closeModal('tokenResultModal');
       document.getElementById('newTokenValue').value = '';
     }
 
@@ -624,16 +603,14 @@
       selectedAllowedModelIndices.clear();
       renderAllowedModelsTable();
 
-      document.getElementById('editModal').style.display = 'block';
-      pushModal(closeEditModal);
+      window.openModal('editModal', { initialFocus: '#editTokenDescription' });
     }
 
     function closeEditModal() {
-      document.getElementById('editModal').style.display = 'none';
+      window.closeModal('editModal');
       // 清理模型限制状态
       editAllowedModels = [];
       selectedAllowedModelIndices.clear();
-      popModal();
     }
 
     async function updateToken() {
@@ -682,7 +659,7 @@
         closeEditModal();
         if (data.token) {
           document.getElementById('newTokenValue').value = data.token;
-          document.getElementById('tokenResultModal').style.display = 'block';
+          window.openModal('tokenResultModal', { initialFocus: '#newTokenValue' });
           window.showNotification(t('tokens.msg.updateSuccess') + ' - ' + t('tokens.msg.regenerateSuccess'), 'success');
         } else {
           window.showNotification(t('tokens.msg.updateSuccess'), 'success');
@@ -885,17 +862,15 @@
       selectedModelsForAdd.clear();
       document.getElementById('modelSearchInput').value = '';
       renderAvailableModels('');
-      document.getElementById('modelSelectModal').style.display = 'block';
-      pushModal(closeModelSelectModal);
+      window.openModal('modelSelectModal', { initialFocus: '#modelSearchInput' });
     }
 
     /**
      * 关闭模型选择对话框
      */
     function closeModelSelectModal() {
-      document.getElementById('modelSelectModal').style.display = 'none';
+      window.closeModal('modelSelectModal');
       selectedModelsForAdd.clear();
-      popModal();
     }
 
     /**
@@ -1074,17 +1049,15 @@
     function showModelImportModal() {
       document.getElementById('tokenModelImportTextarea').value = '';
       document.getElementById('tokenModelImportPreview').style.display = 'none';
-      document.getElementById('modelImportModal').style.display = 'block';
+      window.openModal('modelImportModal', { initialFocus: '#tokenModelImportTextarea' });
       setTimeout(() => document.getElementById('tokenModelImportTextarea').focus(), 100);
-      pushModal(closeModelImportModal);
     }
 
     /**
      * 关闭模型导入对话框
      */
     function closeModelImportModal() {
-      document.getElementById('modelImportModal').style.display = 'none';
-      popModal();
+      window.closeModal('modelImportModal');
     }
 
     /**

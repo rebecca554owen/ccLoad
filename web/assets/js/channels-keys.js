@@ -780,12 +780,12 @@ function confirmInlineKeyImport() {
 function openKeyImportModal() {
   document.getElementById('keyImportTextarea').value = '';
   document.getElementById('keyImportPreviewContent').style.display = 'none';
-  document.getElementById('keyImportModal').classList.add('show');
+  window.openModal('keyImportModal', { initialFocus: '#keyImportTextarea' });
   setTimeout(() => document.getElementById('keyImportTextarea').focus(), 100);
 }
 
 function closeKeyImportModal() {
-  document.getElementById('keyImportModal').classList.remove('show');
+  window.closeModal('keyImportModal');
 }
 
 function setupKeyImportPreview() {
@@ -839,7 +839,7 @@ function updateExportButton(count) {
  */
 function openKeyExportModal() {
   if (selectedKeyIndices.size === 0) return;
-  document.getElementById('keyExportModal').classList.add('show');
+  window.openModal('keyExportModal', { initialFocus: '#keyExportPreview' });
   updateExportPreview();
 }
 
@@ -847,7 +847,7 @@ function openKeyExportModal() {
  * 关闭导出对话框
  */
 function closeKeyExportModal() {
-  document.getElementById('keyExportModal').classList.remove('show');
+  window.closeModal('keyExportModal');
 }
 
 /**

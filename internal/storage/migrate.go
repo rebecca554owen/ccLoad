@@ -50,6 +50,7 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 		schema.DefineChannelsTable,
 		schema.DefineAPIKeysTable,
 		schema.DefineChannelModelsTable,
+		schema.DefineChannelModelMappingsTable, // 多目标模型重定向表
 		schema.DefineAuthTokensTable,
 		schema.DefineSystemSettingsTable,
 		schema.DefineAdminSessionsTable,

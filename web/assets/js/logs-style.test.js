@@ -9,7 +9,7 @@ const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'logs.css'), 'utf8
 test('日志页底部分页使用专用紧凑样式类', () => {
   assert.match(html, /class="pagination-controls\s+logs-pagination-controls"/);
   assert.match(html, /class="pagination-info\s+logs-pagination-info"/);
-  assert.match(html, /id="logs_jump_page"[\s\S]*class="logs-jump-input"/);
+  assert.match(html, /id="logs_jump_page"[\s\S]*class="form-input\s+logs-jump-input"/);
 });
 
 test('日志页跳转输入框显式锁定浅色背景和文字颜色', () => {
@@ -112,7 +112,7 @@ test('日志页桌面筛选组设置基准宽度避免互相挤压', () => {
 });
 
 test('日志页筛选输入控件允许在 flex 布局中收缩', () => {
-  const controlMatch = css.match(/\.logs-filter-group\s+\.filter-input,\s*\.logs-filter-group\s+\.filter-select\s*\{[^}]+\}/);
+  const controlMatch = css.match(/\.logs-filter-group\s+\.filter-input,\s*\.logs-filter-group\s+\.form-select\s*\{[^}]+\}/);
   assert.ok(controlMatch, '缺少日志页筛选控件收缩样式');
 
   const styleBlock = controlMatch[0];

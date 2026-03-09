@@ -157,13 +157,10 @@ func (cr *ChannelRequest) Validate() error {
 // ToConfig 转换为Config结构(不包含API Key,API Key单独处理)
 // 规范化重定向模型：如果 RedirectModel == Model 则清空（透传语义，节省存储）
 func (cr *ChannelRequest) ToConfig() *model.Config {
-	// 规范化模型条目：同名重定向清空为透传
 	normalizedModels := make([]model.ModelEntry, len(cr.Models))
 	for i, m := range cr.Models {
 		normalizedModels[i] = m
-		if m.RedirectModel == m.Model {
-			normalizedModels[i].RedirectModel = ""
-		}
+		normalizedModels[i].NormalizeRedirects()
 	}
 
 	return &model.Config{
@@ -214,4 +211,60 @@ type CooldownRequest struct {
 // SettingUpdateRequest 系统配置更新请求
 type SettingUpdateRequest struct {
 	Value string `json:"value" binding:"required"`
+}
+
+// ==================== 模型映射类型 ====================
+
+// ModelMappingTarget 模型映射目标
+type ModelMappingTarget struct {
+	TargetModel string `json:"target_model" binding:"required"`
+	Weight      int    `json:"weight"` // 默认 1
+}
+
+// ModelMappingRequest 批量更新模型映射请求
+type ModelMappingRequest struct {
+	Targets []ModelMappingTarget `json:"targets" binding:"required,min=1"`
+}
+
+// Validate 验证请求
+func (r *ModelMappingRequest) Validate() error {
+	if len(r.Targets) == 0 {
+		return fmt.Errorf("targets cannot be empty")
+	}
+	seen := make(map[string]struct{}, len(r.Targets))
+	for i, t := range r.Targets {
+		if t.TargetModel == "" {
+			return fmt.Errorf("targets[%d]: target_model cannot be empty", i)
+		}
+		if _, exists := seen[t.TargetModel]; exists {
+			return fmt.Errorf("duplicate target_model: %s", t.TargetModel)
+		}
+		seen[t.TargetModel] = struct{}{}
+	}
+	return nil
+}
+
+// ModelMappingResponse 模型映射响应
+type ModelMappingResponse struct {
+	Model     string               `json:"model"`
+	Targets   []ModelMappingTarget `json:"targets"`
+	CreatedAt int64                `json:"created_at"`
+	UpdatedAt int64                `json:"updated_at"`
+}
+
+// ModelTargetCooldownRequest 模型目标冷却请求
+type ModelTargetCooldownRequest struct {
+	TargetModel string `json:"target_model" binding:"required"`
+	DurationMs  int64  `json:"duration_ms" binding:"required,min=1000"`
+}
+
+// Validate 验证请求参数
+func (r *ModelTargetCooldownRequest) Validate() error {
+	if r.TargetModel == "" {
+		return fmt.Errorf("target_model cannot be empty")
+	}
+	if r.DurationMs < 1000 {
+		return fmt.Errorf("duration_ms must be at least 1000")
+	}
+	return nil
 }

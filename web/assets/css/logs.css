@@ -43,8 +43,9 @@
       display: none;
       text-align: center;
       padding: var(--space-4);
-      background: var(--neutral-50);
-      border-radius: 8px;
+      background: rgba(var(--primary-rgb), 0.06);
+      border: 1px solid rgba(var(--primary-rgb), 0.12);
+      border-radius: 14px;
       margin: var(--space-4) 0;
     }
 
@@ -183,23 +184,16 @@
 
     .logs-jump-input {
       width: 84px;
-      padding: 4px 8px;
-      border: 1px solid var(--neutral-300);
-      border-radius: 4px;
       text-align: center;
       font-size: var(--text-sm);
       color: var(--neutral-900);
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.96);
       color-scheme: light;
       -webkit-text-fill-color: var(--neutral-900);
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
 
     .logs-jump-input:focus {
-      outline: none;
-      border-color: var(--primary-500);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      background: white;
+      background: rgba(255, 255, 255, 0.99);
     }
 
     .logs-jump-input::placeholder {
@@ -216,7 +210,7 @@
     }
 
     .logs-filter-group .filter-input,
-    .logs-filter-group .filter-select {
+    .logs-filter-group .form-select {
       width: 100%;
       min-width: 0;
     }
@@ -291,19 +285,19 @@
 
     /* 列背景交替（按列斑马纹） */
     .logs-table tbody td:nth-child(odd) {
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.78);
     }
 
     .logs-table tbody td:nth-child(even) {
-      background: rgba(248, 250, 252, 0.96);
+      background: rgba(244, 247, 251, 0.88);
     }
 
     [data-theme="dark"] .logs-table tbody td:nth-child(odd) {
-      background: rgba(30, 30, 35, 0.92);
+      background: rgba(25, 31, 40, 0.82);
     }
 
     [data-theme="dark"] .logs-table tbody td:nth-child(even) {
-      background: rgba(40, 40, 45, 0.96);
+      background: rgba(31, 38, 48, 0.9);
     }
 
     /* 固定宽度列 */

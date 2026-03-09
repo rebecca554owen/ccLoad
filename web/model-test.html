@@ -6,30 +6,10 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
+  <meta name="theme-color" content="#0A84FF">
   <title data-i18n="modelTest.title">模型测试 - Claude Code & Codex Proxy</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <style>
-    .mode-tab-btn {
-      padding: 8px 14px;
-      font-size: 13px;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      background: var(--color-bg-secondary);
-      color: var(--color-text-secondary);
-      cursor: pointer;
-    }
-
-    .mode-tab-btn.active {
-      background: var(--primary-500);
-      border-color: var(--primary-500);
-      color: #fff;
-    }
-
-    [data-theme="dark"] .mode-tab-btn.active {
-      color: var(--neutral-100);
-    }
-
     .delete-preview-text {
       margin: 0;
       margin-top: 10px;
@@ -80,7 +60,7 @@
         <section class="page-section" style="overflow: visible;">
           <div class="glass-card" style="overflow: visible;">
           <!-- 模式切换 -->
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div class="mode-tab-group" style="margin-bottom: 12px;">
             <button id="modeTabChannel" class="mode-tab-btn active" onclick="setTestMode('channel')" data-i18n="modelTest.mode.channel">按渠道测试</button>
             <button id="modeTabModel" class="mode-tab-btn" onclick="setTestMode('model')" data-i18n="modelTest.mode.model">按模型测试</button>
           </div>
@@ -186,11 +166,11 @@
   </template>
 
   <!-- 删除预览确认弹窗 -->
-  <div id="deletePreviewModal" class="modal">
+  <div id="deletePreviewModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="deletePreviewModalTitle">
     <div class="modal-content" style="max-width: 760px; width: min(90vw, 760px);">
       <div class="modal-header" style="margin-bottom: 8px;">
-        <h2 class="modal-title" data-i18n="modelTest.deletePreviewTitle">确认删除模型</h2>
-        <button id="deletePreviewCloseBtn" class="close-btn" aria-label="Close">&times;</button>
+        <h2 id="deletePreviewModalTitle" class="modal-title" data-i18n="modelTest.deletePreviewTitle">确认删除模型</h2>
+        <button id="deletePreviewCloseBtn" type="button" class="close-btn" aria-label="关闭">&times;</button>
       </div>
       <p style="margin: 0; color: var(--color-text-secondary); font-size: 13px;" data-i18n="modelTest.deletePreviewDesc">将按以下分组删除，请确认：</p>
       <pre id="deletePreviewContent" class="delete-preview-text">-</pre>

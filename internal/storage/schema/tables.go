@@ -52,6 +52,21 @@ func DefineChannelModelsTable() *TableBuilder {
 		Index("idx_channel_models_model", "model")
 }
 
+// DefineChannelModelMappingsTable 定义channel_model_mappings表结构
+// 支持多目标模型重定向，按权重分配流量
+func DefineChannelModelMappingsTable() *TableBuilder {
+	return NewTable("channel_model_mappings").
+		Column("channel_id INT NOT NULL").
+		Column("model VARCHAR(191) NOT NULL").
+		Column("target_model VARCHAR(191) NOT NULL").
+		Column("weight INT NOT NULL DEFAULT 1"). // 权重，默认1
+		Column("created_at BIGINT NOT NULL DEFAULT 0").
+		Column("updated_at BIGINT NOT NULL DEFAULT 0").
+		Column("PRIMARY KEY (channel_id, model, target_model)").
+		Column("FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE").
+		Index("idx_channel_model_mappings_channel_model", "channel_id, model")
+}
+
 // DefineAuthTokensTable 定义auth_tokens表结构
 func DefineAuthTokensTable() *TableBuilder {
 	return NewTable("auth_tokens").

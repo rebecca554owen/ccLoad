@@ -2,9 +2,9 @@
 const CHANNEL_TYPE_CONFIGS = {
   'anthropic': {
     text: 'Claude',
-    color: '#8b5cf6',
-    bgColor: '#f3e8ff',
-    borderColor: '#c4b5fd'
+    color: '#0A84FF',
+    bgColor: '#EAF4FF',
+    borderColor: '#B9DBFF'
   },
   'codex': {
     text: 'Codex',
@@ -20,9 +20,9 @@ const CHANNEL_TYPE_CONFIGS = {
   },
   'gemini': {
     text: 'Gemini',
-    color: '#2563eb',
-    bgColor: '#dbeafe',
-    borderColor: '#93c5fd'
+    color: '#2C9ED1',
+    bgColor: '#EAF8FF',
+    borderColor: '#B9E9FF'
   }
 };
 

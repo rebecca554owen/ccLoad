@@ -10,8 +10,25 @@ import (
 
 // ModelEntry 模型配置条目
 type ModelEntry struct {
-	Model         string `json:"model"`                    // 模型名称
-	RedirectModel string `json:"redirect_model,omitempty"` // 重定向目标模型（空表示不重定向）
+	Model         string            `json:"model"`                    // 模型名称
+	RedirectModel string            `json:"redirect_model,omitempty"` // 重定向目标模型（空表示不重定向）
+	Targets       []ModelTargetSpec `json:"targets,omitempty"`
+}
+
+type ModelTargetSpec struct {
+	TargetModel string `json:"target_model"`
+	Weight      int    `json:"weight"`
+}
+
+// ChannelModelMapping 渠道模型多目标重定向映射
+// 支持一个模型映射到多个目标模型，按权重分配流量
+type ChannelModelMapping struct {
+	ChannelID   int64  `json:"channel_id"`   // 渠道ID
+	Model       string `json:"model"`        // 原始模型名称
+	TargetModel string `json:"target_model"` // 目标模型名称
+	Weight      int    `json:"weight"`       // 权重，默认1
+	CreatedAt   int64  `json:"created_at"`   // 创建时间（Unix秒）
+	UpdatedAt   int64  `json:"updated_at"`   // 更新时间（Unix秒）
 }
 
 // Validate 验证并规范化模型条目
@@ -30,7 +47,58 @@ func (e *ModelEntry) Validate() error {
 	if strings.ContainsAny(e.RedirectModel, "\x00\r\n") {
 		return errors.New("redirect_model contains illegal characters")
 	}
+
+	if len(e.Targets) > 0 {
+		seenTargets := make(map[string]struct{}, len(e.Targets))
+		normalizedTargets := make([]ModelTargetSpec, 0, len(e.Targets))
+		for _, target := range e.Targets {
+			target.TargetModel = strings.TrimSpace(target.TargetModel)
+			if target.TargetModel == "" {
+				continue
+			}
+			if strings.ContainsAny(target.TargetModel, "\x00\r\n") {
+				return errors.New("target_model contains illegal characters")
+			}
+			if _, exists := seenTargets[target.TargetModel]; exists {
+				return errors.New("duplicate target_model")
+			}
+			seenTargets[target.TargetModel] = struct{}{}
+			if target.Weight <= 0 {
+				target.Weight = 1
+			}
+			normalizedTargets = append(normalizedTargets, target)
+		}
+		e.Targets = normalizedTargets
+	}
+
+	e.NormalizeRedirects()
 	return nil
+}
+
+func (e *ModelEntry) NormalizeRedirects() {
+	if len(e.Targets) == 0 {
+		if e.RedirectModel == "" || e.RedirectModel == e.Model {
+			e.RedirectModel = ""
+			e.Targets = nil
+			return
+		}
+		e.Targets = []ModelTargetSpec{{
+			TargetModel: e.RedirectModel,
+			Weight:      1,
+		}}
+		return
+	}
+
+	if len(e.Targets) == 1 {
+		if e.Targets[0].TargetModel == "" || e.Targets[0].TargetModel == e.Model {
+			e.RedirectModel = ""
+			return
+		}
+		e.RedirectModel = e.Targets[0].TargetModel
+		return
+	}
+
+	e.RedirectModel = ""
 }
 
 // Config 渠道配置

@@ -505,12 +505,14 @@ func (s *AuthService) ReloadAuthTokens() error {
 		newTokenIDs[t.Token] = t.ID
 		// 只有有限制时才存储（节省内存）
 		if len(t.AllowedModels) > 0 {
-			newTokenModels[t.Token] = t.AllowedModels
+			tokenHash := model.HashToken(t.Token)
+			newTokenModels[tokenHash] = t.AllowedModels
 		}
 		// 费用限额：只为”有限额”的令牌维护状态（避免无谓内存占用）
 		limitMicro := t.CostLimitMicroUSD
 		if limitMicro > 0 {
-			newTokenCostLimits[t.Token] = tokenCostLimit{
+			tokenHash := model.HashToken(t.Token)
+			newTokenCostLimits[tokenHash] = tokenCostLimit{
 				usedMicroUSD:  t.CostUsedMicroUSD,
 				limitMicroUSD: limitMicro,
 			}

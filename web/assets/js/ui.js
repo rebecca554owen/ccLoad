@@ -453,16 +453,16 @@
       gap: 12px;
     `,
     success: {
-      light: { bg: 'rgba(24, 160, 88, 0.15)', color: '#16a34a', border: 'rgba(24, 160, 88, 0.3)' },
-      dark: { bg: 'rgba(24, 160, 88, 0.2)', color: '#4ade80', border: 'rgba(24, 160, 88, 0.4)' }
+      light: { bg: 'rgba(48, 209, 88, 0.12)', color: '#248a3d', border: 'rgba(48, 209, 88, 0.24)' },
+      dark: { bg: 'rgba(48, 209, 88, 0.18)', color: '#8df0a5', border: 'rgba(48, 209, 88, 0.32)' }
     },
     error: {
-      light: { bg: 'rgba(208, 48, 80, 0.15)', color: '#dc2626', border: 'rgba(208, 48, 80, 0.3)' },
-      dark: { bg: 'rgba(208, 48, 80, 0.2)', color: '#f87171', border: 'rgba(208, 48, 80, 0.4)' }
+      light: { bg: 'rgba(255, 69, 58, 0.12)', color: '#d92f24', border: 'rgba(255, 69, 58, 0.24)' },
+      dark: { bg: 'rgba(255, 69, 58, 0.18)', color: '#ff9f96', border: 'rgba(255, 69, 58, 0.32)' }
     },
     info: {
-      light: { bg: 'rgba(32, 128, 240, 0.15)', color: '#2563eb', border: 'rgba(32, 128, 240, 0.3)' },
-      dark: { bg: 'rgba(32, 128, 240, 0.2)', color: '#60a5fa', border: 'rgba(32, 128, 240, 0.4)' }
+      light: { bg: 'rgba(10, 132, 255, 0.12)', color: '#0071e3', border: 'rgba(10, 132, 255, 0.24)' },
+      dark: { bg: 'rgba(10, 132, 255, 0.18)', color: '#89c8ff', border: 'rgba(10, 132, 255, 0.32)' }
     }
   };
 
@@ -1419,6 +1419,169 @@
 
   window.populateSelect = populateSelect;
   window.initTimeRangeSelector = initTimeRangeSelector;
+
+  const modalState = {
+    stack: [],
+    previousFocus: new Map()
+  };
+
+  function getModalElement(modalOrId) {
+    if (!modalOrId) return null;
+    return typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
+  }
+
+  function getFocusableElements(modal) {
+    return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(el => !el.disabled && el.getAttribute('aria-hidden') !== 'true' && el.offsetParent !== null);
+  }
+
+  function syncBodyModalState() {
+    document.body.classList.toggle('modal-open', modalState.stack.length > 0);
+  }
+
+  function registerModal(modalOrId) {
+    const modal = getModalElement(modalOrId);
+    if (!modal || modal.dataset.modalRegistered === 'true') return modal;
+
+    modal.dataset.modalRegistered = 'true';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('tabindex', '-1');
+    if (!modal.hasAttribute('role')) modal.setAttribute('role', 'dialog');
+    if (!modal.hasAttribute('aria-modal')) modal.setAttribute('aria-modal', 'true');
+
+    modal.addEventListener('mousedown', (event) => {
+      if (event.target !== modal) return;
+      if (modal.dataset.dismissBackdrop === 'false') return;
+      window.closeModal(modal);
+    });
+
+    return modal;
+  }
+
+  function openModal(modalOrId, options = {}) {
+    const modal = registerModal(modalOrId);
+    if (!modal) return null;
+
+    const isAlreadyOpen = modal.classList.contains('show');
+    const previousFocus = options.restoreFocus || document.activeElement;
+    if (!isAlreadyOpen) {
+      modalState.previousFocus.set(modal, previousFocus);
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      if (!modalState.stack.includes(modal)) {
+        modalState.stack.push(modal);
+      }
+      syncBodyModalState();
+    }
+
+    const focusTarget = typeof options.initialFocus === 'string'
+      ? modal.querySelector(options.initialFocus)
+      : options.initialFocus;
+    const fallback = getFocusableElements(modal)[0] || modal.querySelector('.modal-content') || modal;
+    setTimeout(() => (focusTarget || fallback)?.focus(), 0);
+    return modal;
+  }
+
+  function focusBeforeModalHide(modal, target) {
+    if (target && target.isConnected && !modal.contains(target) && typeof target.focus === 'function') {
+      try {
+        target.focus({ preventScroll: true });
+        return;
+      } catch (_) {
+        target.focus();
+        return;
+      }
+    }
+
+    const active = document.activeElement;
+    if (active && modal.contains(active) && typeof active.blur === 'function') {
+      active.blur();
+    }
+
+    const body = document.body;
+    if (!body) return;
+
+    const hadTabIndex = body.hasAttribute('tabindex');
+    const prevTabIndex = body.getAttribute('tabindex');
+    if (!hadTabIndex) {
+      body.setAttribute('tabindex', '-1');
+    }
+    try {
+      body.focus({ preventScroll: true });
+    } catch (_) {
+      body.focus();
+    }
+    if (!hadTabIndex) {
+      body.removeAttribute('tabindex');
+    } else if (prevTabIndex !== null) {
+      body.setAttribute('tabindex', prevTabIndex);
+    }
+  }
+
+  function closeModal(modalOrId, options = {}) {
+    const modal = getModalElement(modalOrId);
+    if (!modal || !modal.classList.contains('show')) return;
+
+    const shouldRestoreFocus = options.restoreFocus !== false;
+    const previousFocus = modalState.previousFocus.get(modal);
+    focusBeforeModalHide(modal, shouldRestoreFocus ? previousFocus : null);
+
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    modalState.stack = modalState.stack.filter(item => item !== modal);
+    syncBodyModalState();
+
+    modalState.previousFocus.delete(modal);
+  }
+
+  function getTopModal() {
+    return modalState.stack[modalState.stack.length - 1] || null;
+  }
+
+  document.addEventListener('keydown', (event) => {
+    const topModal = getTopModal();
+    if (!topModal) return;
+
+    if (event.key === 'Escape') {
+      if (topModal.dataset.closeOnEscape === 'false') return;
+      event.preventDefault();
+      window.closeModal(topModal);
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = getFocusableElements(topModal);
+    if (focusable.length === 0) {
+      event.preventDefault();
+      topModal.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    if (event.shiftKey && (active === first || active === topModal)) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.modal').forEach(registerModal);
+  });
+
+  window.registerModal = registerModal;
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+  window.getTopModal = getTopModal;
 
   // 初始化主题
   window.initTheme();

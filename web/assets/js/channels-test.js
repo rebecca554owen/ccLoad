@@ -63,11 +63,11 @@ async function testChannel(id, name) {
   const channelType = channel.channel_type || 'anthropic';
   await window.ChannelTypeManager.renderChannelTypeSelect('testChannelType', channelType);
 
-  document.getElementById('testModal').classList.add('show');
+  window.openModal('testModal', { initialFocus: '#testModelSelect' });
 }
 
 function closeTestModal() {
-  document.getElementById('testModal').classList.remove('show');
+  window.closeModal('testModal');
   testingChannelId = null;
 }
 

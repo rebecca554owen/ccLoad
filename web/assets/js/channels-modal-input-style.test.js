@@ -8,10 +8,10 @@ const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'channels.css'), '
 
 test('编辑弹窗动态输入框复用统一浅色输入样式类', () => {
   const requiredClasses = [
-    /class="inline-key-input\s+modal-inline-input"/,
-    /class="inline-url-input\s+modal-inline-input"/,
-    /class="redirect-from-input\s+modal-inline-input"/,
-    /class="redirect-to-input\s+modal-inline-input"/
+    /class="inline-key-input\s+form-input\s+modal-inline-input"/,
+    /class="inline-url-input\s+form-input\s+modal-inline-input"/,
+    /class="redirect-from-input\s+form-input\s+modal-inline-input"/,
+    /class="redirect-to-input\s+form-input\s+modal-inline-input"/
   ];
 
   requiredClasses.forEach((pattern) => {
@@ -19,12 +19,11 @@ test('编辑弹窗动态输入框复用统一浅色输入样式类', () => {
   });
 });
 
-test('统一浅色输入样式显式锁定背景和文字颜色', () => {
+test('统一浅色输入样式显式锁定文字颜色和配色方案', () => {
   const styleBlockMatch = css.match(/\.modal-inline-input\s*\{[^}]+\}/);
   assert.ok(styleBlockMatch, '缺少 .modal-inline-input 样式');
 
   const styleBlock = styleBlockMatch[0];
-  assert.match(styleBlock, /background:\s*rgba\(255,\s*255,\s*255,\s*0\.9\)/);
   assert.match(styleBlock, /color:\s*var\(--neutral-900\)/);
   assert.match(styleBlock, /color-scheme:\s*light/);
 });

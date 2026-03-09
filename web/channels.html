@@ -7,7 +7,7 @@
  <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
  <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
  <link rel="manifest" href="/web/manifest.json">
- <meta name="theme-color" content="#3b82f6">
+ <meta name="theme-color" content="#0A84FF">
  <title data-i18n="channels.title">渠道管理 - Claude Code & Codex Proxy</title>
  <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
  <link rel="stylesheet" href="/web/assets/css/channels.css?v=__VERSION__">
@@ -103,13 +103,15 @@
  <div class="filter-group">
  <label class="filter-label" data-i18n="channels.filterSearch">搜索渠道</label>
  <div style="position: relative; flex: 1; min-width: 140px;">
- <input type="text" id="searchInput" class="filter-input"
+ <input type="search" id="searchInput" name="channel_search" autocomplete="off" class="filter-input"
  data-i18n-placeholder="channels.searchPlaceholder" placeholder="输入渠道名称..."
  style="padding-right: 36px;">
  <button id="clearSearchBtn" type="button"
- style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--neutral-500); cursor: pointer; padding: 2px; opacity: 0; transition: opacity 0.2s; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center;"
+ class="icon-ghost-btn"
+ aria-label="清空搜索"
+ style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; padding: 2px; opacity: 0; display: inline-flex; align-items: center; justify-content: center;"
  data-i18n-title="common.clearSearch" title="清空搜索"
- onmouseover="this.style.background='var(--neutral-100)'" onmouseout="this.style.background='none'">
+ >
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
  aria-hidden="true" focusable="false">
  <path d="M4 4L10 10M10 4L4 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
@@ -219,20 +221,20 @@
  </div>
 
  <!-- 添加/编辑渠道模态框 -->
- <div id="channelModal" class="modal">
+ <div id="channelModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modalTitle">
  <div class="modal-content">
  <div class="modal-header">
  <h2 class="modal-title" id="modalTitle" data-i18n="channels.modalAddTitle">添加渠道</h2>
- <button class="close-btn" onclick="closeModal()">&times;</button>
+ <button type="button" class="close-btn" aria-label="关闭" onclick="closeChannelModal()">&times;</button>
  </div>
  <form id="channelForm" onsubmit="saveChannel(event)">
- <div class="form-group">
+ <div class="form-group channel-model-config-group">
  <!-- 渠道名称和类型在第一行 -->
  <div style="display: flex; gap: 20px; align-items: center;">
  <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
  <label class="form-label" style="margin: 0; white-space: nowrap;" data-i18n="channels.channelName">渠道名称
  *</label>
- <input type="text" id="channelName" class="form-input" required style="flex: 1;">
+ <input type="text" id="channelName" name="channel_name" autocomplete="off" class="form-input" required style="flex: 1;">
  </div>
 
  <div style="display: flex; align-items: center; gap: 8px; flex: 0 0 550px;">
@@ -310,15 +312,15 @@
   <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
   <div style="width: 70px; font-size: 13px; color: var(--neutral-700);"
   data-i18n="channels.customEndpoint">自定义端点</div>
-  <input type="text" id="channelCustomEndpoint" value=""
-  style="flex: 1; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;">
+  <input type="text" id="channelCustomEndpoint" class="form-input modal-inline-input" value=""
+  style="flex: 1; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
   </div>
   </div>
   </div>
 
  <div class="form-group">
  <!-- API Key标签行：包含标签、Key计数和操作按钮 -->
- <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+ <div class="channel-model-toolbar">
  <label class="form-label" style="margin: 0;">
  <span data-i18n="channels.apiKey">API Key *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
@@ -360,10 +362,10 @@
  <span data-i18n="channels.exportKeys">导出</span>
  </button>
  <button type="button" id="toggleInlineKeyBtn" onclick="toggleInlineKeyVisibility()"
- style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--neutral-300); background: white; color: var(--neutral-500); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;"
- data-i18n-title="channels.toggleKeyVisibility" title="显示/隐藏API Key"
- onmouseover="this.style.background='var(--neutral-50)'; this.style.borderColor='var(--neutral-400)';"
- onmouseout="this.style.background='white'; this.style.borderColor='var(--neutral-300)';">
+ class="icon-ghost-btn"
+ aria-label="显示或隐藏 API Key"
+ style="width: 26px; height: 26px; padding: 0;"
+ data-i18n-title="channels.toggleKeyVisibility" title="显示/隐藏API Key">
  <svg id="inlineEyeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
  xmlns="http://www.w3.org/2000/svg">
  <path
@@ -410,8 +412,8 @@
  </th>
  <th data-i18n="channels.tableApiKey">API Key</th>
  <th style="width: 200px;">
- <select id="keyStatusFilter" onchange="filterKeysByStatus(this.value)"
- style="width: 100%; padding: 4px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; background: white;">
+ <select id="keyStatusFilter" class="form-select model-select" onchange="filterKeysByStatus(this.value)"
+ style="width: 100%;">
  <option value="all" data-i18n="channels.keyStatusAll">全部</option>
  <option value="normal" data-i18n="channels.keyStatusNormal">正常</option>
  <option value="cooldown" data-i18n="channels.keyStatusCooldown">冷却中</option>
@@ -490,7 +492,7 @@
  </div>
 
  <!-- 模型表格容器 -->
- <div class="inline-table-container tall">
+ <div class="inline-table-container tall channel-model-table-container">
  <table class="inline-table">
  <thead>
  <tr>
@@ -501,13 +503,12 @@
  <span>#</span>
  </div>
  </th>
- <th style="width: 42%;">
- <input type="text" id="modelFilterInput" class="table-filter-input"
+ <th style="width: 35%;">
+ <input type="text" id="modelFilterInput" class="table-filter-input form-input"
  data-i18n-placeholder="channels.searchModelPlaceholder" placeholder="搜索模型名称..."
  oninput="filterModelsByKeyword(this.value)">
  </th>
- <th style="width: 42%;" data-i18n="channels.redirectTarget">重定向目标（可选）</th>
- <th style="width: 60px;"></th>
+ <th style="width: calc(60% - 70px); text-align: right;" data-i18n="channels.redirectTarget">重定向目标（可多目标）</th>
  </tr>
  </thead>
  <tbody id="redirectTableBody">
@@ -516,7 +517,7 @@
  </table>
  </div>
  </div>
- <div class="form-group">
+ <div class="form-group channel-modal-footer-group">
  <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
  <label class="form-label" style="margin: 0;">
  <input type="checkbox" id="channelEnabled" checked> <span data-i18n="channels.enableChannel">启用渠道</span>
@@ -543,9 +544,9 @@
  style="flex: 1; min-width: 200px;" data-i18n-placeholder="channels.customUserAgentPlaceholder"
  placeholder="留空则使用客户端透传的 UA">
  </div>
- <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
- <div style="margin-left: auto; display: flex; gap: 12px;">
- <button type="button" class="btn btn-secondary" onclick="closeModal()"
+ <div class="channel-modal-footer">
+ <div class="channel-modal-footer-actions">
+ <button type="button" class="btn btn-secondary" onclick="closeChannelModal()"
  data-i18n="common.cancel">取消</button>
  <button type="submit" id="channelSaveBtn" class="btn btn-primary" data-i18n="common.save">保存</button>
  </div>
@@ -556,9 +557,9 @@
  </div>
 
  <!-- 删除确认模态框 -->
- <div id="deleteModal" class="modal">
+ <div id="deleteModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="deleteModalTitle">
  <div class="modal-content confirm-modal">
- <h2 class="modal-title" data-i18n="channels.confirmDeleteTitle">确认删除</h2>
+ <h2 class="modal-title" id="deleteModalTitle" data-i18n="channels.confirmDeleteTitle">确认删除</h2>
  <p><span data-i18n="channels.confirmDeleteMsg">确定要删除渠道</span> "<span id="deleteChannelName"></span>" <span
  data-i18n="channels.confirmDeleteMsgSuffix">吗？</span></p>
  <p style="color: var(--error-600); font-size: 0.875rem;" data-i18n="channels.deleteWarning">此操作不可恢复！</p>
@@ -570,12 +571,12 @@
  </div>
 
  <!-- 测试渠道模态框 -->
- <div id="testModal" class="modal">
+ <div id="testModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="testModalTitle">
  <div class="modal-content test-modal-content">
  <div class="modal-header">
- <h2 class="modal-title"><span data-i18n="channels.testChannelTitle">测试渠道</span> - <span
+ <h2 class="modal-title" id="testModalTitle"><span data-i18n="channels.testChannelTitle">测试渠道</span> - <span
  id="testChannelName"></span></h2>
- <button class="close-btn" onclick="closeTestModal()">&times;</button>
+ <button type="button" class="close-btn" aria-label="关闭" onclick="closeTestModal()">&times;</button>
  </div>
  <div class="form-group">
  <label class="form-label" for="testChannelType" data-i18n="channels.channelType">渠道类型</label>
@@ -666,14 +667,11 @@
  </div>
 
  <!-- Key导入模态框 -->
- <div id="keyImportModal" class="modal">
+ <div id="keyImportModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="keyImportModalTitle">
  <div class="modal-content" style="max-width: 600px;">
  <div class="modal-header">
- <h2 class="modal-title" data-i18n="channels.importKeysTitle">批量导入 API Keys</h2>
- <button class="close-btn" onclick="closeKeyImportModal()"
- style="width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--neutral-100); color: var(--neutral-600); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
- onmouseover="this.style.background='var(--neutral-200)'"
- onmouseout="this.style.background='var(--neutral-100)'">
+ <h2 class="modal-title" id="keyImportModalTitle" data-i18n="channels.importKeysTitle">批量导入 API Keys</h2>
+ <button type="button" class="close-btn" aria-label="关闭" onclick="closeKeyImportModal()">
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -685,7 +683,7 @@
  <label class="form-label" style="margin-bottom: 8px;"><span data-i18n="channels.pasteApiKeys">粘贴API
  Keys</span> <span style="color: var(--neutral-500); font-size: 13px; font-weight: normal;"
  data-i18n="channels.keysSeparatorHint">(支持逗号或换行分隔)</span></label>
- <textarea id="keyImportTextarea" class="form-input" rows="10"
+ <textarea id="keyImportTextarea" name="key_import_textarea" class="form-input" rows="10"
  placeholder="sk-ant-key1,sk-ant-key2&#10;sk-ant-key3&#10;sk-ant-key4"
  style="resize: vertical; min-height: 200px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"></textarea>
  </div>
@@ -733,14 +731,11 @@
  </div>
 
  <!-- Key导出模态框 -->
- <div id="keyExportModal" class="modal">
+ <div id="keyExportModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="keyExportModalTitle">
  <div class="modal-content" style="max-width: 500px;">
  <div class="modal-header">
- <h2 class="modal-title" data-i18n="channels.exportKeysTitle">导出 API Keys</h2>
- <button class="close-btn" onclick="closeKeyExportModal()"
- style="width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--neutral-100); color: var(--neutral-600); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
- onmouseover="this.style.background='var(--neutral-200)'"
- onmouseout="this.style.background='var(--neutral-100)'">
+ <h2 class="modal-title" id="keyExportModalTitle" data-i18n="channels.exportKeysTitle">导出 API Keys</h2>
+ <button type="button" class="close-btn" aria-label="关闭" onclick="closeKeyExportModal()">
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -765,7 +760,7 @@
  <!-- 预览区域 -->
  <div class="form-group">
  <label class="form-label" data-i18n="channels.exportPreview">预览</label>
- <textarea id="keyExportPreview" class="form-input" rows="8" readonly
+ <textarea id="keyExportPreview" name="key_export_preview" class="form-input" rows="8" readonly
  style="resize: vertical; min-height: 150px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"></textarea>
  </div>
  </div>
@@ -780,14 +775,11 @@
  </div>
 
  <!-- 模型导入模态框 -->
- <div id="modelImportModal" class="modal">
+ <div id="modelImportModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modelImportModalTitle">
  <div class="modal-content" style="max-width: 600px;">
  <div class="modal-header">
- <h2 class="modal-title" data-i18n="channels.importModelsTitle">批量添加模型</h2>
- <button class="close-btn" onclick="closeModelImportModal()"
- style="width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--neutral-100); color: var(--neutral-600); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
- onmouseover="this.style.background='var(--neutral-200)'"
- onmouseout="this.style.background='var(--neutral-100)'">
+ <h2 class="modal-title" id="modelImportModalTitle" data-i18n="channels.importModelsTitle">批量添加模型</h2>
+ <button type="button" class="close-btn" aria-label="关闭" onclick="closeModelImportModal()">
  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
  stroke-linecap="round" stroke-linejoin="round" />
@@ -799,7 +791,7 @@
  <label class="form-label" style="margin-bottom: 8px;"><span data-i18n="channels.inputModelNames">输入模型名称</span>
  <span style="color: var(--neutral-500); font-size: 13px; font-weight: normal;"
  data-i18n="channels.keysSeparatorHint">(支持逗号或换行分隔)</span></label>
- <textarea id="modelImportTextarea" class="form-input" rows="10"
+ <textarea id="modelImportTextarea" name="model_import_textarea" class="form-input" rows="10"
  placeholder="gpt-4o,gpt-4o-mini&#10;claude-3-5-sonnet-20241022&#10;claude-3-5-haiku-latest"
  style="resize: vertical; min-height: 200px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"></textarea>
  </div>
@@ -847,11 +839,11 @@
  </div>
 
  <!-- 渠道排序模态框 -->
- <div id="sortModal" class="modal">
+ <div id="sortModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="sortModalTitle">
  <div class="modal-content" style="max-width: 800px; max-height: 85vh; display: flex; flex-direction: column;">
  <div class="modal-header">
- <h2 class="modal-title" data-i18n="channels.sortModalTitle">渠道排序</h2>
- <button class="close-btn" onclick="closeSortModal()">&times;</button>
+ <h2 class="modal-title" id="sortModalTitle" data-i18n="channels.sortModalTitle">渠道排序</h2>
+ <button type="button" class="close-btn" aria-label="关闭" onclick="closeSortModal()">&times;</button>
  </div>
  <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
  <!-- 排序列表容器 -->
@@ -892,8 +884,8 @@
  </div>
  </td>
  <td style="padding: 6px 10px;">
- <input type="{{inputType}}" value="{{key}}" class="inline-key-input" data-index="{{index}}"
- style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px; transition: all 0.2s;">
+ <input type="{{inputType}}" value="{{key}}" class="inline-key-input form-input modal-inline-input" data-index="{{index}}"
+ style="width: 100%; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
  </td>
  <td style="padding: 6px 10px;">{{{cooldownHtml}}}</td>
  <td style="padding: 6px 10px; text-align: center;">{{{actionsHtml}}}</td>
@@ -959,9 +951,9 @@
  </div>
  </td>
  <td style="padding: 6px 10px;">
- <input type="text" value="{{url}}" class="inline-url-input" data-index="{{index}}"
+ <input type="text" value="{{url}}" class="inline-url-input form-input modal-inline-input" data-index="{{index}}"
  onchange="updateInlineURL({{index}}, this.value)" placeholder="https://api.example.com"
- style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;">
+ style="width: 100%; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
  </td>
  <td style="padding: 6px 10px; text-align: center;">
  <div style="display: flex; gap: 6px; justify-content: center;">
@@ -997,27 +989,24 @@
  <!-- 渠道卡片模板 -->
  <template id="tpl-channel-card">
  <div class="{{cardClasses}}" id="channel-{{id}}" data-channel-id="{{id}}">
- <div class="flex justify-between items-center">
- <div style="flex: 1;">
- <div class="section-title">
+ <div class="channel-card-layout">
+ <div class="channel-card-info">
+ <div class="ch-name-main channel-card-title-row">
  <input type="checkbox" class="channel-select-checkbox" data-channel-id="{{id}}"
  style="margin-right: 8px; vertical-align: middle;" data-i18n-title="channels.selectChannel" title="选择渠道">
- {{name}} {{{typeBadge}}}
- <span style="color: var(--neutral-500); font-size: 0.875rem; font-weight: 400;">(ID: {{id}})</span>
- <span
- style="color: var(--neutral-600); font-size: 1rem; font-weight: 400; display: inline-block; max-width: 1100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"
- title="{{modelsText}}"><span data-i18n="channels.modelPrefix">模型:</span> {{modelsText}}</span>
+ {{{typeBadge}}}<strong>{{name}}</strong><span class="ch-id-text">(ID: {{id}})</span>{{{disabledBadge}}}
+ <span class="channel-card-models" title="{{modelsText}}"><span data-i18n="channels.modelPrefix">模型:</span> {{modelsText}}</span>
  </div>
- <div class="text-sm" style="color: var(--neutral-600); margin-top: 4px;">
+ <div class="channel-card-meta">
  <div class="channel-meta-line">
  <span><span data-i18n="channels.urlLabel">URL:</span> {{url}} | <span
  data-i18n="channels.priorityLabel">优先级:</span> {{priority}}{{{effectivePriorityHtml}}} |
- {{statusText}}{{{cooldownBadge}}}</span>
+ {{statusText}}</span><div class="ch-name-statuses">{{{cooldownBadge}}}</div><span style="display:none;"></span>
  {{{statsHtml}}}
  </div>
  </div>
  </div>
- <div class="channel-actions">
+ <div class="channel-actions channel-card-actions">
  <button class="btn-icon channel-action-btn" data-action="edit" data-channel-id="{{id}}"
  data-i18n-title="common.edit" title="编辑" data-i18n="common.edit">编辑</button>
  <button class="btn-icon channel-action-btn" data-action="test" data-channel-id="{{id}}"
@@ -1048,9 +1037,9 @@
  </td>
  <td style="padding: 4px 10px;">
  <div style="display: flex; align-items: center; gap: 4px;">
- <input type="text" class="redirect-from-input" data-index="{{index}}" value="{{from}}"
+ <input type="text" class="redirect-from-input form-input modal-inline-input" data-index="{{index}}" value="{{from}}"
  placeholder="claude-3-opus-20240229"
- style="flex: 1; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+ style="flex: 1; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
  <button type="button" class="lowercase-btn" data-index="{{index}}"
  style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--neutral-300); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;"
  data-i18n-title="channels.toLowercase" title="转为小写">
@@ -1063,9 +1052,9 @@
  </div>
  </td>
  <td style="padding: 4px 10px;">
- <input type="text" class="redirect-to-input" data-index="{{index}}" value="{{to}}"
+ <input type="text" class="redirect-to-input form-input modal-inline-input" data-index="{{index}}" value="{{to}}"
  placeholder="{{toPlaceholder}}"
- style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+ style="width: 100%; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
  </td>
  <td style="padding: 4px 10px; text-align: center;">
  <button type="button" class="redirect-delete-btn" data-index="{{index}}"
@@ -1101,7 +1090,7 @@
  <path d="M2 4H14M2 8H14M2 12H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
  </svg>
  <span style="font-weight: 600; color: var(--neutral-900);">{{name}}</span>
- <span style="color: var(--neutral-500); font-size: 13px;">(ID: {{id}})</span>
+ <span style="color: var(--neutral-500); font-size: 13px;"><span class="ch-id-text">(ID: {{id}})</span></span>
  </div>
  <div style="display: flex; align-items: center; gap: 8px;">
  <span style="color: var(--neutral-600); font-size: 13px;" data-i18n="channels.currentPriority">当前优先级:</span>

@@ -226,7 +226,7 @@ func (s *Server) HandleProxyRequest(c *gin.Context) {
 	}
 
 	tokenStr := ""
-	if v, ok := c.Get("token"); ok {
+	if v, ok := c.Get("token_hash"); ok {
 		tokenStr, _ = v.(string)
 	}
 

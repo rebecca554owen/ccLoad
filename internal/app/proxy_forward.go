@@ -663,9 +663,10 @@ func (s *Server) tryChannelWithKeys(ctx context.Context, cfg *model.Config, reqC
 
 	var lastFailure *proxyResult
 
-	// 准备请求体（处理模型重定向）
+	// 准备请求体（处理模型重定向和多目标选择）
 	// [INFO] 修复：保存重定向后的模型名称，用于日志记录和调试
-	actualModel, bodyToSend := s.prepareRequestBody(cfg, reqCtx)
+	// [NEW] 2026-03: 支持多目标模型重定向，按权重选择并支持冷却
+	actualModel, bodyToSend := s.prepareRequestBodyWithMultiTarget(ctx, cfg, reqCtx)
 
 	// [FIX] 2026-01: 模型名变更时同步替换 URL 路径
 	// 场景：Gemini API 的模型名在 URL 路径中（如 /v1beta/models/gemini-3-flash:streamGenerateContent）

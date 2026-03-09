@@ -1036,6 +1036,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // ESC键关闭测试模态框
   document.addEventListener('keydown', (e) => {
+    if (typeof window.getTopModal === 'function' && window.getTopModal()) return;
     if (e.key === 'Escape') {
       closeTestKeyModal();
     }
@@ -1126,7 +1127,7 @@ async function testKey(channelId, channelName, apiKey, model, apiKeyHash = '') {
   updateTestKeyIndexInfo('');
 
   // 显示模态框
-  document.getElementById('testKeyModal').classList.add('show');
+  window.openModal('testKeyModal', { initialFocus: '#testKeyModel' });
 
   // 异步加载渠道配置以获取支持的模型列表 + Keys 用于 key_index 匹配
   try {
@@ -1207,7 +1208,7 @@ async function testKey(channelId, channelName, apiKey, model, apiKeyHash = '') {
 }
 
 function closeTestKeyModal() {
-  document.getElementById('testKeyModal').classList.remove('show');
+  window.closeModal('testKeyModal');
   testingKeyData = null;
 }
 

@@ -3,19 +3,19 @@
 
 // 渠道类型颜色配置
 const CHANNEL_TYPE_COLORS = {
-  anthropic: '#3b82f6',
-  openai: '#10b981',
-  azure: '#0ea5e9',
-  bedrock: '#f59e0b',
-  vertex: '#8b5cf6',
-  openrouter: '#ec4899',
-  cohere: '#06b6d4',
-  groq: '#f97316',
-  deepseek: '#6366f1',
-  qwen: '#14b8a6',
-  zhipu: '#a855f7',
-  baidu: '#3b82f6',
-  ollama: '#84cc16',
+  anthropic: '#0A84FF',
+  openai: '#30D158',
+  azure: '#32ADE6',
+  bedrock: '#FF9F0A',
+  vertex: '#5AC8FA',
+  openrouter: '#64D2FF',
+  cohere: '#32ADE6',
+  groq: '#FF7A1A',
+  deepseek: '#2C9ED1',
+  qwen: '#40C8AE',
+  zhipu: '#7D8A9C',
+  baidu: '#0A84FF',
+  ollama: '#9AD94F',
   custom: '#6b7280'
 };
 
@@ -51,15 +51,14 @@ function showSortModal() {
   // 渲染排序列表
   renderSortList();
 
-  // 显示模态框(使用show类实现居中)
-  modal.classList.add('show');
+  window.openModal(modal);
 }
 
 // 关闭排序模态框
 function closeSortModal() {
   const modal = document.getElementById('sortModal');
   if (modal) {
-    modal.classList.remove('show');
+    window.closeModal(modal);
   }
   sortChannels = [];
   draggedItem = null;
