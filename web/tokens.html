@@ -7,7 +7,7 @@
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
   <meta name="theme-color" content="#0A84FF">
-  <title data-i18n="tokens.title">API访问令牌 - Claude Code & Codex Proxy</title>
+  <title data-i18n="tokens.title">API令牌</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/tokens.css?v=__VERSION__">
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
@@ -26,21 +26,26 @@
 <body>
   <div class="app-container">
     <main class="main-content">
-      <div class="content-area">
+      <div class="content-area page-shell tokens-page-shell">
         <header class="page-section">
-          <div class="glass-card" style="padding: var(--space-6);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-              <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
-              <button type="button" onclick="showCreateModal()" class="btn btn-primary btn-md" data-i18n="tokens.createToken">
-                + 创建令牌
-              </button>
+          <div class="glass-card page-header-card tokens-page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title tokens-page-title" data-i18n="tokens.title">API令牌</h1>
+                <p class="page-subtitle tokens-page-subtitle" data-i18n="tokens.subtitle">管理用于 API (/v1/*) 访问的令牌</p>
+              </div>
+              <div class="page-header-actions">
+                <button type="button" onclick="showCreateModal()" class="btn btn-primary btn-md" data-i18n="tokens.createToken">
+                  + 创建令牌
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
         <!-- 时间范围选择器 -->
         <section class="page-section">
-          <div class="time-range-container">
+          <div class="time-range-container page-toolbar-card tokens-toolbar-card">
             <div class="time-range-selector">
               <button class="time-range-btn active" data-range="today" data-i18n="index.timeRange.today">本日</button>
               <button class="time-range-btn" data-range="yesterday" data-i18n="index.timeRange.yesterday">昨日</button>
@@ -55,11 +60,13 @@
 
         <section class="page-section">
           <!-- 令牌表格 -->
-          <div id="tokens-container" class="token-table"></div>
+          <div class="glass-card page-content-card tokens-table-card">
+            <div id="tokens-container" class="token-table"></div>
+          </div>
 
           <!-- 空状态 -->
-          <div id="empty-state" class="glass-card" style="display: none; text-align: center; padding: 60px 20px;">
-            <div style="margin-bottom: 16px; color: var(--primary-500);">
+          <div id="empty-state" class="glass-card page-content-card tokens-empty-state">
+            <div class="tokens-empty-state__icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                 <circle cx="8.5" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/>
                 <path d="M12.8 12H21V14.6H19.2V16.4H17.4V14.6H15.6V13H12.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -76,12 +83,12 @@
 
   <!-- 创建令牌对话框 -->
   <div id="createModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="createModalTitle">
-    <div class="modal-content">
+    <div class="modal-content token-modal-content">
       <div class="modal-header">
         <h2 id="createModalTitle" class="modal-title" data-i18n="tokens.createModalTitle">创建API令牌</h2>
         <button type="button" class="close-btn" aria-label="关闭" onclick="closeCreateModal()">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body token-modal-body">
         <div class="form-group">
           <label class="form-label" data-i18n="tokens.descriptionLabel">描述 *</label>
           <input type="text" id="tokenDescription" name="token_description" autocomplete="off" class="form-input" data-i18n-placeholder="tokens.descriptionPlaceholder" placeholder="请输入令牌用途描述" required>
@@ -90,7 +97,7 @@
         <div class="form-group">
           <label class="form-label" data-i18n="tokens.customTokenLabel">自定义令牌</label>
           <input type="text" id="customToken" name="custom_token" autocomplete="off" spellcheck="false" class="form-input" placeholder="留空则自动生成 (格式: sk-xxxxx)" data-i18n-placeholder="tokens.customTokenPlaceholder">
-          <div style="font-size: 12px; color: var(--neutral-500); margin-top: 4px;" data-i18n="tokens.customTokenHint">留空则自动生成 48 位随机令牌</div>
+          <div class="token-form-hint" data-i18n="tokens.customTokenHint">留空则自动生成 48 位随机令牌</div>
         </div>
 
         <div class="form-group">
@@ -110,17 +117,17 @@
           <input type="datetime-local" id="customExpiry" name="custom_expiry" class="form-input">
         </div>
 
-        <div class="form-group" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <label class="form-label" style="margin: 0; white-space: nowrap; min-width: 60px;" data-i18n="tokens.costLimitLabel">费用上限</label>
-          <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
-            <span style="color: var(--neutral-500);">$</span>
-            <input type="number" id="tokenCostLimitUSD" name="token_cost_limit_usd" inputmode="decimal" class="form-input" style="flex: 1;" min="0" step="0.01" data-i18n-placeholder="tokens.costLimitPlaceholder" placeholder="0 表示无限制">
+        <div class="form-group token-form-row">
+          <label class="form-label token-form-row__label" data-i18n="tokens.costLimitLabel">费用上限</label>
+          <div class="token-form-row__content token-form-currency">
+            <span class="token-form-currency__prefix">$</span>
+            <input type="number" id="tokenCostLimitUSD" name="token_cost_limit_usd" inputmode="decimal" class="form-input token-form-row__input" min="0" step="0.01" data-i18n-placeholder="tokens.costLimitPlaceholder" placeholder="0 表示无限制">
           </div>
         </div>
 
         <div class="form-group">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="tokenActive" name="token_active" checked style="width: 18px; height: 18px;">
+          <label class="token-checkbox-row">
+            <input type="checkbox" id="tokenActive" name="token_active" checked class="token-checkbox-row__input">
             <span data-i18n="tokens.enableToken">启用令牌</span>
           </label>
         </div>
@@ -134,24 +141,24 @@
 
   <!-- 显示新令牌对话框 -->
   <div id="tokenResultModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="tokenResultModalTitle">
-    <div class="modal-content">
+    <div class="modal-content token-modal-content">
       <div class="modal-header">
         <h2 id="tokenResultModalTitle" class="modal-title" data-i18n="tokens.resultModalTitle">令牌创建成功</h2>
         <button type="button" class="close-btn" aria-label="关闭" onclick="closeTokenResultModal()">&times;</button>
       </div>
-      <div class="modal-body">
-        <div style="background: var(--warning-50); border: 1px solid var(--warning-200); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-          <div style="font-weight: 600; color: var(--warning-700); margin-bottom: 8px;" data-i18n="tokens.resultWarningTitle">⚠️ 重要提示:</div>
-          <div style="font-size: 14px; color: var(--warning-800);" data-i18n="tokens.resultWarningDesc">
+      <div class="modal-body token-modal-body">
+        <div class="token-result-warning">
+          <div class="token-result-warning__title" data-i18n="tokens.resultWarningTitle">⚠️ 重要提示:</div>
+          <div class="token-result-warning__body" data-i18n="tokens.resultWarningDesc">
             请立即复制并保存此令牌。关闭此窗口后,您将无法再次查看完整令牌。
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label" data-i18n="tokens.resultTokenLabel">API令牌(请妥善保管)</label>
-          <div style="position: relative;">
-            <textarea id="newTokenValue" readonly class="form-input" style="font-family: monospace; font-size: 13px; height: 80px; resize: none;"></textarea>
-            <button type="button" onclick="copyToken()" class="btn btn-secondary btn-compact token-action-btn token-action-copy" style="position: absolute; top: 8px; right: 8px;" data-i18n="common.copy">
+          <div class="token-result-copy">
+            <textarea id="newTokenValue" readonly class="form-input token-result-copy__input"></textarea>
+            <button type="button" onclick="copyToken()" class="btn btn-secondary btn-compact token-action-btn token-action-copy token-result-copy__button" data-i18n="common.copy">
               复制
             </button>
           </div>
@@ -165,30 +172,30 @@
 
   <!-- 编辑令牌对话框 -->
   <div id="editModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="editModalTitle">
-    <div class="modal-content" style="height: 680px; display: flex; flex-direction: column;">
+    <div class="modal-content token-modal-content token-edit-modal-content">
       <div class="modal-header">
         <h2 id="editModalTitle" class="modal-title" data-i18n="tokens.editModalTitle">编辑令牌</h2>
         <button type="button" class="close-btn" aria-label="关闭" onclick="closeEditModal()">&times;</button>
       </div>
-      <div class="modal-body" style="padding-top: 12px; padding-bottom: 12px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+      <div class="modal-body token-modal-body token-edit-modal-body">
         <input type="hidden" id="editTokenId" name="edit_token_id">
 
-        <div class="form-group" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <label class="form-label" style="margin: 0; white-space: nowrap; min-width: 60px;" data-i18n="tokens.editDescLabel">描述</label>
-          <input type="text" id="editTokenDescription" name="edit_token_description" autocomplete="off" class="form-input" style="flex: 1;">
+        <div class="form-group token-form-row">
+          <label class="form-label token-form-row__label" data-i18n="tokens.editDescLabel">描述</label>
+          <input type="text" id="editTokenDescription" name="edit_token_description" autocomplete="off" class="form-input token-form-row__input">
         </div>
 
-        <div class="form-group" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <label class="form-label" style="margin: 0; white-space: nowrap; min-width: 60px;" data-i18n="tokens.editTokenLabel">修改令牌</label>
-          <div style="flex: 1;">
-            <input type="text" id="editTokenValue" name="edit_token_value" autocomplete="off" spellcheck="false" class="form-input" placeholder="留空则保持当前令牌不变" data-i18n-placeholder="tokens.editTokenHint" style="width: 100%;">
-            <div style="font-size: 12px; color: var(--neutral-500); margin-top: 4px;" data-i18n="tokens.customTokenHint">留空则保持当前令牌不变</div>
+        <div class="form-group token-form-row">
+          <label class="form-label token-form-row__label" data-i18n="tokens.editTokenLabel">修改令牌</label>
+          <div class="token-form-row__content">
+            <input type="text" id="editTokenValue" name="edit_token_value" autocomplete="off" spellcheck="false" class="form-input token-form-row__input" placeholder="留空则保持当前令牌不变" data-i18n-placeholder="tokens.editTokenHint">
+            <div class="token-form-hint" data-i18n="tokens.customTokenHint">留空则保持当前令牌不变</div>
           </div>
         </div>
 
-        <div class="form-group" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <label class="form-label" style="margin: 0; white-space: nowrap; min-width: 60px;" data-i18n="tokens.expiryLabel">过期时间</label>
-          <select id="editTokenExpiry" name="edit_token_expiry" class="form-select" style="flex: 1;">
+        <div class="form-group token-form-row">
+          <label class="form-label token-form-row__label" data-i18n="tokens.expiryLabel">过期时间</label>
+          <select id="editTokenExpiry" name="edit_token_expiry" class="form-select token-form-row__input">
             <option value="never" data-i18n="tokens.expiryNever">永不过期</option>
             <option value="30d" data-i18n="tokens.expiry30d">30天后过期</option>
             <option value="90d" data-i18n="tokens.expiry90d">90天后过期</option>
@@ -198,36 +205,34 @@
           </select>
         </div>
 
-        <div id="editCustomExpiryContainer" style="display: none; margin-bottom: 12px;" class="form-group">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <label class="form-label" style="margin: 0; white-space: nowrap; min-width: 60px;" data-i18n="tokens.customLabel">自定义</label>
-            <input type="datetime-local" id="editCustomExpiry" name="edit_custom_expiry" class="form-input" style="flex: 1;">
+        <div id="editCustomExpiryContainer" class="form-group token-form-row token-form-row--toggle" style="display: none;">
+          <label class="form-label token-form-row__label" data-i18n="tokens.customLabel">自定义</label>
+          <input type="datetime-local" id="editCustomExpiry" name="edit_custom_expiry" class="form-input token-form-row__input">
+        </div>
+
+        <div class="form-group token-form-row">
+          <label class="form-label token-form-row__label" data-i18n="tokens.costLimitLabel">费用上限</label>
+          <div class="token-form-row__content token-form-currency">
+            <span class="token-form-currency__prefix">$</span>
+            <input type="number" id="editCostLimitUSD" name="edit_cost_limit_usd" inputmode="decimal" class="form-input token-form-row__input" min="0" step="0.01" data-i18n-placeholder="tokens.costLimitPlaceholder" placeholder="0 表示无限制">
+            <span id="editCostUsedDisplay" class="token-form-inline-note"></span>
           </div>
         </div>
 
-        <div class="form-group" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <label class="form-label" style="margin: 0; white-space: nowrap; min-width: 60px;" data-i18n="tokens.costLimitLabel">费用上限</label>
-          <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
-            <span style="color: var(--neutral-500);">$</span>
-            <input type="number" id="editCostLimitUSD" name="edit_cost_limit_usd" inputmode="decimal" class="form-input" style="flex: 1;" min="0" step="0.01" data-i18n-placeholder="tokens.costLimitPlaceholder" placeholder="0 表示无限制">
-            <span id="editCostUsedDisplay" style="color: var(--neutral-600); font-size: 13px; white-space: nowrap;"></span>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="editTokenActive" name="edit_token_active" style="width: 18px; height: 18px;">
+        <div class="form-group">
+          <label class="token-checkbox-row">
+            <input type="checkbox" id="editTokenActive" name="edit_token_active" class="token-checkbox-row__input">
             <span data-i18n="tokens.enableToken">启用令牌</span>
           </label>
         </div>
 
         <!-- 模型限制区域 -->
-        <div class="form-group" style="margin-bottom: 0; flex: 1; display: flex; flex-direction: column; min-height: 0;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label class="form-label" style="margin: 0;">
-              <span data-i18n="tokens.modelRestriction">模型限制</span> <span style="color: var(--neutral-500); font-size: 12px; margin-left: 8px;"><span data-i18n="tokens.modelCountPrefix">共</span> <span id="editAllowedModelsCount">0</span> <span data-i18n="tokens.modelCountSuffix">个模型（空表示允许所有）</span></span>
+        <div class="form-group token-model-panel">
+          <div class="token-model-panel__header">
+            <label class="form-label token-model-panel__title">
+              <span data-i18n="tokens.modelRestriction">模型限制</span> <span class="token-model-panel__count"><span data-i18n="tokens.modelCountPrefix">共</span> <span id="editAllowedModelsCount">0</span> <span data-i18n="tokens.modelCountSuffix">个模型（空表示允许所有）</span></span>
             </label>
-            <div style="display: flex; gap: 6px;">
+            <div class="token-model-panel__actions">
               <button type="button" class="btn btn-secondary btn-xs" onclick="showModelSelectModal()" data-i18n-title="tokens.selectFromListTitle" title="从渠道模型列表中选择" data-i18n="tokens.selectFromList">
                 + 从列表选择
               </button>
@@ -240,15 +245,15 @@
               </button>
             </div>
           </div>
-          <div class="inline-table-container" style="flex: 1; overflow-y: auto; border: 1px solid var(--neutral-200); border-radius: 6px;">
-            <table class="inline-table" style="width: 100%; border-collapse: collapse;">
+          <div class="inline-table-container token-model-panel__table">
+            <table class="inline-table token-model-table">
               <thead>
                 <tr class="glass-card">
-                  <th style="width: 40px; padding: 8px; text-align: center;">
+                  <th class="token-model-table__select">
                     <input type="checkbox" id="selectAllAllowedModels" onchange="toggleSelectAllAllowedModels(this.checked)">
                   </th>
-                  <th style="padding: 8px; text-align: left;" data-i18n="tokens.modelName">模型名称</th>
-                  <th style="width: 60px; padding: 8px;"></th>
+                  <th class="token-model-table__name" data-i18n="tokens.modelName">模型名称</th>
+                  <th class="token-model-table__actions"></th>
                 </tr>
               </thead>
               <tbody id="allowedModelsTableBody">
@@ -267,7 +272,7 @@
 
   <!-- 模型选择对话框 -->
   <div id="modelSelectModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modelSelectModalTitle">
-    <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-content token-modal-content token-modal-content--narrow">
       <div class="modal-header">
         <h2 id="modelSelectModalTitle" class="modal-title" data-i18n="tokens.selectModelTitle">选择模型</h2>
         <button type="button" class="close-btn" aria-label="关闭" onclick="closeModelSelectModal()">&times;</button>
@@ -276,17 +281,17 @@
         <div class="form-group">
           <input type="search" id="modelSearchInput" name="model_search" autocomplete="off" class="form-input" data-i18n-placeholder="tokens.searchModelPlaceholder" placeholder="搜索模型..." oninput="filterAvailableModels(this.value)">
         </div>
-        <div id="selectAllContainer" class="glass-card" style="display: none; border-bottom: none; border-radius: 6px 6px 0 0;">
-          <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-            <input type="checkbox" id="selectAllModelsCheckbox" style="margin-right: 8px;" onchange="toggleSelectAllModels(this.checked)">
+        <div id="selectAllContainer" class="glass-card token-select-all-card" style="display: none;">
+          <label class="token-select-all-card__label">
+            <input type="checkbox" id="selectAllModelsCheckbox" class="token-select-all-card__input" onchange="toggleSelectAllModels(this.checked)">
             <span data-i18n="tokens.selectAllCurrent">全选当前列表</span>
-            <span id="visibleModelsCount" style="margin-left: 8px; color: var(--neutral-500);"></span>
+            <span id="visibleModelsCount" class="token-select-all-card__count"></span>
           </label>
         </div>
-        <div id="availableModelsContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--neutral-200); border-radius: 6px;">
+        <div id="availableModelsContainer" class="token-available-models">
           <!-- 动态渲染可选模型列表 -->
         </div>
-        <div style="margin-top: 8px; font-size: 12px; color: var(--neutral-500);">
+        <div class="token-modal-counter">
           <span data-i18n="tokens.selectedPrefix">已选择</span> <span id="selectedModelsCount">0</span> <span data-i18n="tokens.selectedSuffix">个模型</span>
         </div>
       </div>
@@ -299,28 +304,27 @@
 
   <!-- 批量导入模型对话框 -->
   <div id="modelImportModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modelImportModalTitle">
-    <div class="modal-content" style="max-width: 550px;">
+    <div class="modal-content token-modal-content token-modal-content--wide">
       <div class="modal-header">
         <h2 id="modelImportModalTitle" class="modal-title" data-i18n="tokens.importModelTitle">手动输入模型</h2>
         <button type="button" class="close-btn" aria-label="关闭" onclick="closeModelImportModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label class="form-label" style="margin-bottom: 8px;"><span data-i18n="tokens.inputModelLabel">输入模型名称</span> <span style="color: var(--neutral-500); font-size: 13px; font-weight: normal;" data-i18n="tokens.inputModelHint">(支持逗号或换行分隔)</span></label>
+        <div class="form-group token-import-group">
+          <label class="form-label token-import-group__label"><span data-i18n="tokens.inputModelLabel">输入模型名称</span> <span class="token-import-group__hint" data-i18n="tokens.inputModelHint">(支持逗号或换行分隔)</span></label>
           <textarea
             id="tokenModelImportTextarea"
-            class="form-input"
+            class="form-input token-import-textarea"
             rows="8"
             name="token_model_import"
             placeholder="gpt-4o,gpt-4o-mini&#10;claude-3-5-sonnet-20241022&#10;claude-3-5-haiku-latest"
-            style="resize: vertical; min-height: 160px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"
             oninput="updateModelImportPreview()"
           ></textarea>
         </div>
         <div class="glass-card rounded mb-3">
           <strong data-i18n="tokens.importTipTitle">提示：</strong><span data-i18n="tokens.importTipDesc">支持逗号分隔 <code style="background: rgba(128,128,128,0.15); padding: 2px 4px; border-radius: 3px;">model1,model2</code> 或每行一个模型，自动去重</span>
         </div>
-        <div id="tokenModelImportPreview" style="display: none; padding: 10px 12px; background: var(--success-50); border: 1px solid var(--success-200); border-radius: 6px; color: var(--success-700); font-size: 13px;">
+        <div id="tokenModelImportPreview" class="token-import-preview" style="display: none;">
           <span data-i18n="tokens.willAddPrefix">将添加</span> <span id="tokenModelImportCount">0</span> <span data-i18n="tokens.willAddSuffix">个模型</span>
         </div>
       </div>

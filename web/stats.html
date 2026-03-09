@@ -7,7 +7,7 @@
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
   <meta name="theme-color" content="#0A84FF">
-  <title data-i18n="stats.title">调用统计 - Claude Code & Codex Proxy</title>
+  <title data-i18n="stats.title">调用统计</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/channels.css?v=__VERSION__">
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
@@ -27,97 +27,87 @@
 </head>
 <body>
   <div class="app-container">
-    
-
-    <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <!-- 页面标题 -->
+        <div class="page-shell">
         <header class="page-section">
+          <div class="glass-card page-header-card analytics-page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="stats.title">调用统计</h1>
+                <p class="page-subtitle analytics-page-subtitle" data-i18n="stats.subtitle">查看渠道、模型与令牌维度的调用统计</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <!-- Filter Bar -->
         <section class="page-section">
-        <div class="filter-bar">
+        <div class="filter-bar page-toolbar-card analytics-filter-card">
           <div class="filter-controls">
-            <!-- 渠道类型筛选 -->
             <div class="filter-group">
               <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
-              <select id="f_channel_type" class="form-select" style="min-width: 120px;">
-                <!-- 动态加载渠道类型选项 -->
+              <select id="f_channel_type" class="form-select analytics-filter-select analytics-filter-select--type">
               </select>
             </div>
 
-            <!-- 时间范围筛选 -->
             <div class="filter-group">
               <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
-              <select id="f_hours" class="form-select" style="min-width: 100px;">
-                <!-- 动态生成选项 by date-range-selector.js -->
+              <select id="f_hours" class="form-select analytics-filter-select">
               </select>
             </div>
 
-            <!-- 渠道ID筛选 -->
-            <div class="filter-group">
+            <div class="filter-group analytics-filter-group--id">
               <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
-              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID..." style="max-width: 100px;">
+              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID...">
             </div>
 
-            <!-- 渠道名筛选 -->
             <div class="filter-group">
               <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
               <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
-            <!-- 模型筛选（合并重复字段） -->
             <div class="filter-group">
               <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
               <input type="text" id="f_model" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
-            <!-- 令牌筛选 -->
             <div class="filter-group">
               <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
-              <select id="f_auth_token" class="form-select" style="min-width: 150px;">
+              <select id="f_auth_token" class="form-select analytics-filter-select analytics-filter-select--token">
                 <option value="" data-i18n="stats.allTokens">全部令牌</option>
-                <!-- 动态加载令牌列表 -->
               </select>
             </div>
 
-            <!-- 隐藏0成功的模型 -->
-            <div class="filter-group" style="align-items: center;">
+            <div class="filter-group analytics-filter-group--checkbox">
               <label class="filter-checkbox-label">
                 <input type="checkbox" id="f_hide_zero_success" checked>
                 <span data-i18n="stats.hideZeroSuccess">隐藏0成功</span>
               </label>
             </div>
 
-            <!-- 统计信息 -->
-            <div class="filter-info">
+            <div class="filter-info analytics-filter-info">
               <span data-i18n="stats.totalRecordsPrefix">共</span> <span id="statsCount">0</span> <span data-i18n="stats.totalRecordsSuffix">条记录</span>
             </div>
 
-            <!-- 操作按钮组 -->
-            <div style="flex: none;">
+            <div class="analytics-filter-actions">
               <button id="btn_filter" type="button" class="btn btn-primary btn-md" data-i18n="common.filter">筛选</button>
             </div>
           </div>
         </div>
         </section>
 
-        <!-- 统计详情表格 -->
         <section class="page-section">
-	          <div class="glass-card stats-detail-card" style="animation-delay: 0.3s;">
-            <h3 class="section-title mb-6" style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="display: flex; align-items: center;">
+	          <div class="glass-card page-content-card analytics-content-card stats-detail-card" style="animation-delay: 0.3s;">
+            <h3 class="section-title analytics-section-header mb-6">
+              <span class="analytics-section-title">
                 <svg class="inline-block w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
                 <span data-i18n="stats.detailTitle">详细统计数据</span>
-                <small class="opacity-75" style="font-weight: var(--font-normal); margin-left: var(--space-2);" data-i18n="stats.sortByPriority">
+                <small class="opacity-75 analytics-section-note" data-i18n="stats.sortByPriority">
                   按渠道优先级排序
                 </small>
               </span>
-              <!-- 表格/图表切换按钮 -->
               <div class="view-toggle-group" id="view-toggle-group">
                 <button type="button" class="view-toggle-btn active" data-view="table" onclick="switchView('table')">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,6 +238,7 @@
             </div>
           </div>
         </section>
+        </div>
       </div>
     </main>
   </div>

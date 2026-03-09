@@ -77,7 +77,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Login Page
   // ============================================================
-  'login.title': 'Login - Claude Code & Codex Proxy',
+  'login.title': 'Login',
   'login.brandSubtitle': 'Intelligent API Proxy Management System',
   'login.adminLogin': 'Admin Login',
   'login.passwordHint': 'Enter your admin password to access the system',
@@ -99,8 +99,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Index Overview
   // ============================================================
-  'index.title': 'Claude Code & Codex Proxy Service',
-  'index.pageSubtitle': 'Analytics',
+  'index.title': 'Overview',
+  'index.subtitle': 'Analytics',
   'index.timeRange.today': 'Today',
   'index.timeRange.yesterday': 'Yesterday',
   'index.timeRange.dayBeforeYesterday': 'Day Before',
@@ -124,7 +124,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Channels Management
   // ============================================================
-  'channels.title': 'Channels - Claude Code & Codex Proxy',
+  'channels.title': 'Channels',
+  'channels.subtitle': 'Configure API channels, priorities, and model support with weighted routing by key count',
   'channels.description': 'Configure API channels, priorities and model support (High priority channels preferred, same priority uses weighted random by key count)',
   'channels.priorityHint': 'High priority channels are preferred, same priority uses weighted random by key count',
   'channels.exportCsv': 'Export CSV',
@@ -376,7 +377,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // API Tokens
   // ============================================================
-  'tokens.title': 'API Tokens - Claude Code & Codex Proxy',
+  'tokens.title': 'API Tokens',
+  'tokens.subtitle': 'Manage tokens for API (/v1/*) access',
   'tokens.pageTitle': 'API Access Tokens',
   'tokens.pageSubtitle': 'Manage tokens for API (/v1/*) access',
   'tokens.createToken': '+ Create Token',
@@ -526,7 +528,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Statistics
   // ============================================================
-  'stats.title': 'Statistics - Claude Code & Codex Proxy',
+  'stats.title': 'Statistics',
+  'stats.subtitle': 'Review channel, model, and token level usage statistics',
   'stats.channelType': 'Channel',
   'stats.timeRange': 'Time Range',
   'stats.channelId': 'Channel#',
@@ -599,7 +602,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Trends
   // ============================================================
-  'trend.title': 'Trends - Claude Code & Codex Proxy',
+  'trend.title': 'Trends',
+  'trend.subtitle': 'Track requests, cost, and token usage over time',
   'trend.chartTitle': 'Request Trend Chart',
   'trend.allModels': 'All Models',
   'trend.typeCount': 'Call Count',
@@ -650,7 +654,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Logs
   // ============================================================
-  'logs.title': 'Request Logs - Claude Code & Codex Proxy',
+  'logs.title': 'Request Logs',
+  'logs.subtitle': 'Adjust filters or review the selected time range',
   'logs.resultType': 'Result',
   'logs.resultAll': 'All',
   'logs.resultSuccess': 'Success (2xx)',
@@ -714,7 +719,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Model Test
   // ============================================================
-  'modelTest.title': 'Model Test - Claude Code & Codex Proxy',
+  'modelTest.title': 'Model Test',
+  'modelTest.subtitle': 'Validate channels, models, and response quality in one workspace',
   'modelTest.channel': 'Channel',
   'modelTest.channelName': 'Channel',
   'modelTest.priority': 'Priority',
@@ -792,7 +798,8 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Settings
   // ============================================================
-  'settings.title': 'System Settings - Claude Code & Codex Proxy',
+  'settings.title': 'System Settings',
+  'settings.subtitle': 'Configure system preferences and runtime behavior',
   'settings.configItem': 'Configuration',
   'settings.currentValue': 'Current Value',
   'settings.saveAll': 'Save All Changes',

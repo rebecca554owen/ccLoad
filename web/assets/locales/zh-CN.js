@@ -77,7 +77,7 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 登录页
   // ============================================================
-  'login.title': '登录 - Claude Code & Codex Proxy',
+  'login.title': '登录',
   'login.brandSubtitle': '智能API代理管理系统',
   'login.adminLogin': '管理员登录',
   'login.passwordHint': '请输入您的管理密码以访问系统',
@@ -99,8 +99,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 首页概览
   // ============================================================
-  'index.title': 'Claude Code & Codex Proxy 代理服务',
-  'index.pageSubtitle': '统计分析',
+  'index.title': '概览',
+  'index.subtitle': '统计分析',
   'index.timeRange.today': '本日',
   'index.timeRange.yesterday': '昨日',
   'index.timeRange.dayBeforeYesterday': '前日',
@@ -124,7 +124,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 渠道管理
   // ============================================================
-  'channels.title': '渠道管理 - Claude Code & Codex Proxy',
+  'channels.title': '渠道管理',
+  'channels.subtitle': '配置API渠道、优先级和模型支持（优先请求高优先级渠道，相同优先级按Key数量加权随机）',
   'channels.description': '配置API渠道、优先级和模型支持（优先请求高优先级渠道，相同优先级按Key数量加权随机）',
   'channels.priorityHint': '优先请求高优先级渠道，相同优先级按Key数量加权随机',
   'channels.exportCsv': '导出 CSV',
@@ -376,7 +377,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // API令牌
   // ============================================================
-  'tokens.title': 'API令牌 - Claude Code & Codex Proxy',
+  'tokens.title': 'API令牌',
+  'tokens.subtitle': '管理用于 API (/v1/*) 访问的令牌',
   'tokens.pageTitle': 'API访问令牌',
   'tokens.pageSubtitle': '管理用于 API (/v1/*) 访问的令牌',
   'tokens.createToken': '+ 创建令牌',
@@ -526,7 +528,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 调用统计
   // ============================================================
-  'stats.title': '调用统计 - Claude Code & Codex Proxy',
+  'stats.title': '调用统计',
+  'stats.subtitle': '查看渠道、模型与令牌维度的调用统计',
   'stats.channelType': '渠道类型',
   'stats.timeRange': '时间范围',
   'stats.channelId': '渠道ID',
@@ -599,7 +602,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 请求趋势
   // ============================================================
-  'trend.title': '请求趋势 - Claude Code & Codex Proxy',
+  'trend.title': '请求趋势',
+  'trend.subtitle': '查看请求量、成本与令牌消耗的时间趋势',
   'trend.chartTitle': '请求趋势图表',
   'trend.allModels': '全部模型',
   'trend.typeCount': '调用次数',
@@ -650,7 +654,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 日志
   // ============================================================
-  'logs.title': '请求日志 - Claude Code & Codex Proxy',
+  'logs.title': '请求日志',
+  'logs.subtitle': '请调整筛选条件或检查时间范围',
   'logs.resultType': '请求结果',
   'logs.resultAll': '全部',
   'logs.resultSuccess': '成功(2xx)',
@@ -714,7 +719,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 模型测试
   // ============================================================
-  'modelTest.title': '模型测试 - Claude Code & Codex Proxy',
+  'modelTest.title': '模型测试',
+  'modelTest.subtitle': '在同一工作区内验证渠道、模型与响应质量',
   'modelTest.channel': '渠道',
   'modelTest.channelName': '渠道',
   'modelTest.priority': '优先级',
@@ -792,7 +798,8 @@ window.I18N_LOCALES['zh-CN'] = {
   // ============================================================
   // 设置
   // ============================================================
-  'settings.title': '系统设置 - Claude Code & Codex Proxy',
+  'settings.title': '系统设置',
+  'settings.subtitle': '系统偏好与运行参数配置',
   'settings.configItem': '配置项',
   'settings.currentValue': '当前值',
   'settings.saveAll': '保存所有更改',

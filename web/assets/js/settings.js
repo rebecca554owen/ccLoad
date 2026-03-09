@@ -103,58 +103,70 @@ async function loadSettings() {
 }
 
 function renderSettings(settings) {
-  const tbody = document.getElementById('settings-tbody');
+  const container = document.getElementById('settings-groups');
   originalSettings = {};
-  tbody.innerHTML = '';
+  container.innerHTML = '';
 
-  // 初始化事件委托（仅一次）
   initSettingsEventDelegation();
 
   const groups = groupSettings(settings);
   renderGroupNav(groups);
 
   for (const g of groups) {
-    const groupRow = TemplateEngine.render('tpl-setting-group-row', {
+    const groupSection = TemplateEngine.render('tpl-setting-group-row', {
       groupId: g.id,
       groupName: g.name
     });
-    if (groupRow) tbody.appendChild(groupRow);
+    if (!groupSection) continue;
+
+    const groupBody = groupSection.querySelector('[data-settings-group-body]');
 
     for (const s of g.settings) {
       originalSettings[s.key] = s.value;
-      // 优先使用语言包中的描述，若没有则回退到后端返回的描述
       const descKey = `settings.desc.${s.key}`;
       const translatedDesc = t(descKey);
-      const description = (translatedDesc !== descKey) ? translatedDesc : s.description;
+      const rawDescription = (translatedDesc !== descKey) ? translatedDesc : s.description;
+      const restartRequired = rawDescription.includes(RESTART_MARKER);
+      const description = rawDescription.replace(RESTART_MARKER, '').trim();
       const row = TemplateEngine.render('tpl-setting-row', {
         key: s.key,
         description: description,
+        restartRequired: restartRequired ? 'true' : 'false',
+        restartBadgeHtml: restartRequired ? renderRestartBadge() : '',
         inputHtml: renderInput(s)
       });
-      if (row) tbody.appendChild(row);
+      if (row) groupBody.appendChild(row);
     }
+
+    container.appendChild(groupSection);
+  }
+
+  if (window.i18n && window.i18n.translatePage) {
+    window.i18n.translatePage();
   }
 }
 
-// 初始化事件委托（替代 inline onclick）
 function initSettingsEventDelegation() {
-  const tbody = document.getElementById('settings-tbody');
-  if (!tbody || tbody.dataset.delegated) return;
-  tbody.dataset.delegated = 'true';
+  const container = document.getElementById('settings-groups');
+  if (!container || container.dataset.delegated) return;
+  container.dataset.delegated = 'true';
 
-  // 重置按钮点击
-  tbody.addEventListener('click', (e) => {
+  container.addEventListener('click', (e) => {
     const resetBtn = e.target.closest('.setting-reset-btn');
     if (resetBtn) {
       resetSetting(resetBtn.dataset.key);
     }
   });
 
-  // 输入变更
-  tbody.addEventListener('change', (e) => {
+  container.addEventListener('change', (e) => {
     const input = e.target.closest('input');
     if (input) markChanged(input);
   });
+}
+
+function renderRestartBadge() {
+  const badge = TemplateEngine.render('tpl-setting-restart-badge', {});
+  return badge ? badge.outerHTML : '';
 }
 
 function renderInput(setting) {
@@ -180,7 +192,7 @@ function renderInput(setting) {
 }
 
 function markChanged(input) {
-  const row = input.closest('tr');
+  const row = input.closest('.settings-item');
   let key, currentValue;
 
   if (input.type === 'radio') {
@@ -193,9 +205,9 @@ function markChanged(input) {
   }
 
   if (currentValue !== originalSettings[key]) {
-    row.style.background = 'rgba(59, 130, 246, 0.08)';
+    row.classList.add('is-dirty');
   } else {
-    row.style.background = '';
+    row.classList.remove('is-dirty');
   }
 }
 
@@ -231,9 +243,8 @@ function collectSettingChanges() {
 
     if (currentValue !== originalSettings[key]) {
       updates[key] = currentValue;
-      // 检查是否需要重启
-      const row = input?.closest('tr');
-      if (row?.querySelector('td')?.textContent?.includes(RESTART_MARKER)) {
+      const row = input?.closest('.settings-item');
+      if (row?.dataset.restartRequired === 'true') {
         needsRestartKeys.push(key);
       }
     }
@@ -288,5 +299,5 @@ async function resetSetting(key) {
   }
 }
 
-// 页面加载时执行
+document.getElementById('save-all-btn')?.addEventListener('click', saveAllSettings);
 loadSettings();

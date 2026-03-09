@@ -7,7 +7,7 @@
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
   <meta name="theme-color" content="#0A84FF">
-  <title data-i18n="trend.title">请求趋势 - Claude Code & Codex Proxy</title>
+  <title data-i18n="trend.title">请求趋势</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/channels.css?v=__VERSION__">
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
@@ -27,76 +27,70 @@
 </head>
 <body class="trend-page">
   <div class="app-container">
-    <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <!-- 页面标题 -->
+        <div class="page-shell">
         <header class="page-section">
+          <div class="glass-card page-header-card analytics-page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="trend.title">请求趋势</h1>
+                <p class="page-subtitle analytics-page-subtitle" data-i18n="trend.subtitle">查看请求量、成本与令牌消耗的时间趋势</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <!-- Filter Bar -->
         <section class="page-section">
-        <div class="filter-bar">
+        <div class="filter-bar page-toolbar-card analytics-filter-card">
           <div class="filter-controls">
-            <!-- 渠道类型筛选 -->
             <div class="filter-group">
               <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
-              <select id="f_channel_type" class="form-select" style="min-width: 120px;">
-                <!-- 动态加载渠道类型选项 -->
+              <select id="f_channel_type" class="form-select analytics-filter-select analytics-filter-select--type">
               </select>
             </div>
 
-            <!-- 时间范围筛选 -->
             <div class="filter-group">
               <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
-              <select id="f_hours" class="form-select" style="min-width: 100px;">
-                <!-- 动态生成选项 by date-range-selector.js -->
+              <select id="f_hours" class="form-select analytics-filter-select">
               </select>
             </div>
 
-            <!-- 渠道ID筛选 -->
-            <div class="filter-group">
+            <div class="filter-group analytics-filter-group--id">
               <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
-              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID..." style="max-width: 100px;">
+              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID...">
             </div>
 
-            <!-- 渠道名筛选 -->
             <div class="filter-group">
               <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
               <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
-            <!-- 模型筛选 -->
             <div class="filter-group">
               <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
-              <select id="f_model" class="form-select" style="min-width: 150px;">
+              <select id="f_model" class="form-select analytics-filter-select analytics-filter-select--token">
                 <option value="" data-i18n="trend.allModels">全部模型</option>
-                <!-- 动态加载模型列表 -->
               </select>
             </div>
 
-            <!-- 令牌筛选 -->
             <div class="filter-group">
               <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
-              <select id="f_auth_token" class="form-select" style="min-width: 150px;">
+              <select id="f_auth_token" class="form-select analytics-filter-select analytics-filter-select--token">
                 <option value="" data-i18n="stats.allTokens">全部令牌</option>
-                <!-- 动态加载令牌列表 -->
               </select>
             </div>
 
-            <!-- 操作按钮组 -->
-            <div style="flex: none;">
+            <div class="analytics-filter-actions">
               <button id="btn_filter" type="button" class="btn btn-primary btn-md" data-i18n="common.filter">筛选</button>
             </div>
           </div>
         </div>
         </section>
 
-        <!-- 趋势图表 -->
         <section class="page-section trend-chart-section">
-          <div class="glass-card  trend-chart-card" style="animation-delay: 0.2s;">
-            <div class="flex justify-between items-center mb-6">
-              <h3 class="text-xl font-semibold">
+          <div class="glass-card page-content-card analytics-content-card trend-chart-card" style="animation-delay: 0.2s;">
+            <div class="analytics-section-header mb-6">
+              <h3 class="text-xl font-semibold analytics-section-title">
                 <svg class="inline-block w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21l4-4 4 4"/>
@@ -106,9 +100,7 @@
                 <span data-i18n="trend.chartTitle">请求趋势图表</span>
               </h3>
               
-              <!-- 控件与图例 -->
-              <div class="flex items-center" style="gap:12px; flex-wrap: wrap;">
-                <!-- 趋势类型切换 -->
+              <div class="analytics-section-actions trend-chart-toolbar">
                 <div class="toggle-group" id="trend-type-group">
                   <div class="toggle-btn" data-type="count" data-i18n="trend.typeCount">调用次数</div>
                   <div class="toggle-btn" data-type="rpm" data-i18n="trend.typeRpm">RPM</div>
@@ -117,7 +109,6 @@
                   <div class="toggle-btn" data-type="tokens" data-i18n="trend.typeTokens">Token用量</div>
                   <div class="toggle-btn" data-type="cost" data-i18n="trend.typeCost">费用消耗</div>
                 </div>
-                <!-- 渠道筛选器 -->
                 <div class="channel-filter-container">
                   <button class="btn btn-secondary btn-sm" onclick="toggleChannelFilter()">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,6 +166,7 @@
             </div>
           </div>
         </section>
+        </div>
       </div>
     </main>
   </div>

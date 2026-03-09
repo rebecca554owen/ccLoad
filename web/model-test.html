@@ -7,36 +7,8 @@
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
   <meta name="theme-color" content="#0A84FF">
-  <title data-i18n="modelTest.title">模型测试 - Claude Code & Codex Proxy</title>
+  <title data-i18n="modelTest.title">模型测试</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
-  <style>
-    .delete-preview-text {
-      margin: 0;
-      margin-top: 10px;
-      white-space: pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--color-text-secondary);
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 10px;
-      max-height: 260px;
-      overflow: auto;
-    }
-
-    #runTestBtn:disabled,
-    #runTestBtn.is-disabled {
-      opacity: 0.62;
-      filter: saturate(60%);
-      background: var(--color-border);
-      border-color: var(--color-border);
-      color: var(--color-text-secondary);
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-  </style>
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
   <script defer src="/web/assets/locales/en.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/i18n.js?v=__VERSION__"></script>
@@ -53,59 +25,67 @@
 <body>
   <div class="app-container">
     <main class="main-content">
-      <div class="content-area">
+      <div class="content-area page-shell model-test-page-shell">
         <header class="page-section">
+          <div class="glass-card page-header-card model-test-page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title model-test-page-title" data-i18n="modelTest.title">模型测试</h1>
+                <p class="page-subtitle model-test-page-subtitle" data-i18n="modelTest.subtitle">在同一工作区内验证渠道、模型与响应质量</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <section class="page-section" style="overflow: visible;">
-          <div class="glass-card" style="overflow: visible;">
+        <section class="page-section model-test-page-section">
+          <div class="glass-card page-content-card model-test-content-card">
           <!-- 模式切换 -->
-          <div class="mode-tab-group" style="margin-bottom: 12px;">
+          <div class="mode-tab-group model-test-mode-tabs">
             <button id="modeTabChannel" class="mode-tab-btn active" onclick="setTestMode('channel')" data-i18n="modelTest.mode.channel">按渠道测试</button>
             <button id="modeTabModel" class="mode-tab-btn" onclick="setTestMode('model')" data-i18n="modelTest.mode.model">按模型测试</button>
           </div>
 
           <!-- 控制栏 -->
-          <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
-            <label id="channelSelectorLabel" style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
-              <span style="color: var(--color-text-secondary);" data-i18n="modelTest.channel">渠道</span>
-              <select id="testChannelSelect" class="form-select" style="min-width: 150px;">
+          <div class="model-test-toolbar">
+            <label id="channelSelectorLabel" class="model-test-toolbar-field model-test-toolbar-field--compact">
+              <span class="model-test-toolbar-label" data-i18n="modelTest.channel">渠道</span>
+              <select id="testChannelSelect" class="form-select model-test-toolbar-select model-test-toolbar-select--channel">
               </select>
             </label>
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
-              <span style="color: var(--color-text-secondary);" data-i18n="common.type">类型</span>
-              <select id="testChannelType" class="form-select" style="min-width: 100px;">
+            <label class="model-test-toolbar-field model-test-toolbar-field--compact">
+              <span class="model-test-toolbar-label" data-i18n="common.type">类型</span>
+              <select id="testChannelType" class="form-select model-test-toolbar-select model-test-toolbar-select--type">
               </select>
             </label>
-            <label id="modelSelectorLabel" style="display: none; align-items: center; gap: 6px; font-size: 13px;">
-              <span style="color: var(--color-text-secondary);" data-i18n="common.model">模型</span>
-              <select id="testModelSelect" class="form-select" style="min-width: 200px;">
+            <label id="modelSelectorLabel" class="model-test-toolbar-field model-test-toolbar-field--compact" style="display: none;">
+              <span class="model-test-toolbar-label" data-i18n="common.model">模型</span>
+              <select id="testModelSelect" class="form-select model-test-toolbar-select model-test-toolbar-select--model">
               </select>
             </label>
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; flex: 1; min-width: 200px;">
-              <span style="color: var(--color-text-secondary);" data-i18n="modelTest.content">内容</span>
-              <input type="text" id="modelTestContent" value="" class="form-input" data-i18n-placeholder="common.loading" placeholder="加载中..." style="flex: 1;">
+            <label class="model-test-toolbar-field model-test-toolbar-field--flex">
+              <span class="model-test-toolbar-label" data-i18n="modelTest.content">内容</span>
+              <input type="text" id="modelTestContent" value="" class="form-input model-test-toolbar-input" data-i18n-placeholder="common.loading" placeholder="加载中...">
             </label>
-            <span id="testProgress" style="font-size: 13px; color: var(--color-text-secondary);"></span>
+            <span id="testProgress" class="model-test-progress"></span>
             <button onclick="selectAllModels()" class="btn btn-secondary btn-compact" data-i18n="modelTest.selectAll">全选</button>
             <button onclick="deselectAllModels()" class="btn btn-secondary btn-compact" data-i18n="modelTest.deselectAll">取消全选</button>
             <button id="fetchModelsBtn" onclick="fetchAndAddModels()" class="btn btn-secondary btn-compact" data-i18n="modelTest.fetchModels">获取模型</button>
             <button id="deleteModelsBtn" onclick="deleteSelectedModels()" class="btn btn-danger btn-compact" data-i18n="modelTest.deleteModels">删除模型</button>
-            <label style="display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer;">
-              <input type="checkbox" id="streamEnabled" style="width: 16px; height: 16px;">
+            <label class="model-test-toggle">
+              <input type="checkbox" id="streamEnabled" class="model-test-toggle__input">
               <span data-i18n="modelTest.stream">流式</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 4px; font-size: 13px;">
+            <label class="model-test-toolbar-field model-test-toolbar-field--compact">
               <span data-i18n="modelTest.concurrency">并发</span>
-              <input type="number" id="concurrency" value="5" min="1" max="20" class="form-input" style="width: 60px; text-align: center;">
+              <input type="number" id="concurrency" value="5" min="1" max="20" class="form-input model-test-toolbar-input model-test-toolbar-input--compact">
             </label>
             <button id="runTestBtn" onclick="runModelTests()" class="btn btn-primary btn-compact" data-i18n="modelTest.startTest">开始测试</button>
           </div>
 
           <!-- 模型测试表格 -->
-          <div class="table-container">
-            <table class="modern-table" style="font-size: 13px; table-layout: fixed; width: 100%;">
-              <thead style="position: sticky; top: 0; background: var(--glass-bg); z-index: 1;">
+          <div class="table-container model-test-table-wrap">
+            <table class="modern-table model-test-table">
+              <thead class="model-test-table-head">
                 <tr id="model-test-head-row">
                   <th style="width: 30px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleAllModels(this.checked)"></th>
                   <th style="width: 200px;" data-i18n="common.model" data-sort-key="name">模型</th>
@@ -120,7 +100,7 @@
                 </tr>
               </thead>
               <tbody id="model-test-tbody">
-                <tr><td colspan="10" style="text-align: center; color: var(--color-text-secondary); padding: 40px;" data-i18n="modelTest.selectChannelFirst">请先选择渠道</td></tr>
+                <tr><td colspan="10" class="model-test-empty-row" data-i18n="modelTest.selectChannelFirst">请先选择渠道</td></tr>
               </tbody>
             </table>
           </div>
@@ -167,16 +147,16 @@
 
   <!-- 删除预览确认弹窗 -->
   <div id="deletePreviewModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="deletePreviewModalTitle">
-    <div class="modal-content" style="max-width: 760px; width: min(90vw, 760px);">
-      <div class="modal-header" style="margin-bottom: 8px;">
+    <div class="modal-content model-test-delete-modal">
+      <div class="modal-header model-test-delete-modal__header">
         <h2 id="deletePreviewModalTitle" class="modal-title" data-i18n="modelTest.deletePreviewTitle">确认删除模型</h2>
         <button id="deletePreviewCloseBtn" type="button" class="close-btn" aria-label="关闭">&times;</button>
       </div>
-      <p style="margin: 0; color: var(--color-text-secondary); font-size: 13px;" data-i18n="modelTest.deletePreviewDesc">将按以下分组删除，请确认：</p>
+      <p class="model-test-delete-modal__desc" data-i18n="modelTest.deletePreviewDesc">将按以下分组删除，请确认：</p>
       <pre id="deletePreviewContent" class="delete-preview-text">-</pre>
-      <p id="deletePreviewProgress" style="display: none; margin: 0; margin-top: 10px; font-size: 13px; color: var(--color-text-secondary);">-</p>
-      <pre id="deletePreviewRuntimeLog" class="delete-preview-text" style="display: none; max-height: 180px;">-</pre>
-      <div class="confirm-actions" style="justify-content: flex-end; margin-top: 16px;">
+      <p id="deletePreviewProgress" class="model-test-delete-modal__progress" style="display: none;">-</p>
+      <pre id="deletePreviewRuntimeLog" class="delete-preview-text model-test-delete-modal__runtime" style="display: none;">-</pre>
+      <div class="confirm-actions model-test-delete-modal__actions">
         <button id="deletePreviewCancelBtn" class="btn btn-secondary" data-i18n="common.cancel">取消</button>
         <button id="deletePreviewConfirmBtn" class="btn btn-danger" data-i18n="modelTest.deletePreviewConfirm">确认删除</button>
       </div>
