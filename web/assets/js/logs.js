@@ -6,7 +6,7 @@ let totalLogsPages = 1;
 let totalLogs = 0;
 let currentChannelType = 'all'; // 当前选中的渠道类型
 let authTokens = []; // 令牌列表
-let defaultTestContent = 'sonnet 4.0的发布日期是什么？'; // 默认测试内容（从设置加载）
+let logsDefaultTestContent = 'sonnet 4.0的发布日期是什么？'; // 默认测试内容（从设置加载）
 
 const ACTIVE_REQUESTS_POLL_INTERVAL_MS = 2000;
 let activeRequestsPollTimer = null;
@@ -86,6 +86,15 @@ function clearActiveRequestsRows() {
   document.querySelectorAll('tr.pending-row').forEach(el => el.remove());
 }
 
+function buildChannelTrigger(channelId, channelName, baseURL = '') {
+  if (!channelId || !channelName) {
+    return '<span style="color: var(--neutral-500);">-</span>';
+  }
+
+  const channelTooltip = baseURL ? ` title="${escapeHtml(baseURL)}"` : '';
+  return `<button type="button" class="channel-link" data-channel-id="${channelId}"${channelTooltip}>${escapeHtml(channelName)} <small>(#${channelId})</small></button>`;
+}
+
 function ensureActiveRequestsPollingStarted() {
   if (activeRequestsPollTimer) return;
   activeRequestsPollTimer = setInterval(async () => {
@@ -105,7 +114,7 @@ async function loadDefaultTestContent() {
   try {
     const setting = await fetchDataWithAuth('/admin/settings/channel_test_content');
     if (setting && setting.value) {
-      defaultTestContent = setting.value;
+      logsDefaultTestContent = setting.value;
     }
   } catch (e) {
     console.warn('加载默认测试内容失败，使用内置默认值', e);
@@ -328,8 +337,7 @@ function buildChannelDisplay(req) {
     return '<span style="color: var(--neutral-500);">选择中...</span>';
   }
 
-  const channelTooltip = req.base_url ? ` title="${escapeHtml(req.base_url)}"` : '';
-  return `<a class="channel-link" href="/web/channels.html?id=${req.channel_id}#channel-${req.channel_id}"${channelTooltip}>${escapeHtml(req.channel_name)} <small>(#${req.channel_id})</small></a>`;
+  return buildChannelTrigger(req.channel_id, req.channel_name, req.base_url || '');
 }
 
 /**
@@ -493,7 +501,7 @@ function renderLogs(data) {
       channelTooltip = ` title="${escapeHtml(entry.base_url)}"`;
     }
     const configDisplay = entry.channel_id ?
-      `<a class="channel-link" href="/web/channels.html?id=${entry.channel_id}#channel-${entry.channel_id}"${channelTooltip}>${escapeHtml(entry.channel_name || '')} <small>(#${entry.channel_id})</small></a>` :
+      buildChannelTrigger(entry.channel_id, entry.channel_name || '', entry.base_url || '') :
       `<span style="color: var(--neutral-500);"${channelTooltip}>${escapeHtml(configInfo)}</span>`;
 
     // 2. 状态码样式
@@ -1063,6 +1071,15 @@ document.addEventListener('DOMContentLoaded', async function () {
   const tbody = document.getElementById('tbody');
   if (tbody) {
     tbody.addEventListener('click', (e) => {
+      const channelBtn = e.target.closest('.channel-link[data-channel-id]');
+      if (channelBtn) {
+        const channelId = parseInt(channelBtn.dataset.channelId, 10);
+        if (Number.isFinite(channelId) && channelId > 0 && typeof openLogChannelEditor === 'function') {
+          openLogChannelEditor(channelId);
+        }
+        return;
+      }
+
       const btn = e.target.closest('.test-key-btn[data-action]');
       if (!btn) return;
 
@@ -1236,7 +1253,7 @@ function resetTestKeyModal() {
   document.getElementById('testKeyProgress').classList.remove('show');
   document.getElementById('testKeyResult').classList.remove('show', 'success', 'error');
   document.getElementById('runKeyTestBtn').disabled = false;
-  document.getElementById('testKeyContent').value = defaultTestContent;
+  document.getElementById('testKeyContent').value = logsDefaultTestContent;
   document.getElementById('testKeyStream').checked = true;
   updateTestKeyIndexInfo('');
   // 重置模型选择框
@@ -1251,7 +1268,7 @@ async function runKeyTest() {
   const contentInput = document.getElementById('testKeyContent');
   const streamCheckbox = document.getElementById('testKeyStream');
   const selectedModel = modelSelect.value;
-  const testContent = contentInput.value.trim() || defaultTestContent;
+  const testContent = contentInput.value.trim() || logsDefaultTestContent;
   const streamEnabled = streamCheckbox.checked;
 
   if (!selectedModel) {
