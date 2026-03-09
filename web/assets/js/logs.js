@@ -128,6 +128,7 @@ async function load(skipLoading = false) {
     const channelId = document.getElementById('f_id')?.value?.trim() || '';
     const channelName = document.getElementById('f_name')?.value?.trim() || '';
     const model = document.getElementById('f_model')?.value?.trim() || '';
+    const resultType = document.getElementById('f_result_type')?.value?.trim() || 'all';
     const statusCode = document.getElementById('f_status')?.value?.trim() || '';
     const authTokenId = document.getElementById('f_auth_token')?.value?.trim() || '';
 
@@ -140,6 +141,7 @@ async function load(skipLoading = false) {
     if (channelId) params.set('channel_id', channelId);
     if (channelName) params.set('channel_name_like', channelName);
     if (model) params.set('model_like', model);
+    if (resultType && resultType !== 'all') params.set('result_type', resultType);
     if (statusCode) params.set('status_code', statusCode);
     if (authTokenId) params.set('auth_token_id', authTokenId);
 
@@ -215,6 +217,7 @@ function filterActiveRequests(requests) {
   const model = (document.getElementById('f_model')?.value || '').trim().toLowerCase();
   const channelType = (document.getElementById('f_channel_type')?.value || '').trim();
   const tokenId = (document.getElementById('f_auth_token')?.value || '').trim();
+  const resultType = (document.getElementById('f_result_type')?.value || 'all').trim();
 
   return requests.filter(req => {
     // 渠道ID精确匹配
@@ -242,6 +245,7 @@ function filterActiveRequests(requests) {
       if (req.token_id === undefined || req.token_id === null || req.token_id === 0) return false;
       if (String(req.token_id) !== tokenId) return false;
     }
+    if (resultType === 'success' || resultType === 'error') return false;
     return true;
   });
 }
@@ -253,8 +257,8 @@ async function fetchActiveRequests() {
   // 优化：当筛选条件不可能匹配进行中请求时，跳过请求
   const hours = (document.getElementById('f_hours')?.value || '').trim();
   const status = (document.getElementById('f_status')?.value || '').trim();
-  // 进行中的请求只存在于"本日"，且没有状态码
-  if ((hours && hours !== 'today') || status) {
+  const resultType = (document.getElementById('f_result_type')?.value || 'all').trim();
+  if ((hours && hours !== 'today') || status || (resultType && resultType !== 'all')) {
     clearActiveRequestsRows();
     lastActiveRequestIDs = null;
     return;
@@ -734,6 +738,7 @@ function applyFilter() {
   const id = document.getElementById('f_id').value.trim();
   const name = document.getElementById('f_name').value.trim();
   const model = document.getElementById('f_model').value.trim();
+  const resultType = document.getElementById('f_result_type') ? document.getElementById('f_result_type').value.trim() : 'all';
   const status = document.getElementById('f_status') ? document.getElementById('f_status').value.trim() : '';
   const authToken = document.getElementById('f_auth_token').value.trim();
   const channelType = document.getElementById('f_channel_type').value.trim();
@@ -749,6 +754,8 @@ function applyFilter() {
   else { q.delete('channel_name_like'); }
   if (model) { q.set('model_like', model); q.delete('model'); }
   else { q.delete('model_like'); q.delete('model'); }
+  if (resultType && resultType !== 'all') { q.set('result_type', resultType); }
+  else { q.delete('result_type'); }
   if (status) { q.set('status_code', status); }
   else { q.delete('status_code'); }
   if (authToken) q.set('auth_token_id', authToken); else q.delete('auth_token_id');
@@ -769,6 +776,7 @@ async function initFilters() {
   const name = u.get('channel_name_like') || u.get('channel_name') || (!hasUrlParams && saved?.channelName) || '';
   const range = u.get('range') || (!hasUrlParams && saved?.range) || 'today';
   const model = u.get('model_like') || u.get('model') || (!hasUrlParams && saved?.model) || '';
+  const resultType = u.get('result_type') || (!hasUrlParams && saved?.resultType) || 'all';
   const status = u.get('status_code') || (!hasUrlParams && saved?.status) || '';
   const authToken = u.get('auth_token_id') || (!hasUrlParams && saved?.authToken) || '';
   const channelType = u.get('channel_type') || (!hasUrlParams && saved?.channelType) || 'all';
@@ -787,6 +795,8 @@ async function initFilters() {
   document.getElementById('f_id').value = id;
   document.getElementById('f_name').value = name;
   document.getElementById('f_model').value = model;
+  const resultTypeEl = document.getElementById('f_result_type');
+  if (resultTypeEl) resultTypeEl.value = resultType;
   const statusEl = document.getElementById('f_status');
   if (statusEl) statusEl.value = status;
 
@@ -818,8 +828,13 @@ async function initFilters() {
     }
   });
 
+  const resultTypeInput = document.getElementById('f_result_type');
+  if (resultTypeInput) {
+    resultTypeInput.addEventListener('change', applyFilter);
+  }
+
   // 回车键筛选
-  ['f_hours', 'f_id', 'f_name', 'f_model', 'f_status', 'f_auth_token', 'f_channel_type'].forEach(id => {
+  ['f_hours', 'f_id', 'f_name', 'f_model', 'f_result_type', 'f_status', 'f_auth_token', 'f_channel_type'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('keydown', e => {
@@ -962,6 +977,7 @@ function saveLogsFilters() {
       channelId: document.getElementById('f_id')?.value || '',
       channelName: document.getElementById('f_name')?.value || '',
       model: document.getElementById('f_model')?.value || '',
+      resultType: document.getElementById('f_result_type')?.value || 'all',
       status: document.getElementById('f_status')?.value || '',
       authToken: document.getElementById('f_auth_token')?.value || ''
     };
@@ -1008,6 +1024,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (savedFilters.channelId) q.set('channel_id', savedFilters.channelId);
     if (savedFilters.channelName) q.set('channel_name_like', savedFilters.channelName);
     if (savedFilters.model) q.set('model_like', savedFilters.model);
+    if (savedFilters.resultType && savedFilters.resultType !== 'all') q.set('result_type', savedFilters.resultType);
     if (savedFilters.status) q.set('status_code', savedFilters.status);
     if (savedFilters.authToken) q.set('auth_token_id', savedFilters.authToken);
     if (savedFilters.channelType && savedFilters.channelType !== 'all') {
@@ -1092,6 +1109,9 @@ window.addEventListener('pageshow', async function (event) {
       }
       if (savedFilters.model) {
         document.getElementById('f_model').value = savedFilters.model;
+      }
+      if (savedFilters.resultType) {
+        document.getElementById('f_result_type').value = savedFilters.resultType;
       }
       if (savedFilters.status) {
         document.getElementById('f_status').value = savedFilters.status;

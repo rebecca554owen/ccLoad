@@ -915,7 +915,7 @@
  <div style="display: flex; gap: 6px; justify-content: center;">
  <button type="button" class="key-action-btn" data-action="copy" data-index="{{index}}"
  data-i18n-title="channels.copyThisKey" title="复制此Key"
- style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+ style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M4.5 2H10.5C11.0523 2 11.5 2.44772 11.5 3V4H12.5C13.0523 4 13.5 4.44772 13.5 5V13C13.5 13.5523 13.0523 14 12.5 14H6.5C5.94772 14 5.5 13.5523 5.5 13V12H4.5C3.94772 12 3.5 11.5523 3.5 11V3C3.5 2.44772 3.94772 2 4.5 2Z"
@@ -925,14 +925,14 @@
  </button>
  <button type="button" class="key-action-btn" data-action="test" data-index="{{index}}"
  data-i18n-title="channels.testThisKey" title="测试此Key"
- style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+ style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
  </svg>
  </button>
  <button type="button" class="key-action-btn" data-action="delete" data-index="{{index}}"
  data-i18n-title="channels.deleteThisKey" title="删除此Key"
- style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+ style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -958,16 +958,16 @@
  </td>
  <td style="padding: 6px 10px; text-align: center;">
  <div style="display: flex; gap: 6px; justify-content: center;">
- <button type="button" onclick="testInlineURL({{index}}, this)" data-i18n-title="channels.testThisUrl"
+ <button type="button" class="model-source-action" onclick="testInlineURL({{index}}, this)" data-i18n-title="channels.testThisUrl"
  title="测试此URL"
- style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+ style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
  </svg>
  </button>
- <button type="button" onclick="deleteInlineURL({{index}})" data-i18n-title="channels.deleteThisUrl"
+ <button type="button" class="model-target-delete" onclick="deleteInlineURL({{index}})" data-i18n-title="channels.deleteThisUrl"
  title="删除此URL"
- style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+ style="width: 28px; height: 28px; border-radius: 6px; padding: 0;">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
  d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -1000,9 +1000,10 @@
  </div>
  <div class="channel-card-meta">
  <div class="channel-meta-line">
- <span><span data-i18n="channels.urlLabel">URL:</span> {{url}} | <span
- data-i18n="channels.priorityLabel">优先级:</span> {{priority}}{{{effectivePriorityHtml}}} |
- {{statusText}}</span><div class="ch-name-statuses">{{{cooldownBadge}}}</div><span style="display:none;"></span>
+ <span class="channel-card-summary"><span data-i18n="channels.priorityLabel">优先级:</span> {{priority}}{{{effectivePriorityHtml}}} |
+ {{statusText}}</span><div class="ch-name-statuses">{{{cooldownBadge}}}</div>
+ </div>
+ <div class="{{statsSectionClass}}">
  {{{statsHtml}}}
  </div>
  </div>
@@ -1042,7 +1043,7 @@
  placeholder="claude-3-opus-20240229"
  style="flex: 1; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
  <button type="button" class="lowercase-btn" data-index="{{index}}"
- style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--neutral-300); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;"
+ style="width: 24px; height: 24px; border-radius: 4px; padding: 0; flex-shrink: 0;"
  data-i18n-title="channels.toLowercase" title="转为小写">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path
@@ -1059,7 +1060,7 @@
  </td>
  <td style="padding: 4px 10px; text-align: center;">
  <button type="button" class="redirect-delete-btn" data-index="{{index}}"
- style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
+ style="width: 28px; height: 28px; border-radius: 6px; padding: 0;"
  data-i18n-title="channels.deleteThisModel" title="删除此模型">
  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
  <path

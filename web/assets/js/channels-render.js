@@ -155,7 +155,7 @@ function buildChannelTypeBadge(channelType) {
  */
 function createChannelCard(channel) {
   const isCooldown = channel.cooldown_remaining_ms > 0;
-  const cardClasses = ['glass-card'];
+  const cardClasses = ['glass-card', 'channel-card'];
   if (isCooldown) cardClasses.push('channel-card-cooldown');
   if (!channel.enabled) cardClasses.push('channel-disabled');
 
@@ -199,6 +199,7 @@ function createChannelCard(channel) {
     statusText: channel.enabled ? window.t('channels.statusEnabled') : window.t('channels.statusDisabled'),
     cooldownBadge: inlineCooldownBadge(channel),
     statsHtml: statsHtml,
+    statsSectionClass: statsHtml ? 'channel-card-stats' : 'channel-card-stats hidden',
     enabled: channel.enabled,
     toggleText: channel.enabled ? window.t('common.disable') : window.t('common.enable'),
     toggleTitle: channel.enabled ? window.t('channels.toggleDisable') : window.t('channels.toggleEnable')

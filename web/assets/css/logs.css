@@ -201,18 +201,40 @@
     }
 
     .logs-filter-controls {
-      gap: 10px;
+      gap: 8px 10px;
+      align-items: flex-end;
     }
 
     .logs-filter-group {
-      flex: 1 1 180px;
+      flex: 0 1 auto;
       min-width: 0;
+      gap: 4px;
+    }
+
+    .logs-filter-group--compact {
+      flex-wrap: nowrap;
     }
 
     .logs-filter-group .filter-input,
     .logs-filter-group .form-select {
-      width: 100%;
+      width: auto;
       min-width: 0;
+    }
+
+    .logs-filter-group--input-xs .filter-input {
+      width: 92px;
+    }
+
+    .logs-filter-group--input-md .filter-input {
+      width: 148px;
+    }
+
+    .logs-filter-group--select-sm .form-select {
+      min-width: 104px;
+    }
+
+    .logs-filter-group--select-md .form-select {
+      min-width: 140px;
     }
 
     .logs-filter-info {
@@ -233,6 +255,11 @@
         grid-template-columns: 1fr;
         align-items: center;
         gap: 8px;
+        width: 100%;
+      }
+
+      .logs-filter-group .filter-input,
+      .logs-filter-group .form-select {
         width: 100%;
       }
 

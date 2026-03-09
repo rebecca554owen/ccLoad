@@ -71,6 +71,12 @@ func (wb *WhereBuilder) ApplyLogFilter(filter *model.LogFilter) *WhereBuilder {
 	if filter.StatusCode != nil {
 		wb.AddCondition("status_code = ?", *filter.StatusCode)
 	}
+	if filter.ResultType == "success" {
+		wb.AddCondition("status_code >= ? AND status_code < ?", 200, 300)
+	}
+	if filter.ResultType == "error" {
+		wb.AddCondition("(status_code < ? OR status_code >= ?)", 200, 300)
+	}
 	if filter.AuthTokenID != nil {
 		wb.AddCondition("auth_token_id = ?", *filter.AuthTokenID)
 	}
