@@ -156,7 +156,7 @@
     }
     .metric-value {
       font-weight: 600;
-      color: var(--neutral-900);
+      color: var(--text-primary-light);
     }
     .metric-label {
       font-size: 11px;
@@ -267,6 +267,7 @@
 .tokens-page-subtitle {
   color: var(--card-muted-text);
   max-width: 44rem;
+  font-weight: 500;
 }
 
 .tokens-toolbar-card {
@@ -284,39 +285,40 @@
 .tokens-toolbar-card .time-range-btn {
   min-height: 38px;
   background: var(--card-bg-strong);
-  color: var(--card-muted-text);
+  color: var(--text-primary-light);
   border: 1px solid var(--surface-border);
   box-shadow: none;
 }
 
 .tokens-toolbar-card .time-range-btn:hover {
   background: rgba(var(--primary-rgb), 0.08);
-  color: var(--neutral-900);
+  color: var(--text-primary-light);
   border-color: rgba(var(--primary-rgb), 0.18);
 }
 
 .tokens-toolbar-card .time-range-btn.active {
   background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.18), rgba(var(--primary-rgb), 0.1));
-  color: var(--neutral-900);
+  color: var(--text-primary-light);
   border-color: rgba(var(--primary-rgb), 0.24);
 }
 
 [data-theme="dark"] .tokens-toolbar-card .time-range-btn {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(245, 247, 250, 0.86);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--card-bg-strong);
+  color: var(--text-primary-dark);
+  border-color: var(--surface-border);
 }
 
 [data-theme="dark"] .tokens-toolbar-card .time-range-btn:hover {
-  background: rgba(90, 132, 255, 0.16);
-  color: var(--neutral-900);
-  border-color: rgba(90, 132, 255, 0.22);
+  background: color-mix(in srgb, var(--card-bg-strong) 80%, rgba(var(--info-rgb), 0.22) 20%);
+  color: var(--text-primary-dark);
+  border-color: color-mix(in srgb, var(--card-border) 72%, rgba(var(--info-rgb), 0.34) 28%);
 }
 
 [data-theme="dark"] .tokens-toolbar-card .time-range-btn.active {
-  background: linear-gradient(135deg, rgba(90, 132, 255, 0.22), rgba(90, 200, 250, 0.14));
-  color: var(--neutral-900);
-  border-color: rgba(90, 132, 255, 0.3);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.38), rgba(var(--info-rgb), 0.28));
+  color: #fff;
+  border-color: rgba(var(--primary-rgb), 0.42);
+  box-shadow: 0 14px 28px rgba(6, 78, 146, 0.28);
 }
 
 .tokens-table-card {
@@ -338,6 +340,7 @@
 .token-modal-content {
   background: linear-gradient(180deg, var(--card-bg-strong), var(--card-bg));
   border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .token-modal-body {
@@ -348,7 +351,7 @@
 .token-modal-counter,
 .token-form-inline-note {
   font-size: 12px;
-  color: var(--card-soft-text);
+  color: var(--card-muted-text);
 }
 
 .token-form-hint {
@@ -589,3 +592,157 @@
   }
 }
     /* 使用 styles.css 中定义的 fadeIn 和 slideUp keyframes */
+
+.token-table,
+[data-theme="dark"] .token-table {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.token-table thead,
+[data-theme="dark"] .token-table thead {
+  background: rgba(var(--primary-rgb), 0.08);
+}
+
+.token-table th {
+  color: var(--card-muted-text);
+  border-bottom-color: rgba(188, 200, 214, 0.72);
+}
+
+[data-theme="dark"] .token-table th {
+  color: var(--card-muted-text);
+  border-bottom-color: rgba(72, 89, 111, 0.72);
+}
+
+.token-table td {
+  color: var(--text-primary-light);
+  border-bottom-color: rgba(218, 226, 236, 0.82);
+}
+
+[data-theme="dark"] .token-table td {
+  color: var(--text-primary-dark);
+  border-bottom-color: rgba(54, 68, 88, 0.78);
+}
+
+.token-table tbody tr:hover,
+[data-theme="dark"] .token-table tbody tr:hover {
+  background: rgba(var(--primary-rgb), 0.06);
+}
+
+.token-action-btn {
+  border-radius: 12px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.token-display {
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--text-primary-light);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+[data-theme="dark"] .token-display {
+  color: var(--text-primary-dark);
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.18);
+}
+
+.token-display-active,
+.status-active,
+.success-rate-high {
+  background: rgba(var(--success-rgb), 0.12);
+  color: var(--success-700);
+  border-color: rgba(var(--success-rgb), 0.18);
+}
+
+.token-display-inactive,
+.status-inactive,
+.stats-badge {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--card-muted-text);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+.token-display-expired,
+.status-expired,
+.success-rate-low {
+  background: rgba(var(--error-rgb), 0.1);
+  color: var(--error-700);
+  border-color: rgba(var(--error-rgb), 0.18);
+}
+
+.success-rate-medium {
+  background: rgba(var(--warning-rgb), 0.12);
+  color: var(--warning-700);
+}
+
+.status-badge,
+.stats-badge {
+  border: 1px solid transparent;
+}
+
+.tokens-page-header-card::before {
+  background:
+    radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.14), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(var(--info-rgb), 0.1), transparent 28%);
+}
+
+.tokens-page-subtitle,
+.token-form-hint,
+.token-modal-counter,
+.token-form-inline-note,
+.token-select-all-card__count,
+.token-import-group__hint {
+  color: var(--card-muted-text);
+}
+
+.tokens-toolbar-card {
+  padding: 12px;
+}
+
+.tokens-toolbar-card .time-range-btn,
+[data-theme="dark"] .tokens-toolbar-card .time-range-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--card-muted-text);
+  box-shadow: none;
+}
+
+.tokens-toolbar-card .time-range-btn:hover,
+[data-theme="dark"] .tokens-toolbar-card .time-range-btn:hover {
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.14);
+  color: inherit;
+}
+
+.tokens-toolbar-card .time-range-btn.active,
+[data-theme="dark"] .tokens-toolbar-card .time-range-btn.active {
+  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.92), rgba(36, 95, 224, 0.98));
+  color: #fff;
+  border-color: rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 8px 18px rgba(36, 95, 224, 0.24);
+}
+
+.token-modal-content,
+.token-edit-modal-content {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0)),
+    var(--card-tint),
+    var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 28px 64px rgba(15, 23, 42, 0.18);
+}
+
+[data-theme="dark"] .token-modal-content,
+[data-theme="dark"] .token-edit-modal-content {
+  box-shadow: 0 30px 72px rgba(0, 0, 0, 0.38);
+}
+
+.token-import-preview {
+  background: rgba(var(--success-rgb), 0.1);
+  border-color: rgba(var(--success-rgb), 0.18);
+  color: var(--success-700);
+}
