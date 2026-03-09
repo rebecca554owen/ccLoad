@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"ccLoad/internal/cooldown"
 	"ccLoad/internal/model"
@@ -197,6 +198,86 @@ func Test_HandleProxySuccess_Basic(t *testing.T) {
 	}
 	if action != cooldown.ActionReturnClient {
 		t.Errorf("期望 action=ActionReturnClient, 实际=%v", action)
+	}
+}
+
+func Test_ApplyCooldownDecision_TripsKeyFuse(t *testing.T) {
+	srv := newInMemoryServer(t)
+
+	ctx := context.Background()
+	cfg, err := srv.store.CreateConfig(ctx, &model.Config{
+		Name:     "test",
+		URL:      "http://test.example.com",
+		Priority: 1,
+		Enabled:  true,
+	})
+	if err != nil {
+		t.Fatalf("创建渠道失败: %v", err)
+	}
+	err = srv.store.CreateAPIKeysBatch(ctx, []*model.APIKey{
+		{
+			ChannelID:   cfg.ID,
+			KeyIndex:    0,
+			APIKey:      "sk-test-key-0",
+			KeyStrategy: model.KeyStrategySequential,
+		},
+		{
+			ChannelID:   cfg.ID,
+			KeyIndex:    1,
+			APIKey:      "sk-test-key-1",
+			KeyStrategy: model.KeyStrategySequential,
+		},
+	})
+	if err != nil {
+		t.Fatalf("创建API Key失败: %v", err)
+	}
+
+	res := &fwResult{
+		Status: 429,
+		Body:   []byte(`{"error":{"type":"rate_limit_error"}}`),
+		Header: make(http.Header),
+	}
+
+	action := srv.applyCooldownDecision(ctx, cfg, httpErrorInput(cfg.ID, 0, res))
+	if action != cooldown.ActionRetryKey {
+		t.Fatalf("期望 action=ActionRetryKey, 实际=%v", action)
+	}
+
+	if _, fused := srv.keySelector.getFuseUntil(cfg.ID, 0, time.Now()); !fused {
+		t.Fatal("期望 key 被写入本地熔断")
+	}
+}
+
+func Test_HandleProxySuccess_ClearsKeyFuse(t *testing.T) {
+	srv := newInMemoryServer(t)
+
+	ctx := context.Background()
+	cfg := &model.Config{
+		ID:       1,
+		Name:     "test",
+		URL:      "http://test.example.com",
+		Priority: 1,
+		Enabled:  true,
+	}
+
+	srv.keySelector.TripKey(cfg.ID, 0)
+
+	res := &fwResult{
+		Status:        200,
+		Body:          []byte(`{"content": "success"}`),
+		Header:        make(http.Header),
+		FirstByteTime: 0.05,
+	}
+
+	reqCtx := &proxyRequestContext{}
+
+	_, action := srv.handleProxySuccess(ctx, cfg, 0, "test-model", "test-key", res, 0.1, reqCtx)
+	if action != cooldown.ActionReturnClient {
+		t.Fatalf("期望 action=ActionReturnClient, 实际=%v", action)
+	}
+
+	if _, fused := srv.keySelector.getFuseUntil(cfg.ID, 0, time.Now()); fused {
+		t.Fatal("期望成功后清理本地熔断")
 	}
 }
 

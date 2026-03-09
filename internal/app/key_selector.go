@@ -18,6 +18,9 @@ type KeySelector struct {
 	// 渠道删除时需要清理对应计数器，避免rrCounters无界增长。
 	rrCounters map[int64]*rrCounter
 	rrMutex    sync.RWMutex
+	fuseUntil  map[keyFuseID]time.Time
+	fuseMutex  sync.RWMutex
+	fuseTTL    time.Duration
 }
 
 // rrCounter 轮询计数器（简化版）
@@ -26,10 +29,17 @@ type rrCounter struct {
 	lastAccess atomic.Int64 // UnixNano: 最后一次访问时间，用于后台清理
 }
 
+type keyFuseID struct {
+	channelID int64
+	keyIndex  int
+}
+
 // NewKeySelector 创建Key选择器
 func NewKeySelector() *KeySelector {
 	return &KeySelector{
 		rrCounters: make(map[int64]*rrCounter),
+		fuseUntil:  make(map[keyFuseID]time.Time),
+		fuseTTL:    30 * time.Second,
 	}
 }
 
@@ -56,6 +66,11 @@ func (ks *KeySelector) SelectAvailableKey(channelID int64, apiKeys []*model.APIK
 				keyIndex,
 				time.Unix(apiKeys[0].CooldownUntil, 0).Format("2006-01-02 15:04:05"))
 		}
+		if until, fused := ks.getFuseUntil(channelID, keyIndex, time.Now()); fused {
+			return -1, "", fmt.Errorf("single key (index=%d) is fused until %s",
+				keyIndex,
+				until.Format("2006-01-02 15:04:05"))
+		}
 		return keyIndex, apiKeys[0].APIKey, nil
 	}
 
@@ -69,13 +84,13 @@ func (ks *KeySelector) SelectAvailableKey(channelID int64, apiKeys []*model.APIK
 	case model.KeyStrategyRoundRobin:
 		return ks.selectRoundRobin(channelID, apiKeys, excludeKeys)
 	case model.KeyStrategySequential:
-		return ks.selectSequential(apiKeys, excludeKeys)
+		return ks.selectSequential(channelID, apiKeys, excludeKeys)
 	default:
-		return ks.selectSequential(apiKeys, excludeKeys)
+		return ks.selectSequential(channelID, apiKeys, excludeKeys)
 	}
 }
 
-func (ks *KeySelector) selectSequential(apiKeys []*model.APIKey, excludeKeys map[int]bool) (int, string, error) {
+func (ks *KeySelector) selectSequential(channelID int64, apiKeys []*model.APIKey, excludeKeys map[int]bool) (int, string, error) {
 	now := time.Now()
 
 	for _, apiKey := range apiKeys {
@@ -86,6 +101,10 @@ func (ks *KeySelector) selectSequential(apiKeys []*model.APIKey, excludeKeys map
 		}
 
 		if apiKey.IsCoolingDown(now) {
+			continue
+		}
+
+		if _, fused := ks.getFuseUntil(channelID, keyIndex, now); fused {
 			continue
 		}
 
@@ -177,11 +196,47 @@ func (ks *KeySelector) selectRoundRobin(channelID int64, apiKeys []*model.APIKey
 			continue
 		}
 
+		if _, fused := ks.getFuseUntil(channelID, keyIndex, now); fused {
+			continue
+		}
+
 		// 返回真实 KeyIndex，而非 slice 索引
 		return keyIndex, selectedKey.APIKey, nil
 	}
 
 	return -1, "", fmt.Errorf("all API keys are in cooldown or already tried")
+}
+
+func (ks *KeySelector) TripKey(channelID int64, keyIndex int) {
+	ks.fuseMutex.Lock()
+	ks.fuseUntil[keyFuseID{channelID: channelID, keyIndex: keyIndex}] = time.Now().Add(ks.fuseTTL)
+	ks.fuseMutex.Unlock()
+}
+
+func (ks *KeySelector) ClearKeyFuse(channelID int64, keyIndex int) {
+	ks.fuseMutex.Lock()
+	delete(ks.fuseUntil, keyFuseID{channelID: channelID, keyIndex: keyIndex})
+	ks.fuseMutex.Unlock()
+}
+
+func (ks *KeySelector) getFuseUntil(channelID int64, keyIndex int, now time.Time) (time.Time, bool) {
+	id := keyFuseID{channelID: channelID, keyIndex: keyIndex}
+
+	ks.fuseMutex.RLock()
+	until, ok := ks.fuseUntil[id]
+	ks.fuseMutex.RUnlock()
+	if !ok {
+		return time.Time{}, false
+	}
+	if !until.After(now) {
+		ks.fuseMutex.Lock()
+		if current, exists := ks.fuseUntil[id]; exists && !current.After(now) {
+			delete(ks.fuseUntil, id)
+		}
+		ks.fuseMutex.Unlock()
+		return time.Time{}, false
+	}
+	return until, true
 }
 
 // KeySelector 专注于Key选择逻辑，冷却管理已移至 cooldownManager
