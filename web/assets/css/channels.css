@@ -479,6 +479,26 @@
       margin-bottom: 6px;
     }
 
+    .channel-section-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .channel-section-toolbar-actions,
+    .channel-key-toolbar-controls,
+    .channel-key-toolbar-actions,
+    .channel-model-toolbar-controls,
+    .channel-model-toolbar-actions,
+    .key-strategy-radios,
+    .channel-modal-meta-row,
+    .channel-modal-meta-field,
+    .channel-modal-user-agent-row {
+      min-width: 0;
+    }
+
     .channel-model-table-container {
       max-height: 240px;
       min-height: 200px;
@@ -949,6 +969,16 @@
         max-width: none;
         justify-content: flex-start;
       }
+
+      .health-indicator {
+        flex-wrap: wrap;
+      }
+
+      .health-track {
+        width: min(100%, 335px);
+        min-width: 0;
+        flex: 1 1 100%;
+      }
     }
 
     .channel-stats-inline {
@@ -1373,5 +1403,148 @@
       .channel-batch-close {
         width: 26px;
         height: 26px;
+      }
+
+      .channel-modal-name-row,
+      .channel-modal-name-field,
+      .channel-modal-type-group,
+      .channel-custom-endpoint-row {
+        flex-direction: column;
+        align-items: stretch !important;
+      }
+
+      .channel-modal-type-group {
+        flex: 1 1 auto !important;
+      }
+
+      .channel-type-radios {
+        flex-wrap: wrap;
+      }
+
+      .channel-model-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .channel-section-toolbar,
+      .channel-key-toolbar-controls,
+      .channel-model-toolbar-controls,
+      .channel-modal-meta-row,
+      .channel-modal-user-agent-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .channel-model-toolbar > * {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .channel-section-toolbar > *,
+      .channel-key-toolbar-controls > *,
+      .channel-model-toolbar-controls > *,
+      .channel-modal-meta-row > *,
+      .channel-modal-user-agent-row > * {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .channel-section-toolbar-actions,
+      .channel-key-toolbar-actions,
+      .channel-model-toolbar-actions,
+      .key-strategy-radios {
+        display: flex;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .channel-section-toolbar-actions .btn,
+      .channel-key-toolbar-actions .btn,
+      .channel-model-toolbar-actions .btn,
+      .channel-key-toolbar-controls > .btn,
+      .channel-model-toolbar-controls > .btn {
+        flex: 1 1 calc(50% - 4px);
+        justify-content: center;
+      }
+
+      .channel-modal-meta-field {
+        align-items: stretch !important;
+      }
+
+      .channel-modal-meta-field .form-input,
+      .channel-modal-user-agent-row .form-input {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      .channel-modal-user-agent-row .form-label,
+      .channel-modal-meta-field .form-label {
+        white-space: normal !important;
+      }
+
+      .inline-table thead .models-hint {
+        display: block;
+        margin-left: 0 !important;
+        margin-top: 6px !important;
+        line-height: 1.4;
+      }
+
+      .inline-table-container,
+      .channel-model-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .inline-table {
+        min-width: 560px;
+      }
+
+      .channel-modal-footer {
+        bottom: -16px;
+        margin: 0 -16px -16px;
+        padding: 12px 16px 16px;
+      }
+
+      .channel-modal-footer-actions {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .channel-modal-footer-actions .btn {
+        flex: 1 1 100%;
+      }
+
+      .channel-card-actions {
+        gap: 6px;
+      }
+
+      .channel-card-actions .btn-icon {
+        flex: 1 1 calc(50% - 6px);
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .channel-section-toolbar-actions .btn,
+      .channel-key-toolbar-actions .btn,
+      .channel-model-toolbar-actions .btn,
+      .channel-key-toolbar-controls > .btn,
+      .channel-model-toolbar-controls > .btn {
+        flex-basis: 100%;
+      }
+
+      .channel-card-top-row,
+      .channel-card-bottom-row,
+      .channel-meta-line {
+        gap: 8px;
+      }
+
+      .channel-card-actions .btn-icon {
+        flex-basis: 100%;
+      }
+
+      .inline-table {
+        min-width: 520px;
       }
     }

@@ -151,7 +151,7 @@
           <label class="form-label" data-i18n="tokens.resultTokenLabel">API令牌(请妥善保管)</label>
           <div style="position: relative;">
             <textarea id="newTokenValue" readonly class="form-input" style="font-family: monospace; font-size: 13px; height: 80px; resize: none;"></textarea>
-            <button type="button" onclick="copyToken()" class="btn btn-secondary btn-compact" style="position: absolute; top: 8px; right: 8px;" data-i18n="common.copy">
+            <button type="button" onclick="copyToken()" class="btn btn-secondary btn-compact token-action-btn token-action-copy" style="position: absolute; top: 8px; right: 8px;" data-i18n="common.copy">
               复制
             </button>
           </div>
@@ -348,8 +348,8 @@
       <td style="text-align: center;">{{{nonStreamAvgHtml}}}</td>
       <td style="color: var(--neutral-600);">{{lastUsed}}</td>
       <td style="white-space: nowrap;">
-        <button type="button" class="btn-copy-token btn btn-secondary btn-compact" style="margin-right: 4px;" data-token="{{token}}" data-i18n="common.copy">复制</button>
-        <button type="button" class="btn btn-secondary btn-edit btn-compact" style="margin-right: 4px;" data-i18n="common.edit">编辑</button>
+        <button type="button" class="btn-copy-token btn btn-secondary btn-compact token-action-btn token-action-copy" style="margin-right: 4px;" data-token="{{token}}" data-i18n="common.copy">复制</button>
+        <button type="button" class="btn btn-secondary btn-edit btn-compact token-action-btn token-action-edit" style="margin-right: 4px;" data-i18n="common.edit">编辑</button>
         <button type="button" class="btn btn-danger btn-delete btn-compact" data-i18n="common.delete">删除</button>
       </td>
     </tr>

@@ -230,17 +230,17 @@
  <form id="channelForm" onsubmit="saveChannel(event)">
  <div class="form-group channel-model-config-group">
  <!-- 渠道名称和类型在第一行 -->
- <div style="display: flex; gap: 20px; align-items: center;">
- <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+ <div class="channel-modal-name-row" style="display: flex; gap: 20px; align-items: center;">
+ <div class="channel-modal-name-field" style="display: flex; align-items: center; gap: 8px; flex: 1;">
  <label class="form-label" style="margin: 0; white-space: nowrap;" data-i18n="channels.channelName">渠道名称
  *</label>
  <input type="text" id="channelName" name="channel_name" autocomplete="off" class="form-input" required style="flex: 1;">
  </div>
 
- <div style="display: flex; align-items: center; gap: 8px; flex: 0 0 550px;">
+ <div class="channel-modal-type-group" style="display: flex; align-items: center; gap: 8px; flex: 0 0 550px;">
  <label style="margin: 0; font-size: 13px; white-space: nowrap; color: var(--neutral-700);"
  data-i18n="channels.channelType">渠道类型</label>
- <div style="display: flex; gap: 6px;" id="channelTypeRadios">
+ <div class="channel-type-radios" style="display: flex; gap: 6px;" id="channelTypeRadios">
  <!-- 动态加载渠道类型 -->
  </div>
  </div>
@@ -251,13 +251,14 @@
  <!-- API URL和Key策略在第二行 -->
  <div>
  <div
+ class="channel-section-toolbar"
  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
  <label class="form-label" style="margin: 0; font-size: 13px; color: var(--neutral-700);">
  <span data-i18n="channels.apiUrl">API URL *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
  id="inlineUrlCount">0</span> <span data-i18n="channels.urlCountSuffix">个URL</span></span>
  </label>
- <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+ <div class="channel-section-toolbar-actions" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
  <button type="button" class="btn btn-secondary btn-sm" onclick="addInlineURL()"
  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
  data-i18n-title="channels.addUrlTitle" title="添加URL">
@@ -309,7 +310,7 @@
   </div>
 
   <!-- 自定义端点：在API URL表格下方 -->
-  <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+  <div class="channel-custom-endpoint-row" style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
   <div style="width: 70px; font-size: 13px; color: var(--neutral-700);"
   data-i18n="channels.customEndpoint">自定义端点</div>
   <input type="text" id="channelCustomEndpoint" class="form-input modal-inline-input" value=""
@@ -328,10 +329,10 @@
  id="virtualScrollHint" style="display: none; color: var(--primary-600); font-weight: 600;"
  data-i18n="channels.virtualScrollEnabled">· 虚拟滚动已启用</span></span>
  </label>
- <div style="display: flex; align-items: center; gap: 12px;">
+ <div class="channel-key-toolbar-controls" style="display: flex; align-items: center; gap: 12px;">
  <label style="margin: 0; font-size: 13px; white-space: nowrap; color: var(--neutral-700);"
  data-i18n="channels.keyStrategy">Key 策略</label>
- <div style="display: flex; gap: 6px; margin-right: 8px;" id="keyStrategyRadios">
+ <div class="key-strategy-radios" style="display: flex; gap: 6px; margin-right: 8px;" id="keyStrategyRadios">
  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 13px;">
  <input type="radio" name="keyStrategy" value="sequential" checked>
  <span data-i18n="channels.keyStrategySequential">顺序</span>
@@ -341,7 +342,7 @@
  <span data-i18n="channels.keyStrategyRoundRobin">轮询</span>
  </label>
  </div>
- <div style="display: flex; gap: 6px;">
+ <div class="channel-key-toolbar-actions" style="display: flex; gap: 6px;">
  <button type="button" class="btn btn-secondary btn-sm" onclick="openKeyImportModal()"
  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -430,14 +431,14 @@
  </div>
  <div class="form-group">
  <!-- 模型配置标签行：包含标签、添加按钮组和删除按钮 -->
- <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+ <div class="channel-section-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
  <label class="form-label" style="margin: 0;">
  <span data-i18n="channels.modelConfig">模型配置 *</span> <span class="models-hint"
  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
  id="redirectCount">0</span> <span data-i18n="channels.modelCountSuffix">个模型</span></span>
  </label>
- <div style="display: flex; align-items: center; gap: 12px;">
- <div style="display: flex; gap: 6px;">
+ <div class="channel-model-toolbar-controls" style="display: flex; align-items: center; gap: 12px;">
+ <div class="channel-model-toolbar-actions" style="display: flex; gap: 6px;">
  <button type="button" class="btn btn-secondary btn-sm" onclick="addCommonModels()"
  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
  data-i18n-title="channels.addCommonModelsTitle" title="添加当前渠道类型的常用模型">
@@ -518,17 +519,17 @@
  </div>
  </div>
  <div class="form-group channel-modal-footer-group">
- <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+ <div class="channel-modal-meta-row" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
  <label class="form-label" style="margin: 0;">
  <input type="checkbox" id="channelEnabled" checked> <span data-i18n="channels.enableChannel">启用渠道</span>
  </label>
- <div style="display: flex; align-items: center; gap: 8px;">
+ <div class="channel-modal-meta-field" style="display: flex; align-items: center; gap: 8px;">
  <label class="form-label" for="channelPriority" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.priority">优先级</label>
  <input type="number" id="channelPriority" class="form-input" value="0" min="-99999" max="99999"
  style="width: 100px; min-width: 100px;">
  </div>
- <div style="display: flex; align-items: center; gap: 8px;">
+ <div class="channel-modal-meta-field" style="display: flex; align-items: center; gap: 8px;">
  <label class="form-label" for="channelDailyCostLimit" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.dailyCostLimit">每日限额</label>
  <input type="number" id="channelDailyCostLimit" class="form-input" value="0" min="0" step="0.01"
@@ -537,7 +538,7 @@
  <span style="color: var(--neutral-500); font-size: 12px;">$</span>
  </div>
   </div>
-  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+  <div class="channel-modal-user-agent-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
  <label class="form-label" for="channelCustomUserAgent" style="margin: 0; white-space: nowrap;"
  data-i18n="channels.customUserAgent">User-Agent</label>
  <input type="text" id="channelCustomUserAgent" class="form-input" value=""

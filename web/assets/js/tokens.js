@@ -465,8 +465,8 @@
           <td style="text-align: center;">${data.nonStreamAvgHtml}</td>
           <td style="color: var(--neutral-600);">${data.lastUsed}</td>
           <td style="white-space: nowrap;">
-            <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-token="${escapeHtml(data.token)}">${t('common.copy')}</button>
-            <button class="btn btn-secondary btn-edit" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;">${t('common.edit')}</button>
+            <button class="btn-copy-token btn btn-secondary token-action-btn token-action-copy" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-token="${escapeHtml(data.token)}">${t('common.copy')}</button>
+            <button class="btn btn-secondary btn-edit token-action-btn token-action-edit" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;">${t('common.edit')}</button>
             <button class="btn btn-danger btn-delete" style="padding: 4px 12px; font-size: 13px;">${t('common.delete')}</button>
           </td>
         </tr>
