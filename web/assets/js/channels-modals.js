@@ -142,6 +142,11 @@ async function loadChannelData(channel) {
   document.getElementById('channelName').value = channel.name;
   setInlineURLTableData(channel.url);
 
+  const urlCount = getValidInlineURLs().length;
+  if (urlCount > 1) {
+    fetchURLStats(channel.id);
+  }
+
   let apiKeys = [];
   try {
     apiKeys = (await fetchDataWithAuth(`/admin/channels/${channel.id}/keys`)) || [];

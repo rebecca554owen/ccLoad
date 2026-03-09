@@ -40,14 +40,13 @@ async function loadChannelStats(range = channelStatsRange) {
   try {
     const params = new URLSearchParams({ range, limit: '500', offset: '0' });
     const data = await fetchDataWithAuth(`/admin/stats?${params.toString()}`);
-    channelStatsById = aggregateChannelStats((data && data.stats) || []);
+    channelStatsById = aggregateChannelStats((data && data.stats) || [], data && data.channel_health);
     filterChannels();
   } catch (err) {
     console.error('Failed to load channel stats', err);
   }
 }
 
-// 统计字段配置
 const STATS_FIELDS = [
   'total_input_tokens',
   'total_output_tokens',
@@ -56,7 +55,6 @@ const STATS_FIELDS = [
   'total_cost'
 ];
 
-// 聚合单个条目的统计数据
 function aggregateStatsEntry(stats, entry) {
   const success = toSafeNumber(entry.success);
   const error = toSafeNumber(entry.error);
@@ -66,11 +64,17 @@ function aggregateStatsEntry(stats, entry) {
   stats.error += error;
   stats.total += total;
 
-  const avgFirstByte = Number(entry.avg_first_byte_time_seconds);
   const weight = success || total || 0;
+  const avgFirstByte = Number(entry.avg_first_byte_time_seconds);
   if (Number.isFinite(avgFirstByte) && avgFirstByte > 0 && weight > 0) {
     stats._firstByteWeightedSum += avgFirstByte * weight;
     stats._firstByteWeight += weight;
+  }
+
+  const avgDuration = Number(entry.avg_duration_seconds);
+  if (Number.isFinite(avgDuration) && avgDuration > 0 && weight > 0) {
+    stats._durationWeightedSum += avgDuration * weight;
+    stats._durationWeight += weight;
   }
 
   for (const field of STATS_FIELDS) {
@@ -79,16 +83,23 @@ function aggregateStatsEntry(stats, entry) {
   }
 }
 
-// 计算最终统计数据（首字节时间）
-function finalizeStats(stats) {
+function finalizeStats(stats, healthTimeline = null) {
   if (stats._firstByteWeight > 0) {
     stats.avgFirstByteTimeSeconds = stats._firstByteWeightedSum / stats._firstByteWeight;
   }
+  if (stats._durationWeight > 0) {
+    stats.avgDurationSeconds = stats._durationWeightedSum / stats._durationWeight;
+  }
+  if (healthTimeline) {
+    stats.healthTimeline = healthTimeline;
+  }
   delete stats._firstByteWeightedSum;
   delete stats._firstByteWeight;
+  delete stats._durationWeightedSum;
+  delete stats._durationWeight;
 }
 
-function aggregateChannelStats(statsEntries = []) {
+function aggregateChannelStats(statsEntries = [], channelHealth = null) {
   const result = {};
 
   for (const entry of statsEntries) {
@@ -106,7 +117,9 @@ function aggregateChannelStats(statsEntries = []) {
         totalCacheCreationInputTokens: 0,
         totalCost: 0,
         _firstByteWeightedSum: 0,
-        _firstByteWeight: 0
+        _firstByteWeight: 0,
+        _durationWeightedSum: 0,
+        _durationWeight: 0
       };
     }
 
@@ -114,7 +127,7 @@ function aggregateChannelStats(statsEntries = []) {
   }
 
   for (const id of Object.keys(result)) {
-    finalizeStats(result[id]);
+    finalizeStats(result[id], channelHealth && channelHealth[id] ? channelHealth[id] : null);
   }
 
   return result;
