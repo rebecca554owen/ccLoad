@@ -669,6 +669,40 @@ func (h *HybridStore) ImportChannelBatch(ctx context.Context, channels []*model.
 	return created, updated, nil
 }
 
+// === Model Mapping Management ===
+
+func (h *HybridStore) GetModelMappings(ctx context.Context, channelID int64, model string) ([]*model.ChannelModelMapping, error) {
+	return h.sqlite.GetModelMappings(ctx, channelID, model)
+}
+
+func (h *HybridStore) GetAllModelMappings(ctx context.Context, channelID int64) (map[string][]*model.ChannelModelMapping, error) {
+	return h.sqlite.GetAllModelMappings(ctx, channelID)
+}
+
+func (h *HybridStore) UpdateModelMappings(ctx context.Context, channelID int64, model string, targets []model.ChannelModelMapping) error {
+	if err := h.mysql.UpdateModelMappings(ctx, channelID, model, targets); err != nil {
+		return err
+	}
+
+	h.syncToSQLite("UpdateModelMappings", func() error {
+		return h.sqlite.UpdateModelMappings(ctx, channelID, model, targets)
+	})
+
+	return nil
+}
+
+func (h *HybridStore) DeleteModelMapping(ctx context.Context, channelID int64, model string) error {
+	if err := h.mysql.DeleteModelMapping(ctx, channelID, model); err != nil {
+		return err
+	}
+
+	h.syncToSQLite("DeleteModelMapping", func() error {
+		return h.sqlite.DeleteModelMapping(ctx, channelID, model)
+	})
+
+	return nil
+}
+
 // === Lifecycle ===
 
 func (h *HybridStore) Ping(ctx context.Context) error {

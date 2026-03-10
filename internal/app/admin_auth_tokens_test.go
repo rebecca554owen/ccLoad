@@ -70,9 +70,9 @@ func TestAdminAPI_CreateAuthToken_Basic(t *testing.T) {
 		t.Fatalf("DB error: %v", err)
 	}
 
-	expectedHash := model.HashToken(response.Data.Token)
-	if stored.Token != expectedHash {
-		t.Error("Hash mismatch")
+	// 验证存储的token与返回的明文一致（明文存储）
+	if stored.Token != response.Data.Token {
+		t.Errorf("Stored token mismatch: expected %s, got %s", response.Data.Token, stored.Token)
 	}
 }
 
@@ -115,7 +115,7 @@ func createTestToken(t testing.TB, srv *Server, desc string) *model.AuthToken {
 	t.Helper()
 	ctx := context.Background()
 	token := &model.AuthToken{
-		Token:       model.HashToken("test-token-" + desc),
+		Token:       "test-token-" + desc, // 明文存储
 		Description: desc,
 		IsActive:    true,
 	}
@@ -302,7 +302,7 @@ func TestHandleListAuthTokens_StatsAggregation(t *testing.T) {
 	}
 
 	// tokenA: 2 条成功日志
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		entry := &model.LogEntry{
 			Time:         model.JSONTime{Time: now.Add(-time.Duration(i) * time.Minute)},
 			Model:        "test-model",
@@ -436,7 +436,7 @@ func TestHandleListAuthTokens_RPMStats(t *testing.T) {
 		t.Fatalf("CreateConfig failed: %v", err)
 	}
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		entry := &model.LogEntry{
 			Time:        model.JSONTime{Time: now.Add(-time.Duration(i) * time.Second)},
 			Model:       "m",

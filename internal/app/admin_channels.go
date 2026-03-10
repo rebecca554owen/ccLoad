@@ -158,6 +158,9 @@ func (s *Server) handleListChannels(c *gin.Context) {
 	// 填充空的重定向模型为请求模型（方便前端编辑时显示）
 	for i := range out {
 		for j := range out[i].ModelEntries {
+			if len(out[i].Config.ModelEntries[j].Targets) > 1 {
+				continue
+			}
 			if out[i].Config.ModelEntries[j].RedirectModel == "" {
 				out[i].Config.ModelEntries[j].RedirectModel = out[i].Config.ModelEntries[j].Model
 			}
@@ -243,6 +246,9 @@ func (s *Server) handleGetChannel(c *gin.Context, id int64) {
 	}
 	// 填充空的重定向模型为请求模型（方便前端编辑时显示）
 	for i := range cfg.ModelEntries {
+		if len(cfg.ModelEntries[i].Targets) > 1 {
+			continue
+		}
 		if cfg.ModelEntries[i].RedirectModel == "" {
 			cfg.ModelEntries[i].RedirectModel = cfg.ModelEntries[i].Model
 		}
@@ -753,4 +759,278 @@ func normalizeBatchChannelIDs(rawIDs []int64) []int64 {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// ==================== 模型映射管理 API ====================
+
+// HandleChannelModelMappings 处理模型映射列表请求
+// GET /admin/channels/:id/model-mappings
+func (s *Server) HandleChannelModelMappings(c *gin.Context) {
+	channelID, err := ParseInt64Param(c, "id")
+	if err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid channel id")
+		return
+	}
+
+	// 验证渠道存在
+	if _, err := s.store.GetConfig(c.Request.Context(), channelID); err != nil {
+		RespondError(c, http.StatusNotFound, fmt.Errorf("channel not found"))
+		return
+	}
+
+	// 获取所有模型映射
+	mappings, err := s.store.GetAllModelMappings(c.Request.Context(), channelID)
+	if err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	// 转换为响应格式
+	var response []ModelMappingResponse
+	for modelName, targets := range mappings {
+		if len(targets) == 0 {
+			continue
+		}
+
+		targetList := make([]ModelMappingTarget, 0, len(targets))
+		for _, t := range targets {
+			targetList = append(targetList, ModelMappingTarget{
+				TargetModel: t.TargetModel,
+				Weight:      t.Weight,
+			})
+		}
+
+		response = append(response, ModelMappingResponse{
+			Model:     modelName,
+			Targets:   targetList,
+			CreatedAt: targets[0].CreatedAt,
+			UpdatedAt: targets[0].UpdatedAt,
+		})
+	}
+
+	RespondJSON(c, http.StatusOK, response)
+}
+
+// HandleUpdateModelMappings 批量更新模型映射
+// POST /admin/channels/:id/model-mappings
+func (s *Server) HandleUpdateModelMappings(c *gin.Context) {
+	channelID, err := ParseInt64Param(c, "id")
+	if err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid channel id")
+		return
+	}
+
+	modelName := c.Query("model")
+	if modelName == "" {
+		RespondErrorMsg(c, http.StatusBadRequest, "model parameter is required")
+		return
+	}
+
+	var req ModelMappingRequest
+	if err := BindAndValidate(c, &req); err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid request: "+err.Error())
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 验证渠道存在
+	if _, err := s.store.GetConfig(ctx, channelID); err != nil {
+		RespondError(c, http.StatusNotFound, fmt.Errorf("channel not found"))
+		return
+	}
+
+	// 验证模型是否存在于渠道
+	cfg, err := s.store.GetConfig(ctx, channelID)
+	if err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	found := false
+	for _, entry := range cfg.ModelEntries {
+		if entry.Model == modelName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		RespondErrorMsg(c, http.StatusBadRequest, "model not found in channel")
+		return
+	}
+
+	// 转换为存储层类型
+	targets := make([]model.ChannelModelMapping, 0, len(req.Targets))
+	for _, t := range req.Targets {
+		weight := t.Weight
+		if weight <= 0 {
+			weight = 1
+		}
+		targets = append(targets, model.ChannelModelMapping{
+			ChannelID:   channelID,
+			Model:       modelName,
+			TargetModel: t.TargetModel,
+			Weight:      weight,
+		})
+	}
+
+	// 更新映射
+	if err := s.store.UpdateModelMappings(ctx, channelID, modelName, targets); err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	// 获取更新后的映射
+	mappings, err := s.store.GetModelMappings(ctx, channelID, modelName)
+	if err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	targetList := make([]ModelMappingTarget, 0, len(mappings))
+	for _, t := range mappings {
+		targetList = append(targetList, ModelMappingTarget{
+			TargetModel: t.TargetModel,
+			Weight:      t.Weight,
+		})
+	}
+
+	var createdAt, updatedAt int64
+	if len(mappings) > 0 {
+		createdAt = mappings[0].CreatedAt
+		updatedAt = mappings[0].UpdatedAt
+	}
+
+	RespondJSON(c, http.StatusOK, ModelMappingResponse{
+		Model:     modelName,
+		Targets:   targetList,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	})
+}
+
+// HandleDeleteModelMapping 删除模型映射
+// DELETE /admin/channels/:id/model-mappings/:model
+func (s *Server) HandleDeleteModelMapping(c *gin.Context) {
+	channelID, err := ParseInt64Param(c, "id")
+	if err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid channel id")
+		return
+	}
+
+	modelName := c.Param("model")
+	if modelName == "" {
+		RespondErrorMsg(c, http.StatusBadRequest, "model parameter is required")
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 验证渠道存在
+	if _, err := s.store.GetConfig(ctx, channelID); err != nil {
+		RespondError(c, http.StatusNotFound, fmt.Errorf("channel not found"))
+		return
+	}
+
+	// 删除映射
+	if err := s.store.DeleteModelMapping(ctx, channelID, modelName); err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	RespondJSON(c, http.StatusOK, gin.H{
+		"channel_id": channelID,
+		"model":      modelName,
+		"deleted":    true,
+	})
+}
+
+// HandleModelTargetCooldown 设置模型目标冷却
+// POST /admin/channels/:id/model-mappings/:model/cooldown
+func (s *Server) HandleModelTargetCooldown(c *gin.Context) {
+	channelID, err := ParseInt64Param(c, "id")
+	if err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid channel id")
+		return
+	}
+
+	modelName := c.Param("model")
+	if modelName == "" {
+		RespondErrorMsg(c, http.StatusBadRequest, "model parameter is required")
+		return
+	}
+
+	var req ModelTargetCooldownRequest
+	if err := BindAndValidate(c, &req); err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid request: "+err.Error())
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 验证渠道存在
+	if _, err := s.store.GetConfig(ctx, channelID); err != nil {
+		RespondError(c, http.StatusNotFound, fmt.Errorf("channel not found"))
+		return
+	}
+
+	// 计算冷却截止时间
+	until := time.Now().Add(time.Duration(req.DurationMs) * time.Millisecond)
+
+	// 设置冷却
+	if err := s.cooldownManager.SetModelTargetCooldown(ctx, channelID, modelName, req.TargetModel, until); err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	RespondJSON(c, http.StatusOK, gin.H{
+		"channel_id":   channelID,
+		"model":        modelName,
+		"target_model": req.TargetModel,
+		"cooldown_until": until.Unix(),
+		"duration_ms":  req.DurationMs,
+	})
+}
+
+// HandleClearModelTargetCooldown 清除模型目标冷却
+// DELETE /admin/channels/:id/model-mappings/:model/cooldown
+func (s *Server) HandleClearModelTargetCooldown(c *gin.Context) {
+	channelID, err := ParseInt64Param(c, "id")
+	if err != nil {
+		RespondErrorMsg(c, http.StatusBadRequest, "invalid channel id")
+		return
+	}
+
+	modelName := c.Param("model")
+	if modelName == "" {
+		RespondErrorMsg(c, http.StatusBadRequest, "model parameter is required")
+		return
+	}
+
+	targetModel := c.Query("target_model")
+	if targetModel == "" {
+		RespondErrorMsg(c, http.StatusBadRequest, "target_model query parameter is required")
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 验证渠道存在
+	if _, err := s.store.GetConfig(ctx, channelID); err != nil {
+		RespondError(c, http.StatusNotFound, fmt.Errorf("channel not found"))
+		return
+	}
+
+	// 清除冷却
+	if err := s.cooldownManager.ClearModelTargetCooldown(ctx, channelID, modelName, targetModel); err != nil {
+		RespondError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	RespondJSON(c, http.StatusOK, gin.H{
+		"channel_id":   channelID,
+		"model":        modelName,
+		"target_model": targetModel,
+		"cleared":      true,
+	})
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 )
 
@@ -118,13 +119,7 @@ func TestAnthropicModelsFetcher(t *testing.T) {
 	}
 
 	for _, expected := range expectedModels {
-		found := false
-		for _, model := range models {
-			if model == expected {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(models, expected)
 		if !found {
 			t.Errorf("未找到期望的模型: %s", expected)
 		}
@@ -306,13 +301,7 @@ func TestCodexModelsFetcher(t *testing.T) {
 	}
 
 	for _, expected := range expectedModels {
-		found := false
-		for _, model := range models {
-			if model == expected {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(models, expected)
 		if !found {
 			t.Errorf("未找到期望的模型: %s", expected)
 		}

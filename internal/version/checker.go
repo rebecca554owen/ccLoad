@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -89,10 +90,8 @@ func (c *Checker) check() {
 	c.releaseURL = release.HTMLURL
 	c.lastCheck = time.Now()
 
-	// 比较版本
-	current := normalizeVersion(Version)
-	latest := normalizeVersion(release.TagName)
-	c.hasUpdate = current != "" && latest != "" && current != latest
+	// 比较版本（dev版本不参与比较，语义版本号比较）
+	c.hasUpdate = isNewerVersion(Version, release.TagName)
 
 	if c.hasUpdate {
 		log.Printf("[VersionChecker] 发现新版本: %s -> %s", Version, release.TagName)
@@ -102,6 +101,63 @@ func (c *Checker) check() {
 // normalizeVersion 标准化版本号（去掉v前缀）
 func normalizeVersion(v string) string {
 	return strings.TrimPrefix(strings.TrimSpace(v), "v")
+}
+
+// versionParts 语义版本号各部分
+type versionParts struct {
+	major int
+	minor int
+	patch int
+}
+
+// parseVersion 解析语义版本号为数字部分
+// 返回 nil 表示无法解析（如 dev 版本）
+func parseVersion(v string) *versionParts {
+	v = normalizeVersion(v)
+	// dev 版本不参与比较
+	if v == "dev" || v == "" {
+		return nil
+	}
+	parts := strings.Split(v, ".")
+	if len(parts) < 1 || len(parts) > 3 {
+		return nil
+	}
+	vp := &versionParts{}
+	var err error
+	vp.major, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return nil
+	}
+	if len(parts) >= 2 {
+		vp.minor, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return nil
+		}
+	}
+	if len(parts) >= 3 {
+		vp.patch, err = strconv.Atoi(parts[2])
+		if err != nil {
+			return nil
+		}
+	}
+	return vp
+}
+
+// isNewerVersion 检查 latest 是否比 current 新
+// 如果任一版本无法解析（如 dev 版本），返回 false
+func isNewerVersion(current, latest string) bool {
+	cv := parseVersion(current)
+	lv := parseVersion(latest)
+	if cv == nil || lv == nil {
+		return false
+	}
+	if lv.major != cv.major {
+		return lv.major > cv.major
+	}
+	if lv.minor != cv.minor {
+		return lv.minor > cv.minor
+	}
+	return lv.patch > cv.patch
 }
 
 // GetUpdateInfo 获取更新信息

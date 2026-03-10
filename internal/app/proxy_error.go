@@ -40,6 +40,9 @@ func (s *Server) applyCooldownDecision(
 	in.ChannelType = cfg.ChannelType
 
 	action := s.cooldownManager.HandleError(cooldownCtx, in)
+	if action == cooldown.ActionRetryKey && in.KeyIndex != cooldown.NoKeyIndex && s.keySelector != nil {
+		s.keySelector.TripKey(cfg.ID, in.KeyIndex)
+	}
 
 	if action == cooldown.ActionRetryKey || action == cooldown.ActionRetryChannel {
 		s.invalidateChannelRelatedCache(cfg.ID)
@@ -391,6 +394,9 @@ func (s *Server) handleProxySuccess(
 		if count%100 == 1 {
 			log.Printf("[WARN] ClearKeyCooldown 失败 (累计: %d): channel_id=%d key_index=%d err=%v", count, cfg.ID, keyIndex, err)
 		}
+	}
+	if s.keySelector != nil {
+		s.keySelector.ClearKeyFuse(cfg.ID, keyIndex)
 	}
 
 	// 冷却状态已恢复，刷新相关缓存避免下次命中过期数据

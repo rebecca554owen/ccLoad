@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"log"
 	"net/http"
 	"strings"
@@ -135,6 +133,7 @@ func (s *Server) HandleCreateAuthToken(c *gin.Context) {
 		IsActive      *bool    `json:"is_active"`      // nil表示默认启用
 		AllowedModels []string `json:"allowed_models"` // 允许的模型列表，空表示无限制
 		CostLimitUSD  *float64 `json:"cost_limit_usd"` // 费用上限（0=无限制）
+		Token         *string  `json:"token"`          // 自定义令牌值，nil表示自动生成
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -146,36 +145,55 @@ func (s *Server) HandleCreateAuthToken(c *gin.Context) {
 		return
 	}
 
-	// 生成安全令牌(64字符十六进制)
-	tokenBytes := make([]byte, 32)
-	if _, err := rand.Read(tokenBytes); err != nil {
-		log.Print("[ERROR] 生成令牌失败: " + err.Error())
-		RespondError(c, http.StatusInternalServerError, err)
-		return
-	}
-	tokenPlain := hex.EncodeToString(tokenBytes)
-
-	// 计算SHA256哈希用于存储
-	tokenHash := model.HashToken(tokenPlain)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
 
 	isActive := true
 	if req.IsActive != nil {
 		isActive = *req.IsActive
 	}
 
-	authToken := &model.AuthToken{
-		Token:         tokenHash,
-		Description:   req.Description,
-		ExpiresAt:     req.ExpiresAt,
-		IsActive:      isActive,
-		AllowedModels: req.AllowedModels,
+	var authToken *model.AuthToken
+	var tokenPlain string
+
+	if req.Token != nil && strings.TrimSpace(*req.Token) != "" {
+		// 使用自定义token（原样保存明文）
+		tokenPlain = model.NormalizeToken(*req.Token)
+
+		// 检查自定义token是否已存在（直接比较明文）
+		if existing, err := s.store.GetAuthTokenByValue(ctx, tokenPlain); err == nil && existing != nil {
+			RespondErrorMsg(c, http.StatusConflict, "token already exists")
+			return
+		}
+
+		authToken = &model.AuthToken{
+			Token:         tokenPlain, // 直接存储明文
+			Description:   req.Description,
+			ExpiresAt:     req.ExpiresAt,
+			IsActive:      isActive,
+			AllowedModels: req.AllowedModels,
+		}
+	} else {
+		// 生成安全令牌（明文存储）
+		var err error
+		tokenPlain, err = model.GenerateToken()
+		if err != nil {
+			log.Print("[ERROR] 生成令牌失败: " + err.Error())
+			RespondError(c, http.StatusInternalServerError, err)
+			return
+		}
+
+		authToken = &model.AuthToken{
+			Token:         tokenPlain, // 明文存储
+			Description:   req.Description,
+			ExpiresAt:     req.ExpiresAt,
+			IsActive:      isActive,
+			AllowedModels: req.AllowedModels,
+		}
 	}
 	if req.CostLimitUSD != nil {
 		authToken.SetCostLimitUSD(*req.CostLimitUSD)
 	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
-	defer cancel()
 
 	if err := s.store.CreateAuthToken(ctx, authToken); err != nil {
 		log.Print("[ERROR] 创建令牌失败: " + err.Error())
@@ -217,6 +235,7 @@ func (s *Server) HandleUpdateAuthToken(c *gin.Context) {
 		ExpiresAt     *int64   `json:"expires_at"`
 		AllowedModels []string `json:"allowed_models"` // 允许的模型列表，空数组表示清除限制
 		CostLimitUSD  *float64 `json:"cost_limit_usd"` // 费用上限（0=无限制）
+		Token         *string  `json:"token"`          // 新令牌值，空表示不修改
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -255,6 +274,24 @@ func (s *Server) HandleUpdateAuthToken(c *gin.Context) {
 		token.SetCostLimitUSD(*req.CostLimitUSD)
 	}
 
+	// 处理 token 更新
+	var newTokenPlain string
+	if req.Token != nil && strings.TrimSpace(*req.Token) != "" {
+		newTokenPlain = model.NormalizeToken(*req.Token)
+		// 检查新 token 是否与当前相同（直接比较明文）
+		if newTokenPlain == token.Token {
+			RespondErrorMsg(c, http.StatusBadRequest, "new token is the same as current token")
+			return
+		}
+		// 检查新 token 是否已存在（直接比较明文）
+		if existing, err := s.store.GetAuthTokenByValue(ctx, newTokenPlain); err == nil && existing != nil {
+			RespondErrorMsg(c, http.StatusConflict, "token already exists")
+			return
+		}
+		// 更新 token（直接存储明文）
+		token.Token = newTokenPlain
+	}
+
 	if err := s.store.UpdateAuthToken(ctx, token); err != nil {
 		log.Print("[ERROR] 更新令牌失败: " + err.Error())
 		RespondError(c, http.StatusInternalServerError, err)
@@ -266,7 +303,21 @@ func (s *Server) HandleUpdateAuthToken(c *gin.Context) {
 		log.Print("[WARN]  热更新失败: " + err.Error())
 	}
 
-	RespondJSON(c, http.StatusOK, token)
+	// 返回响应
+	resp := gin.H{
+		"id":             token.ID,
+		"description":    token.Description,
+		"created_at":     token.CreatedAt,
+		"expires_at":     token.ExpiresAt,
+		"is_active":      token.IsActive,
+		"allowed_models": token.AllowedModels,
+		"cost_limit_usd": token.CostLimitUSD(),
+	}
+	// 如果更新了 token，返回明文 token
+	if newTokenPlain != "" {
+		resp["token"] = newTokenPlain
+	}
+	RespondJSON(c, http.StatusOK, resp)
 }
 
 // HandleDeleteAuthToken 删除令牌

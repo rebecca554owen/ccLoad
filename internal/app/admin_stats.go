@@ -402,10 +402,7 @@ func (s *Server) fillHealthTimeline(ctx context.Context, stats []model.StatsEntr
 	} else {
 		// 其他时间范围：按总时长/48计算
 		duration := endTime.Sub(startTime)
-		bucketSeconds = int64(duration.Seconds() / numBuckets)
-		if bucketSeconds < 1 {
-			bucketSeconds = 1
-		}
+		bucketSeconds = max(int64(duration.Seconds()/numBuckets), 1)
 		healthStart = startTime
 	}
 
@@ -459,7 +456,7 @@ func (s *Server) fillHealthTimeline(ctx context.Context, stats []model.StatsEntr
 	// 为每个渠道初始化48个空时间点
 	for key := range statsMap {
 		points := make([]model.HealthPoint, numBuckets)
-		for i := 0; i < numBuckets; i++ {
+		for i := range numBuckets {
 			points[i] = model.HealthPoint{
 				Ts:          time.Unix(sinceUnix+int64(i)*bucketSeconds, 0),
 				SuccessRate: -1, // -1 表示无数据

@@ -364,8 +364,8 @@ func parseFetchModelsStatus(errMsg string) (statusCode int, body string, ok bool
 
 	body = errMsg
 	if fullMatch := matches[0]; fullMatch != "" {
-		if idx := strings.Index(errMsg, fullMatch); idx >= 0 {
-			body = strings.TrimLeft(errMsg[idx+len(fullMatch):], "): \t")
+		if _, after, ok0 := strings.Cut(errMsg, fullMatch); ok0 {
+			body = strings.TrimLeft(after, "): \t")
 		}
 	}
 	return code, strings.TrimSpace(body), true

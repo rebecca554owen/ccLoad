@@ -86,6 +86,12 @@ func deepCopyConfig(src *modelpkg.Config) *modelpkg.Config {
 	if src.ModelEntries != nil {
 		dst.ModelEntries = make([]modelpkg.ModelEntry, len(src.ModelEntries))
 		copy(dst.ModelEntries, src.ModelEntries)
+		for i := range src.ModelEntries {
+			if src.ModelEntries[i].Targets != nil {
+				dst.ModelEntries[i].Targets = make([]modelpkg.ModelTargetSpec, len(src.ModelEntries[i].Targets))
+				copy(dst.ModelEntries[i].Targets, src.ModelEntries[i].Targets)
+			}
+		}
 	}
 
 	return dst

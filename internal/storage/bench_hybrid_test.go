@@ -76,7 +76,7 @@ func BenchmarkHybrid_ListConfigs_SQLite(b *testing.B) {
 	ctx := context.Background()
 
 	// 准备测试数据
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		_, err := store.CreateConfig(ctx, &model.Config{
 			Name:        fmt.Sprintf("bench-channel-%d", i),
 			ChannelType: "openai",
@@ -176,7 +176,7 @@ func BenchmarkHybrid_ListLogs_SQLite(b *testing.B) {
 	ctx := context.Background()
 
 	// 准备测试数据
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		_ = store.AddLog(ctx, &model.LogEntry{
 			Time:       model.JSONTime{Time: time.Now().Add(-time.Duration(i) * time.Minute)},
 			ChannelID:  int64(i % 5),
@@ -226,7 +226,7 @@ func BenchmarkHybrid_GetStats_SQLite(b *testing.B) {
 	ctx := context.Background()
 
 	// 准备测试数据
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		_ = store.AddLog(ctx, &model.LogEntry{
 			Time:         model.JSONTime{Time: time.Now().Add(-time.Duration(i) * time.Minute)},
 			ChannelID:    int64(i % 5),
@@ -281,7 +281,7 @@ func BenchmarkHybrid_ListConfigs_SQLite_Parallel(b *testing.B) {
 	ctx := context.Background()
 
 	// 准备测试数据
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		_, _ = store.CreateConfig(ctx, &model.Config{
 			Name:        fmt.Sprintf("bench-parallel-%d", i),
 			ChannelType: "openai",

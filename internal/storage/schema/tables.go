@@ -12,6 +12,8 @@ func DefineChannelsTable() *TableBuilder {
 		Column("cooldown_until BIGINT NOT NULL DEFAULT 0").
 		Column("cooldown_duration_ms BIGINT NOT NULL DEFAULT 0").
 		Column("daily_cost_limit DOUBLE NOT NULL DEFAULT 0").
+		Column("custom_user_agent VARCHAR(255) NOT NULL DEFAULT ''").
+		Column("custom_endpoint VARCHAR(255) NOT NULL DEFAULT ''").
 		Column("created_at BIGINT NOT NULL").
 		Column("updated_at BIGINT NOT NULL").
 		Index("idx_channels_enabled", "enabled").
@@ -48,6 +50,22 @@ func DefineChannelModelsTable() *TableBuilder {
 		Column("PRIMARY KEY (channel_id, model)").
 		Column("FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE").
 		Index("idx_channel_models_model", "model")
+}
+
+// DefineChannelModelMappingsTable 定义channel_model_mappings表结构
+// 支持多目标模型重定向，按权重分配流量
+func DefineChannelModelMappingsTable() *TableBuilder {
+	return NewTable("channel_model_mappings").
+		Column("channel_id INT NOT NULL").
+		Column("model VARCHAR(191) NOT NULL").
+		Column("target_model VARCHAR(191) NOT NULL").
+		Column("weight INT NOT NULL DEFAULT 1"). // 权重，默认1
+		Column("sort_order INT NOT NULL DEFAULT 0").
+		Column("created_at BIGINT NOT NULL DEFAULT 0").
+		Column("updated_at BIGINT NOT NULL DEFAULT 0").
+		Column("PRIMARY KEY (channel_id, model, target_model)").
+		Column("FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE").
+		Index("idx_channel_model_mappings_channel_model", "channel_id, model")
 }
 
 // DefineAuthTokensTable 定义auth_tokens表结构

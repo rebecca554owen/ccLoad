@@ -78,7 +78,7 @@ func TestHandleError_KeyLevelError(t *testing.T) {
 	// 创建多Key渠道（3个Key）
 	cfg := createTestChannel(t, store, "test-key-error")
 	keys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		keys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -253,7 +253,7 @@ func TestHandleError_NetworkError(t *testing.T) {
 
 	// 为测试连接重置场景，创建多Key渠道
 	netKeys := make([]*model.APIKey, 2)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		netKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -457,7 +457,7 @@ func TestHandleError_RateLimitClassification(t *testing.T) {
 	// 创建多Key渠道
 	cfg := createTestChannel(t, store, "test-429-classification")
 	rateKeys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		rateKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -577,7 +577,7 @@ func TestHandleError_RateLimitClassification(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// 重置冷却状态
 			_ = store.ResetChannelCooldown(ctx, cfg.ID)
-			for i := 0; i < 3; i++ {
+			for i := range 3 {
 				_ = store.ResetKeyCooldown(ctx, cfg.ID, i)
 			}
 

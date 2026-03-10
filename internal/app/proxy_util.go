@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	neturl "net/url"
 	"strconv"
@@ -166,8 +167,16 @@ func isStreamingRequest(path string, body []byte) bool {
 // ============================================================================
 
 // buildUpstreamURL 构建上游完整URL（KISS）
-func buildUpstreamURL(baseURL string, requestPath, rawQuery string) string {
-	upstreamURL := strings.TrimRight(baseURL, "/") + requestPath
+// 如果 customEndpoint 不为空，则使用自定义端点替换 requestPath
+func buildUpstreamURL(baseURL string, requestPath, rawQuery, customEndpoint string) string {
+	// 如果配置了自定义端点，使用自定义端点替换请求路径
+	// 否则使用原始请求路径
+	path := requestPath
+	if customEndpoint != "" {
+		path = customEndpoint
+	}
+
+	upstreamURL := strings.TrimRight(baseURL, "/") + path
 
 	// 移除 key 参数（Gemini API 认证格式），避免泄露到上游
 	if rawQuery != "" {
@@ -213,7 +222,7 @@ var hopByHopHeaders = map[string]struct{}{
 func connectionHeaderTokens(h http.Header) map[string]struct{} {
 	var tokens map[string]struct{}
 	for _, v := range h.Values("Connection") {
-		for _, t := range strings.Split(v, ",") {
+		for t := range strings.SplitSeq(v, ",") {
 			t = strings.ToLower(strings.TrimSpace(t))
 			if t == "" {
 				continue
@@ -373,6 +382,7 @@ func replaceModelInPath(path string, originalModel string, actualModel string) s
 // 1. 精确匹配的重定向（redirect_model 配置）
 // 2. 模糊匹配（启用 model_fuzzy_match 时）
 // 3. [FIX] 2026-01: 模糊匹配结果的重定向（链式解析）
+// 4. 多目标模型重定向（按权重选择，支持冷却）
 func (s *Server) prepareRequestBody(cfg *model.Config, reqCtx *proxyRequestContext) (actualModel string, bodyToSend []byte) {
 	actualModel = reqCtx.originalModel
 
@@ -414,6 +424,87 @@ func (s *Server) prepareRequestBody(cfg *model.Config, reqCtx *proxyRequestConte
 			if modifiedBody, err := sonic.Marshal(reqData); err == nil {
 				bodyToSend = modifiedBody
 			}
+		}
+	}
+
+	return actualModel, bodyToSend
+}
+
+// selectModelTarget 多目标模型选择
+// 根据渠道ID和原始模型，查询多目标映射并按权重选择（排除冷却中的目标）
+// 返回选中的目标模型，如果没有多目标配置则返回空字符串
+func (s *Server) selectModelTarget(ctx context.Context, channelID int64, originalModel string) (string, error) {
+	// 查询多目标映射
+	mappings, err := s.store.GetModelMappings(ctx, channelID, originalModel)
+	if err != nil {
+		return "", err
+	}
+
+	// 无多目标配置
+	if len(mappings) == 0 {
+		return "", nil
+	}
+
+	// 转换为 ModelTarget 列表
+	targets := make([]ModelTarget, 0, len(mappings))
+	for _, m := range mappings {
+		weight := m.Weight
+		if weight <= 0 {
+			weight = 1 // 默认权重为1
+		}
+		targets = append(targets, ModelTarget{
+			TargetModel: m.TargetModel,
+			Weight:      weight,
+		})
+	}
+
+	// 冷却检查函数
+	cooldownChecker := func(targetModel string) bool {
+		key := cooldown.GetModelTargetCooldownKey(channelID, originalModel, targetModel)
+		return s.modelTargetSelector.IsCoolingDown(key)
+	}
+
+	// 按权重选择目标（排除冷却中的）
+	selected, err := s.modelTargetSelector.Select(targets, cooldownChecker)
+	if err != nil {
+		return "", err
+	}
+
+	return selected.TargetModel, nil
+}
+
+// prepareRequestBodyWithMultiTarget 准备请求体（支持多目标模型重定向）
+// 在 prepareRequestBody 基础上增加多目标模型选择
+func (s *Server) prepareRequestBodyWithMultiTarget(ctx context.Context, cfg *model.Config, reqCtx *proxyRequestContext) (actualModel string, bodyToSend []byte) {
+	// 1. 先执行标准模型解析（重定向+模糊匹配）
+	actualModel, bodyToSend = s.prepareRequestBody(cfg, reqCtx)
+
+	// 2. 检查多目标模型映射（使用解析后的模型作为查询键）
+	targetModel, err := s.selectModelTarget(ctx, cfg.ID, actualModel)
+	if err != nil {
+		// 多目标选择失败（全部冷却或其他错误），保持当前模型
+		log.Printf("[WARN] 多目标模型选择失败: 渠道=%d 模型=%s 错误=%v", cfg.ID, actualModel, err)
+		return actualModel, bodyToSend
+	}
+
+	// 无多目标配置或选中的是当前模型
+	if targetModel == "" || targetModel == actualModel {
+		return actualModel, bodyToSend
+	}
+
+	// 3. 应用多目标选择的结果
+	actualModel = targetModel
+
+	// 修改请求体
+	var reqData map[string]json.RawMessage
+	if err := sonic.Unmarshal(reqCtx.body, &reqData); err == nil {
+		modelRaw, err := sonic.Marshal(actualModel)
+		if err != nil {
+			return actualModel, bodyToSend
+		}
+		reqData["model"] = modelRaw
+		if modifiedBody, err := sonic.Marshal(reqData); err == nil {
+			bodyToSend = modifiedBody
 		}
 	}
 

@@ -28,6 +28,7 @@ var sqliteMigratableTables = map[string]bool{
 	"logs":              true,
 	"auth_tokens":       true,
 	"channel_models":    true,
+	"channel_model_mappings": true,
 	"channels":          true,
 	"schema_migrations": true,
 }
@@ -50,6 +51,7 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 		schema.DefineChannelsTable,
 		schema.DefineAPIKeysTable,
 		schema.DefineChannelModelsTable,
+		schema.DefineChannelModelMappingsTable, // 多目标模型重定向表
 		schema.DefineAuthTokensTable,
 		schema.DefineSystemSettingsTable,
 		schema.DefineAdminSessionsTable,
@@ -80,6 +82,14 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 			// 增量迁移：将url字段从VARCHAR(191)扩展为TEXT（支持多URL存储）
 			if err := migrateChannelsURLToText(ctx, db, dialect); err != nil {
 				return fmt.Errorf("migrate channels url to text: %w", err)
+			}
+			// 增量迁移：确保channels表有custom_user_agent字段（2026-03新增）
+			if err := ensureChannelsCustomUserAgent(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channels custom_user_agent: %w", err)
+			}
+			// 增量迁移：确保channels表有custom_endpoint字段（2026-03新增）
+			if err := ensureChannelsCustomEndpoint(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channels custom_endpoint: %w", err)
 			}
 		}
 
@@ -113,6 +123,12 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 		if tb.Name() == "channel_models" {
 			if err := migrateChannelModelsSchema(ctx, db, dialect); err != nil {
 				return fmt.Errorf("migrate channel_models schema: %w", err)
+			}
+		}
+
+		if tb.Name() == "channel_model_mappings" {
+			if err := ensureChannelModelMappingsSortOrder(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channel_model_mappings sort_order: %w", err)
 			}
 		}
 
@@ -252,6 +268,19 @@ func ensureMySQLColumns(ctx context.Context, db *sql.DB, table string, cols []my
 		log.Printf("[MIGRATE] Added columns to %s", table)
 	}
 	return nil
+}
+
+func ensureChannelModelMappingsSortOrder(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	if dialect == DialectMySQL {
+		return ensureMySQLColumns(ctx, db, "channel_model_mappings", []mysqlColumnDef{{
+			name:       "sort_order",
+			definition: "INT NOT NULL DEFAULT 0",
+		}})
+	}
+	return ensureSQLiteColumns(ctx, db, "channel_model_mappings", []sqliteColumnDef{{
+		name:       "sort_order",
+		definition: "INT NOT NULL DEFAULT 0",
+	}})
 }
 
 // ensureLogsColumnsSQLite SQLite增量迁移logs表新字段
@@ -671,7 +700,7 @@ func initDefaultSettings(ctx context.Context, db *sql.DB, dialect Dialect) error
 		{"upstream_first_byte_timeout", "0", "duration", "上游首块响应体超时(秒,0=禁用，仅流式)", "0"},
 		{"non_stream_timeout", "120", "duration", "非流式请求超时(秒,0=禁用)", "120"},
 		{"model_fuzzy_match", "false", "bool", "模型匹配失败时，使用子串模糊匹配(多匹配时选最新版本)", "false"},
-		{"channel_test_content", "sonnet 4.0的发布日期是什么", "string", "渠道测试默认内容", "sonnet 4.0的发布日期是什么"},
+		{"channel_test_content", "sonnet 4.0的发布日期是什么？", "string", "渠道测试默认内容", "sonnet 4.0的发布日期是什么？"},
 		{"channel_stats_range", "today", "string", "渠道管理费用统计范围", "today"},
 		// 健康度排序配置
 		{"enable_health_score", "false", "bool", "启用基于健康度的渠道动态排序", "false"},
@@ -1150,6 +1179,44 @@ func ensureChannelsDailyCostLimit(ctx context.Context, db *sql.DB, dialect Diale
 	return ensureSQLiteColumns(ctx, db, "channels", []sqliteColumnDef{
 		{name: "daily_cost_limit", definition: "REAL NOT NULL DEFAULT 0"},
 	})
+}
+
+// ensureChannelsColumn 确保channels表有指定字段（通用函数）
+func ensureChannelsColumn(ctx context.Context, db *sql.DB, dialect Dialect, columnName, columnDef string) error {
+	if dialect == DialectMySQL {
+		// MySQL: 检查字段是否存在
+		var count int
+		err := db.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='channels' AND COLUMN_NAME=?",
+			columnName,
+		).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("check %s field: %w", columnName, err)
+		}
+		if count == 0 {
+			if _, err := db.ExecContext(ctx,
+				fmt.Sprintf("ALTER TABLE channels ADD COLUMN %s %s", columnName, columnDef)); err != nil {
+				return fmt.Errorf("add %s column: %w", columnName, err)
+			}
+			log.Printf("[MIGRATE] Added channels.%s column", columnName)
+		}
+		return nil
+	}
+
+	// SQLite: 使用通用添加列函数
+	return ensureSQLiteColumns(ctx, db, "channels", []sqliteColumnDef{
+		{name: columnName, definition: columnDef},
+	})
+}
+
+// ensureChannelsCustomUserAgent 确保channels表有custom_user_agent字段
+func ensureChannelsCustomUserAgent(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	return ensureChannelsColumn(ctx, db, dialect, "custom_user_agent", "VARCHAR(255) NOT NULL DEFAULT ''")
+}
+
+// ensureChannelsCustomEndpoint 确保channels表有custom_endpoint字段
+func ensureChannelsCustomEndpoint(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	return ensureChannelsColumn(ctx, db, dialect, "custom_endpoint", "VARCHAR(255) NOT NULL DEFAULT ''")
 }
 
 // ensureAPIKeysAPIKeyLength 修复 api_keys.api_key 列定义漂移（MySQL）

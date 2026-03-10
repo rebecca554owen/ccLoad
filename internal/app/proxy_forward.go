@@ -62,7 +62,7 @@ func prependToBody(resp *http.Response, prefix []byte) {
 // 从proxy.go提取，遵循SRP原则
 func (s *Server) buildProxyRequest(
 	reqCtx *requestContext,
-	_ *model.Config,
+	cfg *model.Config,
 	apiKey string,
 	method string,
 	body []byte,
@@ -71,7 +71,7 @@ func (s *Server) buildProxyRequest(
 	baseURL string,
 ) (*http.Request, error) {
 	// 1. 构建完整 URL
-	upstreamURL := buildUpstreamURL(baseURL, requestPath, rawQuery)
+	upstreamURL := buildUpstreamURL(baseURL, requestPath, rawQuery, cfg.CustomEndpoint)
 
 	// 2. 创建带上下文的请求
 	req, err := buildUpstreamRequest(reqCtx.ctx, method, upstreamURL, body)
@@ -82,7 +82,12 @@ func (s *Server) buildProxyRequest(
 	// 3. 复制请求头
 	copyRequestHeaders(req, hdr)
 
-	// 4. 注入认证头
+	// 4. 自定义 User-Agent 优先：如果配置了自定义 UA，覆盖客户端透传的 UA
+	if cfg.CustomUserAgent != "" {
+		req.Header.Set("User-Agent", cfg.CustomUserAgent)
+	}
+
+	// 5. 注入认证头
 	injectAPIKeyHeaders(req, apiKey, requestPath)
 
 	return req, nil
@@ -658,9 +663,10 @@ func (s *Server) tryChannelWithKeys(ctx context.Context, cfg *model.Config, reqC
 
 	var lastFailure *proxyResult
 
-	// 准备请求体（处理模型重定向）
+	// 准备请求体（处理模型重定向和多目标选择）
 	// [INFO] 修复：保存重定向后的模型名称，用于日志记录和调试
-	actualModel, bodyToSend := s.prepareRequestBody(cfg, reqCtx)
+	// [NEW] 2026-03: 支持多目标模型重定向，按权重选择并支持冷却
+	actualModel, bodyToSend := s.prepareRequestBodyWithMultiTarget(ctx, cfg, reqCtx)
 
 	// [FIX] 2026-01: 模型名变更时同步替换 URL 路径
 	// 场景：Gemini API 的模型名在 URL 路径中（如 /v1beta/models/gemini-3-flash:streamGenerateContent）

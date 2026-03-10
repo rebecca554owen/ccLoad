@@ -21,6 +21,7 @@ func (s *SQLStore) ListConfigs(ctx context.Context) ([]*model.Config, error) {
 	query := `
 			SELECT c.id, c.name, c.url, c.priority, c.channel_type, c.enabled,
 			       c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
+			       c.custom_user_agent, c.custom_endpoint,
 			       COUNT(k.id) as key_count,
 			       c.created_at, c.updated_at
 			FROM channels c
@@ -56,6 +57,7 @@ func (s *SQLStore) GetConfig(ctx context.Context, id int64) (*model.Config, erro
 	query := `
 			SELECT c.id, c.name, c.url, c.priority, c.channel_type, c.enabled,
 			       c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
+			       c.custom_user_agent, c.custom_endpoint,
 			       COUNT(k.id) as key_count,
 			       c.created_at, c.updated_at
 			FROM channels c
@@ -93,15 +95,16 @@ func (s *SQLStore) GetEnabledChannelsByModel(ctx context.Context, modelName stri
 		// 通配符：返回所有启用的渠道
 		// 注意：不再从 channels 表读取 models 和 model_redirects
 		query = `
-	            SELECT c.id, c.name, c.url, c.priority,
-	                   c.channel_type, c.enabled,
-	                   c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
-	                   COUNT(k.id) as key_count,
-	                   c.created_at, c.updated_at
-	            FROM channels c
-	            LEFT JOIN api_keys k ON c.id = k.channel_id
-	            WHERE c.enabled = 1
-	              AND (c.cooldown_until = 0 OR c.cooldown_until <= ?)
+            SELECT c.id, c.name, c.url, c.priority,
+                   c.channel_type, c.enabled,
+                   c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
+                   c.custom_user_agent, c.custom_endpoint,
+                   COUNT(k.id) as key_count,
+                   c.created_at, c.updated_at
+            FROM channels c
+            LEFT JOIN api_keys k ON c.id = k.channel_id
+            WHERE c.enabled = 1
+              AND (c.cooldown_until = 0 OR c.cooldown_until <= ?)
             GROUP BY c.id
             ORDER BY c.priority DESC, c.id ASC
         `
@@ -109,15 +112,16 @@ func (s *SQLStore) GetEnabledChannelsByModel(ctx context.Context, modelName stri
 	} else {
 		// 精确匹配：使用 channel_models 索引表
 		query = `
-	            SELECT c.id, c.name, c.url, c.priority,
-	                   c.channel_type, c.enabled,
-	                   c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
-	                   COUNT(k.id) as key_count,
-	                   c.created_at, c.updated_at
-	            FROM channels c
-	            INNER JOIN channel_models cm ON c.id = cm.channel_id
-	            LEFT JOIN api_keys k ON c.id = k.channel_id
-	            WHERE c.enabled = 1
+            SELECT c.id, c.name, c.url, c.priority,
+                   c.channel_type, c.enabled,
+                   c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
+                   c.custom_user_agent, c.custom_endpoint,
+                   COUNT(k.id) as key_count,
+                   c.created_at, c.updated_at
+            FROM channels c
+            INNER JOIN channel_models cm ON c.id = cm.channel_id
+            LEFT JOIN api_keys k ON c.id = k.channel_id
+            WHERE c.enabled = 1
               AND cm.model = ?
               AND (c.cooldown_until = 0 OR c.cooldown_until <= ?)
             GROUP BY c.id
@@ -154,6 +158,7 @@ func (s *SQLStore) GetEnabledChannelsByType(ctx context.Context, channelType str
 			SELECT c.id, c.name, c.url, c.priority,
 			       c.channel_type, c.enabled,
 			       c.cooldown_until, c.cooldown_duration_ms, c.daily_cost_limit,
+			       c.custom_user_agent, c.custom_endpoint,
 			       COUNT(k.id) as key_count,
 			       c.created_at, c.updated_at
 			FROM channels c
@@ -197,10 +202,10 @@ func (s *SQLStore) CreateConfig(ctx context.Context, c *model.Config) (*model.Co
 		if id == 0 {
 			// 插入渠道记录（数据库生成自增 id）
 			res, err := tx.ExecContext(ctx, `
-				INSERT INTO channels(name, url, priority, channel_type, enabled, daily_cost_limit, created_at, updated_at)
-				VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO channels(name, url, priority, channel_type, enabled, daily_cost_limit, custom_user_agent, custom_endpoint, created_at, updated_at)
+				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`, c.Name, c.URL, c.Priority, channelType,
-				boolToInt(c.Enabled), c.DailyCostLimit, nowUnix, nowUnix)
+				boolToInt(c.Enabled), c.DailyCostLimit, c.CustomUserAgent, c.CustomEndpoint, nowUnix, nowUnix)
 			if err != nil {
 				return err
 			}
@@ -213,27 +218,29 @@ func (s *SQLStore) CreateConfig(ctx context.Context, c *model.Config) (*model.Co
 			// 显式主键：用于混合存储同步/恢复，保证两端主键一致
 			if s.IsSQLite() {
 				_, err := tx.ExecContext(ctx, `
-					INSERT INTO channels(id, name, url, priority, channel_type, enabled, daily_cost_limit, created_at, updated_at)
-					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+					INSERT INTO channels(id, name, url, priority, channel_type, enabled, daily_cost_limit, custom_user_agent, custom_endpoint, created_at, updated_at)
+					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				`, id, c.Name, c.URL, c.Priority, channelType,
-					boolToInt(c.Enabled), c.DailyCostLimit, nowUnix, nowUnix)
+					boolToInt(c.Enabled), c.DailyCostLimit, c.CustomUserAgent, c.CustomEndpoint, nowUnix, nowUnix)
 				if err != nil {
 					return err
 				}
 			} else {
 				_, err := tx.ExecContext(ctx, `
-					INSERT INTO channels(id, name, url, priority, channel_type, enabled, daily_cost_limit, created_at, updated_at)
-					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
-					ON DUPLICATE KEY UPDATE
-						name = VALUES(name),
-						url = VALUES(url),
-						priority = VALUES(priority),
-						channel_type = VALUES(channel_type),
-						enabled = VALUES(enabled),
-						daily_cost_limit = VALUES(daily_cost_limit),
-						updated_at = VALUES(updated_at)
-				`, id, c.Name, c.URL, c.Priority, channelType,
-					boolToInt(c.Enabled), c.DailyCostLimit, nowUnix, nowUnix)
+				INSERT INTO channels(id, name, url, priority, channel_type, enabled, daily_cost_limit, custom_user_agent, custom_endpoint, created_at, updated_at)
+				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				ON DUPLICATE KEY UPDATE
+					name = VALUES(name),
+					url = VALUES(url),
+					priority = VALUES(priority),
+					channel_type = VALUES(channel_type),
+					enabled = VALUES(enabled),
+					daily_cost_limit = VALUES(daily_cost_limit),
+					custom_user_agent = VALUES(custom_user_agent),
+					custom_endpoint = VALUES(custom_endpoint),
+					updated_at = VALUES(updated_at)
+			`, id, c.Name, c.URL, c.Priority, channelType,
+					boolToInt(c.Enabled), c.DailyCostLimit, c.CustomUserAgent, c.CustomEndpoint, nowUnix, nowUnix)
 				if err != nil {
 					return err
 				}
@@ -282,10 +289,10 @@ func (s *SQLStore) UpdateConfig(ctx context.Context, id int64, upd *model.Config
 		// 更新渠道记录
 		_, err := tx.ExecContext(ctx, `
 			UPDATE channels
-			SET name=?, url=?, priority=?, channel_type=?, enabled=?, daily_cost_limit=?, updated_at=?
+			SET name=?, url=?, priority=?, channel_type=?, enabled=?, daily_cost_limit=?, custom_user_agent=?, custom_endpoint=?, updated_at=?
 			WHERE id=?
 		`, name, url, upd.Priority, channelType,
-			boolToInt(upd.Enabled), upd.DailyCostLimit, updatedAtUnix, id)
+			boolToInt(upd.Enabled), upd.DailyCostLimit, upd.CustomUserAgent, upd.CustomEndpoint, updatedAtUnix, id)
 		if err != nil {
 			return err
 		}
@@ -401,15 +408,50 @@ func (s *SQLStore) loadModelEntriesForConfig(ctx context.Context, config *model.
 	defer func() { _ = rows.Close() }()
 
 	var entries []model.ModelEntry
+	entryIndex := make(map[string]int)
 	for rows.Next() {
 		var entry model.ModelEntry
 		if err := rows.Scan(&entry.Model, &entry.RedirectModel); err != nil {
 			return fmt.Errorf("scan model entry: %w", err)
 		}
+		entry.NormalizeRedirects()
+		entryIndex[entry.Model] = len(entries)
 		entries = append(entries, entry)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("iterate model entries: %w", err)
+	}
+
+	mappings, err := s.GetAllModelMappings(ctx, config.ID)
+	if err != nil {
+		return fmt.Errorf("query model mappings: %w", err)
+	}
+	for modelName, targets := range mappings {
+		specs := make([]model.ModelTargetSpec, 0, len(targets))
+		for _, target := range targets {
+			if target.TargetModel == "" {
+				continue
+			}
+			specs = append(specs, model.ModelTargetSpec{
+				TargetModel: target.TargetModel,
+				Weight:      target.Weight,
+			})
+		}
+		if len(specs) == 0 {
+			continue
+		}
+		if idx, ok := entryIndex[modelName]; ok {
+			entries[idx].Targets = specs
+			entries[idx].NormalizeRedirects()
+			continue
+		}
+		entry := model.ModelEntry{
+			Model:   modelName,
+			Targets: specs,
+		}
+		entry.NormalizeRedirects()
+		entryIndex[modelName] = len(entries)
+		entries = append(entries, entry)
 	}
 
 	config.ModelEntries = entries
@@ -455,12 +497,57 @@ func (s *SQLStore) loadModelEntriesForConfigs(ctx context.Context, configs []*mo
 		if err := rows.Scan(&channelID, &entry.Model, &entry.RedirectModel); err != nil {
 			return fmt.Errorf("scan model entry: %w", err)
 		}
+		entry.NormalizeRedirects()
 		if cfg, ok := idToConfig[channelID]; ok {
 			cfg.ModelEntries = append(cfg.ModelEntries, entry)
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
 
-	return rows.Err()
+	for _, cfg := range configs {
+		mappings, err := s.GetAllModelMappings(ctx, cfg.ID)
+		if err != nil {
+			return fmt.Errorf("query model mappings: %w", err)
+		}
+		if len(mappings) == 0 {
+			continue
+		}
+		entryIndex := make(map[string]int, len(cfg.ModelEntries))
+		for i := range cfg.ModelEntries {
+			entryIndex[cfg.ModelEntries[i].Model] = i
+		}
+		for modelName, targets := range mappings {
+			specs := make([]model.ModelTargetSpec, 0, len(targets))
+			for _, target := range targets {
+				if target.TargetModel == "" {
+					continue
+				}
+				specs = append(specs, model.ModelTargetSpec{
+					TargetModel: target.TargetModel,
+					Weight:      target.Weight,
+				})
+			}
+			if len(specs) == 0 {
+				continue
+			}
+			if idx, ok := entryIndex[modelName]; ok {
+				cfg.ModelEntries[idx].Targets = specs
+				cfg.ModelEntries[idx].NormalizeRedirects()
+				continue
+			}
+			entry := model.ModelEntry{
+				Model:   modelName,
+				Targets: specs,
+			}
+			entry.NormalizeRedirects()
+			entryIndex[modelName] = len(cfg.ModelEntries)
+			cfg.ModelEntries = append(cfg.ModelEntries, entry)
+		}
+	}
+
+	return nil
 }
 
 // saveModelEntriesTx 保存渠道的模型数据（事务版本，用于 Create/Update/Replace）
@@ -477,17 +564,17 @@ type dbExecutor interface {
 // saveModelEntriesImpl 保存渠道模型数据的统一实现
 // 注意：调用方必须保证 entries 中没有重复的模型名，否则会因 PRIMARY KEY 冲突而失败（Fail-Fast）
 func (s *SQLStore) saveModelEntriesImpl(ctx context.Context, exec dbExecutor, channelID int64, entries []model.ModelEntry) error {
-	// 先删除旧的记录
 	if _, err := exec.ExecContext(ctx, `DELETE FROM channel_models WHERE channel_id = ?`, channelID); err != nil {
 		return fmt.Errorf("delete old model entries: %w", err)
+	}
+	if _, err := exec.ExecContext(ctx, `DELETE FROM channel_model_mappings WHERE channel_id = ?`, channelID); err != nil {
+		return fmt.Errorf("delete old model mappings: %w", err)
 	}
 
 	if len(entries) == 0 {
 		return nil
 	}
 
-	// 插入新记录（不使用 IGNORE，让错误暴露）
-	// 使用数据库函数生成时间戳，保证时间一致性和准确性
 	var insertSQL string
 	if s.IsSQLite() {
 		insertSQL = `INSERT INTO channel_models (channel_id, model, redirect_model, created_at) VALUES (?, ?, ?, unixepoch())`
@@ -501,11 +588,158 @@ func (s *SQLStore) saveModelEntriesImpl(ctx context.Context, exec dbExecutor, ch
 	}
 	defer func() { _ = stmt.Close() }()
 
+	var mappingInsertSQL string
+	if s.IsSQLite() {
+		mappingInsertSQL = `INSERT INTO channel_model_mappings (channel_id, model, target_model, weight, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, unixepoch(), unixepoch())`
+	} else {
+		mappingInsertSQL = `INSERT INTO channel_model_mappings (channel_id, model, target_model, weight, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())`
+	}
+	mappingStmt, err := exec.PrepareContext(ctx, mappingInsertSQL)
+	if err != nil {
+		return fmt.Errorf("prepare mapping insert statement: %w", err)
+	}
+	defer func() { _ = mappingStmt.Close() }()
+
 	for _, entry := range entries {
+		entry.NormalizeRedirects()
 		if _, err := stmt.ExecContext(ctx, channelID, entry.Model, entry.RedirectModel); err != nil {
 			return fmt.Errorf("save model entry %s: %w", entry.Model, err)
 		}
+		for idx, target := range entry.Targets {
+			if target.TargetModel == "" {
+				continue
+			}
+			weight := target.Weight
+			if weight <= 0 {
+				weight = 1
+			}
+			if _, err := mappingStmt.ExecContext(ctx, channelID, entry.Model, target.TargetModel, weight, idx); err != nil {
+				return fmt.Errorf("save model mapping %s -> %s: %w", entry.Model, target.TargetModel, err)
+			}
+		}
 	}
 
+	return nil
+}
+
+// ==================== Model Mappings (多目标模型重定向) ====================
+
+// GetModelMappings 获取指定渠道和模型的多目标映射列表
+func (s *SQLStore) GetModelMappings(ctx context.Context, channelID int64, modelName string) ([]*model.ChannelModelMapping, error) {
+	query := `
+		SELECT channel_id, model, target_model, weight, created_at, updated_at
+		FROM channel_model_mappings
+		WHERE channel_id = ? AND model = ?
+		ORDER BY sort_order ASC, created_at ASC, target_model ASC
+	`
+	rows, err := s.db.QueryContext(ctx, query, channelID, modelName)
+	if err != nil {
+		return nil, fmt.Errorf("query model mappings: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var mappings []*model.ChannelModelMapping
+	for rows.Next() {
+		var m model.ChannelModelMapping
+		if err := rows.Scan(&m.ChannelID, &m.Model, &m.TargetModel, &m.Weight, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan model mapping: %w", err)
+		}
+		mappings = append(mappings, &m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate model mappings: %w", err)
+	}
+
+	return mappings, nil
+}
+
+// GetAllModelMappings 获取指定渠道的所有模型映射
+func (s *SQLStore) GetAllModelMappings(ctx context.Context, channelID int64) (map[string][]*model.ChannelModelMapping, error) {
+	query := `
+		SELECT channel_id, model, target_model, weight, created_at, updated_at
+		FROM channel_model_mappings
+		WHERE channel_id = ?
+		ORDER BY model, sort_order ASC, created_at ASC, target_model ASC
+	`
+	rows, err := s.db.QueryContext(ctx, query, channelID)
+	if err != nil {
+		return nil, fmt.Errorf("query all model mappings: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	result := make(map[string][]*model.ChannelModelMapping)
+	for rows.Next() {
+		var m model.ChannelModelMapping
+		if err := rows.Scan(&m.ChannelID, &m.Model, &m.TargetModel, &m.Weight, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan model mapping: %w", err)
+		}
+		result[m.Model] = append(result[m.Model], &m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate model mappings: %w", err)
+	}
+
+	return result, nil
+}
+
+// UpdateModelMappings 更新指定渠道和模型的多目标映射（全量替换）
+func (s *SQLStore) UpdateModelMappings(ctx context.Context, channelID int64, modelName string, targets []model.ChannelModelMapping) error {
+	// 验证目标模型唯一性
+	seen := make(map[string]struct{}, len(targets))
+	for _, t := range targets {
+		if t.TargetModel == "" {
+			return fmt.Errorf("target_model cannot be empty")
+		}
+		if _, exists := seen[t.TargetModel]; exists {
+			return fmt.Errorf("duplicate target_model: %s", t.TargetModel)
+		}
+		seen[t.TargetModel] = struct{}{}
+	}
+
+	nowUnix := timeToUnix(time.Now())
+
+	return s.WithTransaction(ctx, func(tx *sql.Tx) error {
+		// 1. 删除该渠道和模型的所有现有映射
+		if _, err := tx.ExecContext(ctx,
+			`DELETE FROM channel_model_mappings WHERE channel_id = ? AND model = ?`,
+			channelID, modelName); err != nil {
+			return fmt.Errorf("delete existing mappings: %w", err)
+		}
+
+		// 2. 如果没有新映射，直接返回
+		if len(targets) == 0 {
+			return nil
+		}
+
+		// 3. 批量插入新映射
+		insertSQL := `INSERT INTO channel_model_mappings (channel_id, model, target_model, weight, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+		stmt, err := tx.PrepareContext(ctx, insertSQL)
+		if err != nil {
+			return fmt.Errorf("prepare insert statement: %w", err)
+		}
+		defer func() { _ = stmt.Close() }()
+
+		for idx, t := range targets {
+			weight := t.Weight
+			if weight <= 0 {
+				weight = 1
+			}
+			if _, err := stmt.ExecContext(ctx, channelID, modelName, t.TargetModel, weight, idx, nowUnix, nowUnix); err != nil {
+				return fmt.Errorf("insert mapping for target %s: %w", t.TargetModel, err)
+			}
+		}
+
+		return nil
+	})
+}
+
+// DeleteModelMapping 删除指定渠道和模型的所有映射
+func (s *SQLStore) DeleteModelMapping(ctx context.Context, channelID int64, modelName string) error {
+	_, err := s.db.ExecContext(ctx,
+		`DELETE FROM channel_model_mappings WHERE channel_id = ? AND model = ?`,
+		channelID, modelName)
+	if err != nil {
+		return fmt.Errorf("delete model mappings: %w", err)
+	}
 	return nil
 }

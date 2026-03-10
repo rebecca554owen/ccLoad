@@ -104,7 +104,7 @@ func TestSyncManager_RestoreLogsIncremental(t *testing.T) {
 
 	// 在 MySQL 中添加日志
 	now := time.Now()
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		entry := &model.LogEntry{
 			Time:       model.JSONTime{Time: now.Add(-time.Duration(i) * time.Hour)},
 			ChannelID:  1,
@@ -202,7 +202,7 @@ func TestSyncManager_RestoreLogsIncremental_TrueIncremental(t *testing.T) {
 	now := time.Now()
 
 	// 第一步：在 MySQL 中添加 3 条日志
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		entry := &model.LogEntry{
 			Time:       model.JSONTime{Time: now.Add(-time.Duration(i) * time.Hour)},
 			ChannelID:  1,
@@ -231,7 +231,7 @@ func TestSyncManager_RestoreLogsIncremental_TrueIncremental(t *testing.T) {
 	}
 
 	// 第三步：在 MySQL 中再添加 2 条新日志
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		entry := &model.LogEntry{
 			Time:       model.JSONTime{Time: now.Add(time.Duration(i+1) * time.Minute)}, // 新增时间更晚
 			ChannelID:  2,

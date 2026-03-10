@@ -16,7 +16,7 @@ func TestSmoothWeightedRR_ExactDistribution(t *testing.T) {
 	iterations := 100
 	firstPositionCount := make(map[string]int)
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		channels := []*modelpkg.Config{
 			{ID: 1, Name: "channel-A", Priority: 10, KeyCount: 3},
 			{ID: 2, Name: "channel-B", Priority: 10, KeyCount: 1},
@@ -65,7 +65,7 @@ func TestSmoothWeightedRR_SequencePattern(t *testing.T) {
 
 	// 连续8次选择
 	sequence := make([]string, 8)
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		result := rr.Select(channels, weights)
 		sequence[i] = result[0].Name
 	}
@@ -133,7 +133,7 @@ func TestSmoothWeightedRR_WithCooldown(t *testing.T) {
 	iterations := 100
 	firstPositionCount := make(map[string]int)
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		channels := []*modelpkg.Config{
 			{ID: 1, Name: "channel-A", Priority: 10, KeyCount: 10},
 			{ID: 2, Name: "channel-B", Priority: 10, KeyCount: 2},
@@ -180,7 +180,7 @@ func TestSmoothWeightedRR_Integration(t *testing.T) {
 	iterations := 100
 	callCount := make(map[int64]int)
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		result := balancer.SelectWithCooldown(channels, keyCooldowns, now)
 		callCount[result[0].ID]++
 	}
@@ -239,7 +239,7 @@ func TestSmoothWeightedRR_GroupKeyFormat(t *testing.T) {
 	weights2 := []int{1}
 
 	// 对第一组轮询几次
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		rr.Select(channels1, weights1)
 	}
 

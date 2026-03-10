@@ -363,7 +363,7 @@ func TestHybridStore_GracefulClose(t *testing.T) {
 	ctx := context.Background()
 
 	// 添加一些日志触发异步同步任务
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		entry := &model.LogEntry{
 			Time:       model.JSONTime{Time: time.Now()},
 			ChannelID:  int64(i),
