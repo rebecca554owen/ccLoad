@@ -148,7 +148,10 @@
       border-bottom: 1px solid #e3e8ee;
     }
 
-    .channel-table td.ch-col-priority,
+    .channel-table td.ch-col-priority {
+      text-align: center;
+    }
+
     .channel-table td.ch-col-duration,
     .channel-table td.ch-col-usage,
     .channel-table td.ch-col-cost {
@@ -192,9 +195,15 @@
     }
 
     .ch-col-name {
-      width: 420px;
-      min-width: 420px;
-      max-width: 420px;
+      width: 210px;
+      min-width: 210px;
+      max-width: 210px;
+    }
+
+    .ch-col-models {
+      width: 260px;
+      min-width: 260px;
+      max-width: 260px;
     }
 
     .ch-col-priority {
@@ -202,13 +211,13 @@
       min-width: 90px;
       max-width: 90px;
       white-space: normal;
-      text-align: right;
+      text-align: center;
     }
 
     .ch-priority-stack {
       display: flex;
       flex-direction: column;
-      align-items: stretch;
+      align-items: center;
       justify-content: center;
       width: 100%;
       gap: 2px;
@@ -218,7 +227,7 @@
     .ch-priority-row {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       width: 100%;
       gap: 4px;
       min-width: 0;
@@ -235,8 +244,8 @@
     }
 
     .ch-priority-value {
-      margin-left: auto;
-      text-align: right;
+      margin-left: 0;
+      text-align: center;
       font-size: 13px;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
@@ -294,8 +303,9 @@
     /* 渠道名称行 */
     .ch-name-line {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
       width: 100%;
       min-width: 0;
       font-size: 13px;
@@ -305,18 +315,21 @@
     .ch-name-main {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 4px;
+      width: 100%;
       min-width: 0;
       flex: 1 1 auto;
     }
 
     .ch-name-statuses {
-      margin-left: auto;
+      margin-left: 0;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      flex: 0 0 auto;
-      white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
+      white-space: normal;
     }
 
     .ch-name-line strong {
@@ -774,21 +787,22 @@
     /* 健康状态指示器 */
     .health-indicator {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
       margin-top: 4px;
-      flex-wrap: nowrap;
+      width: 100%;
       min-width: 0;
     }
 
     .health-track {
       display: grid;
-      grid-template-columns: repeat(48, 6px);
+      grid-template-columns: repeat(48, minmax(0, 1fr));
       gap: 1px;
-      width: 335px;
-      min-width: 335px;
-      max-width: 335px;
-      flex: 0 0 335px;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      flex: 1 1 auto;
     }
 
     .health-block {
@@ -827,6 +841,7 @@
       font-weight: 500;
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
+      align-self: flex-end;
     }
 
     .channel-toolbar-actions {
