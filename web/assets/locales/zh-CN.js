@@ -211,6 +211,9 @@ window.I18N_LOCALES['zh-CN'] = {
   'channels.priority': '优先级',
   'channels.dailyCostLimit': '每日限额',
   'channels.dailyCostLimitPlaceholder': '0=无限制',
+  'channels.customUserAgent': 'User-Agent',
+  'channels.customUserAgentPlaceholder': '留空则使用客户端透传的 UA',
+  'channels.customEndpoint': '自定义端点',
 
   // 删除确认（扁平化键名）
   'channels.confirmDeleteTitle': '确认删除',
@@ -883,7 +886,10 @@ window.I18N_LOCALES['zh-CN'] = {
   'channels.testThisKey': '测试此Key',
   'channels.deleteThisKey': '删除此Key',
   'channels.deleteThisModel': '删除此模型',
+  'channels.deleteThisTarget': '删除此目标',
   'channels.toLowercase': '转为小写',
+  'channels.targetWeight': '权重:',
+  'channels.addTarget': '添加',
   'channels.testApiKey': '测试API Key',
   'channels.copyChannelTitle': '复制渠道',
   'channels.toggleEnable': '启用渠道',

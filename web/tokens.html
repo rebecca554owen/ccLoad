@@ -52,7 +52,7 @@
 
     body.tokens-page .token-actions {
       display: inline-flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
@@ -397,9 +397,9 @@
       <td style="color: var(--neutral-600);">{{lastUsed}}</td>
       <td style="white-space: nowrap;">
         <div class="token-actions">
-          <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px;" data-token="{{token}}" data-i18n="common.copy">复制</button>
-          <button class="btn btn-secondary btn-edit" style="padding: 4px 12px; font-size: 13px;" data-i18n="common.edit">编辑</button>
-          <button class="btn btn-danger btn-delete" style="padding: 4px 12px; font-size: 13px;" data-i18n="common.delete">删除</button>
+          <button class="btn-copy-token btn btn-secondary table-action-btn" data-token="{{token}}" data-i18n="common.copy">复制</button>
+          <button class="btn btn-secondary btn-edit table-action-btn" data-i18n="common.edit">编辑</button>
+          <button class="btn btn-danger btn-delete table-action-btn" data-i18n="common.delete">删除</button>
         </div>
       </td>
     </tr>
