@@ -1626,42 +1626,61 @@
 
 .key-action-btn,
 .url-action-btn {
-  border: 1px solid transparent;
+  border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 10px;
   min-height: 34px;
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text);
+  box-shadow: none;
 }
 
 .key-action-btn[data-action="copy"],
 .url-action-btn[data-action="test"] {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 245, 247, 0.72));
-  border-color: rgba(183, 194, 204, 0.9);
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.24);
   box-shadow: none;
   color: var(--text-primary-light);
 }
 
 .key-action-btn[data-action="test"] {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  background: rgba(var(--primary-rgb), 0.1);
   border-color: rgba(var(--primary-rgb), 0.22);
   box-shadow: none;
+  color: color-mix(in srgb, var(--primary-700) 82%, white 18%);
 }
 
 .key-action-btn[data-action="delete"],
 .url-action-btn[data-action="delete"] {
-  background: linear-gradient(135deg, var(--error-500), var(--error-600));
-  border-color: rgba(var(--error-rgb), 0.22);
+  background: rgba(var(--error-rgb), 0.14);
+  border-color: rgba(var(--error-rgb), 0.34);
   box-shadow: none;
+  color: var(--error-700);
 }
 
 [data-theme="dark"] .key-action-btn[data-action="copy"],
 [data-theme="dark"] .url-action-btn[data-action="test"],
 [data-resolved-theme="dark"] .key-action-btn[data-action="copy"],
 [data-resolved-theme="dark"] .url-action-btn[data-action="test"] {
-  background: linear-gradient(180deg, rgba(35, 42, 47, 0.92), rgba(24, 30, 34, 0.86));
-  border-color: rgba(86, 101, 112, 0.72);
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.26);
   color: var(--text-primary-dark);
   box-shadow: none;
+}
+
+[data-theme="dark"] .key-action-btn[data-action="test"],
+[data-resolved-theme="dark"] .key-action-btn[data-action="test"] {
+  background: rgba(var(--primary-rgb), 0.16);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: color-mix(in srgb, var(--primary-200) 72%, white 28%);
+}
+
+[data-theme="dark"] .key-action-btn[data-action="delete"],
+[data-theme="dark"] .url-action-btn[data-action="delete"],
+[data-resolved-theme="dark"] .key-action-btn[data-action="delete"],
+[data-resolved-theme="dark"] .url-action-btn[data-action="delete"] {
+  background: rgba(var(--error-rgb), 0.18);
+  border-color: rgba(var(--error-rgb), 0.4);
+  color: color-mix(in srgb, var(--error-200) 88%, white 12%);
 }
