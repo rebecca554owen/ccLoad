@@ -16,9 +16,6 @@
   <script defer src="/web/assets/js/echarts.min.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/template-engine.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/date-range-selector.js?v=__VERSION__"></script>
-  <script defer src="/web/assets/js/filter-state.js?v=__VERSION__"></script>
-  <script defer src="/web/assets/js/filter-query.js?v=__VERSION__"></script>
-  <script defer src="/web/assets/js/page-filters.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/trend.js?v=__VERSION__"></script>
 </head>
@@ -27,13 +24,71 @@
     <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <div data-page-filters="trend"></div>
+        <!-- 页面标题 -->
+        <header class="mb-2">
+        </header>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-controls trend-filter-controls">
+            <!-- 渠道类型筛选 -->
+            <div class="filter-group trend-filter-group trend-filter-group--sm">
+              <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
+              <select id="f_channel_type" class="filter-select" style="min-width: 120px;">
+                <!-- 动态加载渠道类型选项 -->
+              </select>
+            </div>
+
+            <!-- 时间范围筛选 -->
+            <div class="filter-group trend-filter-group trend-filter-group--sm">
+              <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
+              <select id="f_hours" class="filter-select" style="min-width: 100px;">
+                <!-- 动态生成选项 by date-range-selector.js -->
+              </select>
+            </div>
+
+            <!-- 渠道ID筛选 -->
+            <div class="filter-group trend-filter-group trend-filter-group--id">
+              <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
+              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID..." style="max-width: 100px;">
+            </div>
+
+            <!-- 渠道名筛选 -->
+            <div class="filter-group trend-filter-group trend-filter-group--md">
+              <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
+              <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
+            </div>
+
+            <!-- 模型筛选 -->
+            <div class="filter-group trend-filter-group trend-filter-group--md">
+              <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
+              <select id="f_model" class="filter-select" style="min-width: 150px;">
+                <option value="" data-i18n="trend.allModels">全部模型</option>
+                <!-- 动态加载模型列表 -->
+              </select>
+            </div>
+
+            <!-- 令牌筛选 -->
+            <div class="filter-group trend-filter-group trend-filter-group--md">
+              <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
+              <select id="f_auth_token" class="filter-select" style="min-width: 150px;">
+                <option value="" data-i18n="stats.allTokens">全部令牌</option>
+                <!-- 动态加载令牌列表 -->
+              </select>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="trend-filter-actions">
+              <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;" data-i18n="common.filter">筛选</button>
+            </div>
+          </div>
+        </div>
 
         <!-- 趋势图表 -->
         <section class="mb-8 trend-chart-section">
-          <div class="glass-card trend-chart-card">
-            <div class="flex justify-between items-center mb-6 trend-chart-header">
-              <h3 class="text-xl font-semibold trend-chart-title">
+          <div class="glass-card  trend-chart-card" style="animation-delay: 0.2s;">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-semibold">
                 <svg class="inline-block w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21l4-4 4 4"/>
@@ -44,7 +99,7 @@
               </h3>
               
               <!-- 控件与图例 -->
-              <div class="flex items-center trend-chart-toolbar gap-space-3 flex-wrap">
+              <div class="flex items-center" style="gap:12px; flex-wrap: wrap;">
                 <!-- 趋势类型切换 -->
                 <div class="toggle-group" id="trend-type-group">
                   <div class="toggle-btn" data-type="count" data-i18n="trend.typeCount">调用次数</div>
@@ -56,18 +111,18 @@
                 </div>
                 <!-- 渠道筛选器 -->
                 <div class="channel-filter-container">
-                  <button class="btn btn-secondary btn-sm" id="btn-channel-filter-toggle" type="button">
+                  <button class="btn btn-secondary btn-sm" onclick="toggleChannelFilter()">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
                     </svg>
                     <span data-i18n="trend.channelFilter">渠道筛选</span>
                   </button>
-                  <div class="channel-filter-dropdown hidden" id="channel-filter-dropdown">
+                  <div class="channel-filter-dropdown" id="channel-filter-dropdown" style="display: none;">
                     <div class="filter-header">
                       <span data-i18n="trend.selectChannels">选择渠道</span>
                       <div class="filter-actions">
-                        <button class="filter-action" id="btn-select-all-channels" type="button" data-i18n="common.selectAll">全选</button>
-                        <button class="filter-action" id="btn-clear-all-channels" type="button" data-i18n="common.clear">清空</button>
+                        <button class="filter-action" onclick="selectAllChannels()" data-i18n="common.selectAll">全选</button>
+                        <button class="filter-action" onclick="clearAllChannels()" data-i18n="common.clear">清空</button>
                       </div>
                     </div>
                     <div class="filter-content" id="channel-filter-list">
@@ -84,7 +139,7 @@
                 <div class="loading-spinner"></div>
                 <div data-i18n="trend.loading">正在加载趋势数据...</div>
               </div>
-              <div class="chart-error hidden" id="chart-error">
+              <div class="chart-error" id="chart-error" style="display: none;">
                 <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.864-.833-2.634 0L4.18 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                 </svg>
@@ -92,7 +147,7 @@
                 <div class="error-message" data-i18n="trend.checkNetwork">请检查网络连接或重试</div>
               </div>
               <!-- ECharts 容器 -->
-              <div id="chart" class="w-full h-full hidden"></div>
+              <div id="chart" style="width: 100%; height: 100%; display: none;"></div>
             </div>
 
             <!-- 图表时间范围提示 -->
@@ -119,11 +174,11 @@
 
   <!-- 渠道筛选项模板 -->
   <template id="tpl-channel-filter-item">
-    <div class="channel-filter-item">
-      <div class="channel-checkbox {{checkedClass}}"></div>
+    <label class="channel-filter-item">
+      <input type="checkbox" class="channel-filter-checkbox" {{checkedAttr}}>
       <div class="channel-color-indicator" style="background-color: {{color}}"></div>
       <div class="channel-name">{{displayName}}</div>
-    </div>
+    </label>
   </template>
 
 </body>

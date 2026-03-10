@@ -6,10 +6,6 @@ let totalLogsPages = 1;
 let totalLogs = 0;
 let currentChannelType = 'all'; // 当前选中的渠道类型
 let authTokens = []; // 令牌列表
-let logsChannelNameCombobox = null; // 渠道名筛选组合框
-let logsModelCombobox = null; // 模型筛选组合框
-window.logsChannels = []; // 渠道列表（来自 /admin/models）
-window.availableLogsModels = []; // 可用模型列表
 let logsDefaultTestContent = 'sonnet 4.0的发布日期是什么'; // 默认测试内容（从设置加载）
 
 const ACTIVE_REQUESTS_POLL_INTERVAL_MS = 2000;
@@ -111,45 +107,6 @@ function getStreamFlagHtml(isStreaming) {
     : '<span class="stream-flag placeholder">流</span>';
 }
 
-function getLogMobileLabels() {
-  return {
-    time: escapeHtml(t('logs.colTime')),
-    ip: escapeHtml(t('logs.colIP')),
-    apiKey: escapeHtml(t('logs.colApiKey')),
-    channel: escapeHtml(t('logs.colChannel')),
-    model: escapeHtml(t('common.model')),
-    status: escapeHtml(t('logs.statusCode')),
-    timing: escapeHtml(t('logs.colTiming')),
-    speed: escapeHtml(t('logs.colSpeed')),
-    input: escapeHtml(t('logs.colInput')),
-    output: escapeHtml(t('logs.colOutput')),
-    cacheRead: escapeHtml(t('logs.colCacheRead')),
-    cacheWrite: escapeHtml(t('logs.colCacheWrite')),
-    cost: escapeHtml(t('logs.colCost')),
-    message: escapeHtml(t('logs.colMessage'))
-  };
-}
-
-function renderLogSourceBadge(logSource) {
-  switch (logSource) {
-    case 'scheduled_check':
-      return `<span class="log-source-badge log-source-badge--scheduled">${escapeHtml(t('logs.sourceScheduledCheckBadge'))}</span>`;
-    case 'manual_test':
-      return `<span class="log-source-badge log-source-badge--manual">${escapeHtml(t('logs.sourceManualTestBadge'))}</span>`;
-    default:
-      return '';
-  }
-}
-
-function calculateLogSpeed(entry) {
-  const outputTokens = Number(entry?.output_tokens);
-  const duration = Number(entry?.duration);
-  if (!Number.isFinite(outputTokens) || outputTokens <= 0 || !Number.isFinite(duration) || duration <= 0) {
-    return null;
-  }
-  return outputTokens / duration;
-}
-
 // 加载默认测试内容（从系统设置）
 async function loadDefaultTestContent() {
   try {
@@ -173,7 +130,33 @@ async function load(skipLoading = false) {
       renderLogsLoading();
     }
 
-    const params = buildLogsRequestParams();
+    // 从表单元素获取筛选条件（支持下拉框切换后立即生效）
+    const range = document.getElementById('f_hours')?.value || 'today';
+    const channelId = document.getElementById('f_id')?.value?.trim() || '';
+    const channelName = document.getElementById('f_name')?.value?.trim() || '';
+    const model = document.getElementById('f_model')?.value?.trim() || '';
+    const resultType = document.getElementById('f_result_type')?.value?.trim() || 'all';
+    const statusCode = document.getElementById('f_status')?.value?.trim() || '';
+    const authTokenId = document.getElementById('f_auth_token')?.value?.trim() || '';
+
+    const params = new URLSearchParams({
+      range,
+      limit: logsPageSize.toString(),
+      offset: ((currentLogsPage - 1) * logsPageSize).toString()
+    });
+
+    if (channelId) params.set('channel_id', channelId);
+    if (channelName) params.set('channel_name_like', channelName);
+    if (model) params.set('model_like', model);
+    if (resultType && resultType !== 'all') params.set('result_type', resultType);
+    if (statusCode) params.set('status_code', statusCode);
+    if (authTokenId) params.set('auth_token_id', authTokenId);
+
+    // 添加渠道类型筛选
+    if (currentChannelType && currentChannelType !== 'all') {
+      params.set('channel_type', currentChannelType);
+    }
+
     const response = await fetchAPIWithAuth('/admin/logs?' + params.toString());
     if (!response.success) throw new Error(response.error || '无法加载请求日志');
 
@@ -236,20 +219,28 @@ async function load(skipLoading = false) {
 
 // 根据当前筛选条件过滤活跃请求
 function filterActiveRequests(requests) {
-  const channelName = (logsChannelNameCombobox ? logsChannelNameCombobox.getValue() : (document.getElementById('f_name')?.value || '')).trim().toLowerCase();
-  const model = (logsModelCombobox ? logsModelCombobox.getValue() : (document.getElementById('f_model')?.value || '')).trim();
+  const channelId = (document.getElementById('f_id')?.value || '').trim();
+  const channelName = (document.getElementById('f_name')?.value || '').trim().toLowerCase();
+  const model = (document.getElementById('f_model')?.value || '').trim().toLowerCase();
   const channelType = (document.getElementById('f_channel_type')?.value || '').trim();
   const tokenId = (document.getElementById('f_auth_token')?.value || '').trim();
+  const resultType = (document.getElementById('f_result_type')?.value || 'all').trim();
 
   return requests.filter(req => {
-    // 渠道名称精确匹配（来自下拉框）或模糊匹配（手动输入）
+    // 渠道ID精确匹配
+    if (channelId) {
+      if (req.channel_id === undefined || req.channel_id === null) return false;
+      if (String(req.channel_id) !== channelId) return false;
+    }
+    // 渠道名称模糊匹配（包含）
     if (channelName) {
       const name = (typeof req.channel_name === 'string' ? req.channel_name : '').toLowerCase();
       if (!name.includes(channelName)) return false;
     }
-    // 模型精确匹配（来自下拉框选择）
+    // 模型名称模糊匹配（包含）
     if (model) {
-      if ((req.model || '') !== model) return false;
+      const reqModel = (typeof req.model === 'string' ? req.model : '').toLowerCase();
+      if (!reqModel.includes(model)) return false;
     }
     // 渠道类型精确匹配（'all' 表示全部，不过滤）
     if (channelType && channelType !== 'all') {
@@ -261,14 +252,9 @@ function filterActiveRequests(requests) {
       if (req.token_id === undefined || req.token_id === null || req.token_id === 0) return false;
       if (String(req.token_id) !== tokenId) return false;
     }
+    if (resultType === 'success' || resultType === 'error') return false;
     return true;
   });
-}
-
-function shouldSkipActiveRequestsFetch(hours, status, logSource) {
-  if (hours && hours !== 'today') return true;
-  if (status) return true;
-  return logSource !== 'proxy' && logSource !== 'all';
 }
 
 // 获取进行中的请求
@@ -278,9 +264,8 @@ async function fetchActiveRequests() {
   // 优化：当筛选条件不可能匹配进行中请求时，跳过请求
   const hours = (document.getElementById('f_hours')?.value || '').trim();
   const status = (document.getElementById('f_status')?.value || '').trim();
-  const logSource = (document.getElementById('f_log_source')?.value || 'proxy').trim();
-  // 进行中的请求只存在于"本日"，且没有状态码
-  if (shouldSkipActiveRequestsFetch(hours, status, logSource)) {
+  const resultType = (document.getElementById('f_result_type')?.value || 'all').trim();
+  if ((hours && hours !== 'today') || status || (resultType && resultType !== 'all')) {
     clearActiveRequestsRows();
     lastActiveRequestIDs = null;
     return;
@@ -333,7 +318,6 @@ function renderActiveRequests(activeRequests) {
   const tbody = document.getElementById('tbody');
   const firstRow = tbody.firstChild;
   const totalCols = getTableColspan();
-  const logMobileLabels = getLogMobileLabels();
 
   // 使用 DocumentFragment 批量构建，减少 DOM 操作
   const fragment = document.createDocumentFragment();
@@ -358,7 +342,7 @@ function renderActiveRequests(activeRequests) {
     // Key显示
     let keyDisplay = '<span style="color: var(--neutral-500);">-</span>';
     if (req.api_key_used) {
-      keyDisplay = `<span class="logs-api-key-text logs-mono-text">${escapeHtml(req.api_key_used)}</span>`;
+      keyDisplay = `<span style="font-family: monospace; font-size: 0.85em;">${escapeHtml(req.api_key_used)}</span>`;
     }
 
     const bytesInfo = formatBytes(req.bytes_received);
@@ -375,28 +359,25 @@ function renderActiveRequests(activeRequests) {
             <td colspan="${totalCols}">
               <span class="status-pending">进行中</span>
               <span style="margin-left: 8px;">${formatTime(req.start_time)}</span>
-              <span class="logs-mono-text" style="margin-left: 8px;" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</span>
+              <span style="margin-left: 8px; color: var(--neutral-600);" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</span>
               <span style="margin-left: 8px;">${escapeHtml(req.model || '-')}</span>
               <span style="margin-left: 8px;">${durationDisplay} ${streamFlag}</span>
               <span style="margin-left: 8px; color: ${infoColor};">${escapeHtml(infoDisplay)}</span>
             </td>
           `;
     } else {
+      const emptyCols = Math.max(0, totalCols - 8); // 7列固定信息 + 末尾消息列
+      const emptyCells = '<td></td>'.repeat(emptyCols);
       row.innerHTML = `
-            <td class="logs-col-time" data-mobile-label="${logMobileLabels.time}" style="white-space: nowrap;">${formatTime(req.start_time)}</td>
-            <td class="logs-col-ip logs-mono-text" data-mobile-label="${logMobileLabels.ip}" style="white-space: nowrap;" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</td>
-            <td class="logs-col-api-key" data-mobile-label="${logMobileLabels.apiKey}" style="text-align: center; white-space: nowrap;">${keyDisplay}</td>
-            <td class="logs-col-channel" data-mobile-label="${logMobileLabels.channel}">${channelDisplay}</td>
-            <td class="logs-col-model" data-mobile-label="${logMobileLabels.model}"><span class="model-tag">${escapeHtml(req.model || '-')}</span></td>
-            <td class="logs-col-status" data-mobile-label="${logMobileLabels.status}"><span class="status-pending">进行中</span></td>
-            <td class="logs-col-timing" data-mobile-label="${logMobileLabels.timing}" style="text-align: right; white-space: nowrap;">${durationDisplay} ${streamFlag}</td>
-            <td class="logs-col-speed mobile-empty-cell" data-mobile-label="${logMobileLabels.speed}" style="text-align: right; white-space: nowrap;"></td>
-            <td class="logs-col-input mobile-empty-cell" data-mobile-label="${logMobileLabels.input}" style="text-align: right; white-space: nowrap;"></td>
-            <td class="logs-col-output mobile-empty-cell" data-mobile-label="${logMobileLabels.output}" style="text-align: right; white-space: nowrap;"></td>
-            <td class="logs-col-cache-read mobile-empty-cell" data-mobile-label="${logMobileLabels.cacheRead}" style="text-align: right; white-space: nowrap;"></td>
-            <td class="logs-col-cache-write mobile-empty-cell" data-mobile-label="${logMobileLabels.cacheWrite}" style="text-align: right; white-space: nowrap;"></td>
-            <td class="logs-col-cost mobile-empty-cell" data-mobile-label="${logMobileLabels.cost}" style="text-align: right; white-space: nowrap;"></td>
-            <td class="logs-col-message" data-mobile-label="${logMobileLabels.message}"><span style="color: ${infoColor};">${escapeHtml(infoDisplay)}</span></td>
+            <td style="white-space: nowrap;">${formatTime(req.start_time)}</td>
+            <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);" title="${escapeHtml(req.client_ip || '')}">${escapeHtml(maskIP(req.client_ip) || '-')}</td>
+            <td style="text-align: center;">${keyDisplay}</td>
+            <td class="config-info">${channelDisplay}</td>
+            <td><span class="model-tag">${escapeHtml(req.model)}</span></td>
+            <td><span class="status-pending">进行中</span></td>
+            <td style="text-align: right;">${durationDisplay} ${streamFlag}</td>
+            ${emptyCells}
+            <td><span style="color: ${infoColor};">${escapeHtml(infoDisplay)}</span></td>
           `;
     }
     fragment.appendChild(row);
@@ -411,7 +392,7 @@ function getTableColspan() {
   const table = document.getElementById('tbody')?.closest('table')
     || document.querySelector('.logs-table');
   const headerCells = table ? table.querySelectorAll('thead th') : [];
-  return headerCells.length || 14; // fallback到14列（日志页默认列数）
+  return headerCells.length || 13; // fallback到13列（向后兼容）
 }
 
 function renderLogsLoading() {
@@ -433,7 +414,6 @@ function renderLogsError() {
 function renderLogs(data) {
   const tbody = document.getElementById('tbody');
   const colspan = getTableColspan();
-  const logMobileLabels = getLogMobileLabels();
 
   if (data.length === 0) {
     const emptyRow = TemplateEngine.render('tpl-log-empty', { colspan });
@@ -497,17 +477,12 @@ function renderLogs(data) {
     if (entry.is_streaming) {
       const hasFirstByte = entry.first_byte_time !== undefined && entry.first_byte_time !== null;
       const firstByteDisplay = hasFirstByte ?
-        `<span class="log-timing-first-byte" style="color: var(--success-600);">${entry.first_byte_time.toFixed(2)}</span>` :
-        '<span class="log-timing-first-byte" style="color: var(--neutral-500);">-</span>';
-      responseTimingDisplay = `<span class="log-timing-pair">${firstByteDisplay}<span class="log-timing-separator" style="color: var(--neutral-400);">/</span><span class="log-timing-duration">${durationDisplay}</span></span>${streamFlag}`;
+        `<span style="color: var(--success-600);">${entry.first_byte_time.toFixed(2)}</span>` :
+        '<span style="color: var(--neutral-500);">-</span>';
+      responseTimingDisplay = `<span style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap;">${firstByteDisplay}<span style="color: var(--neutral-400);">/</span>${durationDisplay}</span>${streamFlag}`;
     } else {
-      responseTimingDisplay = `<span class="log-timing-pair"><span class="log-timing-duration">${durationDisplay}</span></span>${streamFlag}`;
+      responseTimingDisplay = `<span style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; white-space: nowrap;">${durationDisplay}</span>${streamFlag}`;
     }
-
-    const logSpeed = calculateLogSpeed(entry);
-    const speedDisplay = logSpeed === null
-      ? ''
-      : `<span class="token-metric-value" style="color: var(--neutral-700);">${logSpeed.toFixed(1)}</span>`;
 
     // 5. API Key显示(含按钮组)
     let apiKeyDisplay = '';
@@ -527,9 +502,9 @@ function renderLogs(data) {
         buttons += `<button class="test-key-btn" style="color: var(--error-600);" data-action="delete" data-channel-id="${entry.channel_id}" data-channel-name="${escapeHtml(entry.channel_name || '').replace(/"/g, '&quot;')}" data-api-key="${escapeHtml(entry.api_key_used).replace(/"/g, '&quot;')}" data-api-key-hash="${keyHashAttr}" title="删除此 API Key">${deleteBtnIcon}</button>`;
       }
 
-      apiKeyDisplay = `<div class="logs-api-key-group"><code class="logs-api-key-text logs-mono-text">${escapeHtml(entry.api_key_used)}</code><span class="logs-api-key-actions">${buttons}</span></div>`;
+      apiKeyDisplay = `<div style="display: flex; align-items: center; gap: 4px; justify-content: center;"><code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(entry.api_key_used)}</code><span style="display: inline-flex; align-items: center; gap: 1px;">${buttons}</span></div>`;
     } else if (entry.api_key_used) {
-      apiKeyDisplay = `<code class="logs-api-key-text logs-mono-text">${escapeHtml(entry.api_key_used)}</code>`;
+      apiKeyDisplay = `<code style="font-size: 0.9em; color: var(--neutral-600);">${escapeHtml(entry.api_key_used)}</code>`;
     } else {
       apiKeyDisplay = '<span style="color: var(--neutral-500);">-</span>';
     }
@@ -577,26 +552,22 @@ function renderLogs(data) {
     }
     const costDisplay = entry.cost ?
       `<span style="color: var(--warning-600); font-weight: 500;">${formatCost(entry.cost)}${tierBadge}</span>` : '';
-    const sourceBadge = renderLogSourceBadge(entry.log_source || 'proxy');
-    const messageText = escapeHtml(entry.message || '');
-    const messageDisplay = `${sourceBadge}${messageText}`;
 
     // === 直接拼接行 HTML ===
-    htmlParts[i] = `<tr class="mobile-card-row logs-table-row">
-          <td class="logs-col-time" data-mobile-label="${logMobileLabels.time}" style="white-space: nowrap;">${formatTime(entry.time)}</td>
-          <td class="logs-col-ip logs-mono-text" data-mobile-label="${logMobileLabels.ip}" style="white-space: nowrap;">${clientIPDisplay}</td>
-          <td class="logs-col-api-key" data-mobile-label="${logMobileLabels.apiKey}" style="text-align: center; white-space: nowrap;">${apiKeyDisplay}</td>
-          <td class="logs-col-channel" data-mobile-label="${logMobileLabels.channel}">${configDisplay}</td>
-          <td class="logs-col-model" data-mobile-label="${logMobileLabels.model}">${modelDisplay}</td>
-          <td class="logs-col-status" data-mobile-label="${logMobileLabels.status}"><span class="${statusClass}">${statusCode}</span></td>
-          <td class="logs-col-timing" data-mobile-label="${logMobileLabels.timing}" style="text-align: right; white-space: nowrap;">${responseTimingDisplay}</td>
-          <td class="logs-col-speed${speedDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.speed}" style="text-align: right; white-space: nowrap;">${speedDisplay}</td>
-          <td class="logs-col-input${inputTokensDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.input}" style="text-align: right; white-space: nowrap;">${inputTokensDisplay}</td>
-          <td class="logs-col-output${outputTokensDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.output}" style="text-align: right; white-space: nowrap;">${outputTokensDisplay}</td>
-          <td class="logs-col-cache-read${cacheReadDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.cacheRead}" style="text-align: right; white-space: nowrap;">${cacheReadDisplay}</td>
-          <td class="logs-col-cache-write${cacheCreationDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.cacheWrite}" style="text-align: right; white-space: nowrap;">${cacheCreationDisplay}</td>
-          <td class="logs-col-cost${costDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.cost}" style="text-align: right; white-space: nowrap;">${costDisplay}</td>
-          <td class="logs-col-message${messageDisplay ? '' : ' mobile-empty-cell'}" data-mobile-label="${logMobileLabels.message}" style="max-width: 300px; word-break: break-word;">${messageDisplay}</td>
+    htmlParts[i] = `<tr>
+          <td style="white-space: nowrap;">${formatTime(entry.time)}</td>
+          <td class="config-info" style="white-space: nowrap; font-family: monospace; font-size: 0.85em; color: var(--neutral-600);">${clientIPDisplay}</td>
+          <td style="text-align: center; white-space: nowrap;">${apiKeyDisplay}</td>
+          <td class="config-info">${configDisplay}</td>
+          <td>${modelDisplay}</td>
+          <td><span class="${statusClass}">${statusCode}</span></td>
+          <td style="text-align: right; white-space: nowrap;">${responseTimingDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${inputTokensDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${outputTokensDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${cacheReadDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${cacheCreationDisplay}</td>
+          <td style="text-align: right; white-space: nowrap;">${costDisplay}</td>
+          <td style="max-width: 300px; word-break: break-word;">${escapeHtml(entry.message || '')}</td>
         </tr>`;
   }
 
@@ -711,213 +682,114 @@ function applyFilter() {
   currentLogsPage = 1;
   totalLogsPages = 1;
 
-  window.persistFilterState({
-    key: LOGS_FILTER_KEY,
-    values: getLogsFilters(),
-    search: location.search,
-    pathname: location.pathname,
-    fields: LOGS_FILTER_FIELDS,
-    preserveExistingParams: true
-  });
+  const range = document.getElementById('f_hours').value.trim();
+  const id = document.getElementById('f_id').value.trim();
+  const name = document.getElementById('f_name').value.trim();
+  const model = document.getElementById('f_model').value.trim();
+  const resultType = document.getElementById('f_result_type') ? document.getElementById('f_result_type').value.trim() : 'all';
+  const status = document.getElementById('f_status') ? document.getElementById('f_status').value.trim() : '';
+  const authToken = document.getElementById('f_auth_token').value.trim();
+  const channelType = document.getElementById('f_channel_type').value.trim();
+
+  // 保存筛选条件到 localStorage
+  saveLogsFilters();
+
+  const q = new URLSearchParams(location.search);
+
+  if (range) q.set('range', range); else q.delete('range');
+  if (id) q.set('channel_id', id); else q.delete('channel_id');
+  if (name) { q.set('channel_name_like', name); q.delete('channel_name'); }
+  else { q.delete('channel_name_like'); }
+  if (model) { q.set('model_like', model); q.delete('model'); }
+  else { q.delete('model_like'); q.delete('model'); }
+  if (resultType && resultType !== 'all') { q.set('result_type', resultType); }
+  else { q.delete('result_type'); }
+  if (status) { q.set('status_code', status); }
+  else { q.delete('status_code'); }
+  if (authToken) q.set('auth_token_id', authToken); else q.delete('auth_token_id');
+  if (channelType) q.set('channel_type', channelType); else q.set('channel_type', 'all');
+
+  // 使用 pushState 更新 URL，避免页面重新加载
+  history.pushState(null, '', '?' + q.toString());
   load();
 }
 
-function applyLogsFilterValues(filters) {
-  window.applyFilterControlValues(filters, {
-    logSource: 'f_log_source',
-    status: 'f_status'
-  });
+async function initFilters() {
+  const u = new URLSearchParams(location.search);
+  const saved = loadLogsFilters();
+  // URL 参数优先，否则从 localStorage 恢复
+  const hasUrlParams = u.toString().length > 0;
 
-  // 渠道名通过 combobox 恢复
-  if (logsChannelNameCombobox && filters.channelName !== undefined) {
-    logsChannelNameCombobox.setValue(filters.channelName || '', filters.channelName || t('stats.allChannels'));
+  const id = u.get('channel_id') || (!hasUrlParams && saved?.channelId) || '';
+  const name = u.get('channel_name_like') || u.get('channel_name') || (!hasUrlParams && saved?.channelName) || '';
+  const range = u.get('range') || (!hasUrlParams && saved?.range) || 'today';
+  const model = u.get('model_like') || u.get('model') || (!hasUrlParams && saved?.model) || '';
+  const resultType = u.get('result_type') || (!hasUrlParams && saved?.resultType) || 'all';
+  const status = u.get('status_code') || (!hasUrlParams && saved?.status) || '';
+  const authToken = u.get('auth_token_id') || (!hasUrlParams && saved?.authToken) || '';
+  const channelType = u.get('channel_type') || (!hasUrlParams && saved?.channelType) || 'all';
+
+  // 初始化时间范围选择器 (默认"本日")，切换后立即筛选
+  if (window.initDateRangeSelector) {
+    initDateRangeSelector('f_hours', 'today', () => {
+      saveLogsFilters();
+      currentLogsPage = 1;
+      load();
+    });
+    // 设置URL中的值
+    document.getElementById('f_hours').value = range;
   }
 
-  // 模型通过 combobox 恢复
-  if (logsModelCombobox && filters.model !== undefined) {
-    logsModelCombobox.setValue(filters.model || '', filters.model || t('trend.allModels'));
-  }
+  document.getElementById('f_id').value = id;
+  document.getElementById('f_name').value = name;
+  document.getElementById('f_model').value = model;
+  const resultTypeEl = document.getElementById('f_result_type');
+  if (resultTypeEl) resultTypeEl.value = resultType;
+  const statusEl = document.getElementById('f_status');
+  if (statusEl) statusEl.value = status;
 
-  currentChannelType = filters.channelType || 'all';
+  // 设置渠道类型
+  currentChannelType = channelType;
   const channelTypeEl = document.getElementById('f_channel_type');
-  if (channelTypeEl) channelTypeEl.value = currentChannelType;
-}
+  if (channelTypeEl) channelTypeEl.value = channelType;
 
-function getLogSourceFilterElements() {
-  const select = document.getElementById('f_log_source');
-  if (!select) {
-    return { group: null, select: null };
-  }
+  // 加载令牌列表（返回 Promise 以便等待完成）
+  authTokens = await window.loadAuthTokensIntoSelect('f_auth_token');
+  document.getElementById('f_auth_token').value = authToken;
 
-  let group = null;
-  if (typeof select.closest === 'function') {
-    group = select.closest('.filter-group');
-  }
-  if (!group) {
-    group = select.parentElement || null;
-  }
-
-  return { group, select };
-}
-
-async function syncLogSourceVisibility() {
-  const { group, select } = getLogSourceFilterElements();
-  if (!group || !select) return false;
-
-  let scheduledCheckEnabledByConfig = false;
-  try {
-    const setting = await fetchDataWithAuth('/admin/settings/channel_check_interval_hours');
-    const intervalHours = Number(setting && setting.value);
-    scheduledCheckEnabledByConfig = Number.isFinite(intervalHours) && intervalHours > 0;
-  } catch (error) {
-    console.warn('Failed to load channel check interval setting for logs filter', error);
-  }
-
-  group.hidden = !scheduledCheckEnabledByConfig;
-  if (!scheduledCheckEnabledByConfig) {
-    select.value = 'proxy';
-  }
-  return scheduledCheckEnabledByConfig;
-}
-
-async function loadLogsModels(channelType, range) {
-  try {
-    const params = new URLSearchParams();
-    const ct = channelType || currentChannelType || 'all';
-    const r = range || document.getElementById('f_hours')?.value || 'today';
-    params.set('range', r);
-    if (ct && ct !== 'all') params.set('channel_type', ct);
-    const resp = await fetchDataWithAuth('/admin/models?' + params.toString()) || {};
-    const rawModels = Array.isArray(resp.models) ? resp.models : [];
-    const rawChannels = Array.isArray(resp.channels) ? resp.channels : [];
-
-    window.availableLogsModels = [...new Set(rawModels)];
-    window.logsChannels = rawChannels;
-    if (logsChannelNameCombobox) logsChannelNameCombobox.refresh();
-    if (logsModelCombobox) logsModelCombobox.refresh();
-  } catch (error) {
-    console.error('加载模型列表失败:', error);
-  }
-}
-
-function initLogsChannelNameCombobox(initialValue) {
-  if (typeof window.createSearchableCombobox !== 'function') return;
-  if (!document.getElementById('f_name')) return;
-  logsChannelNameCombobox = window.createSearchableCombobox({
-    inputId: 'f_name',
-    dropdownId: 'f_name_dropdown',
-    attachMode: true,
-    initialValue: initialValue || '',
-    initialLabel: initialValue || t('stats.allChannels'),
-    getOptions: () => [
-      { value: '', label: t('stats.allChannels') },
-      ...(window.logsChannels || []).map(ch => ({ value: ch.name, label: ch.name }))
-    ],
-    onSelect: () => {
-      applyFilter();
-    }
+  // 令牌选择器切换后立即筛选
+  document.getElementById('f_auth_token').addEventListener('change', () => {
+    saveLogsFilters();
+    currentLogsPage = 1;
+    load();
   });
-}
-
-function initLogsModelCombobox(initialValue) {
-  if (typeof window.createSearchableCombobox !== 'function') return;
-  if (!document.getElementById('f_model')) return;
-  logsModelCombobox = window.createSearchableCombobox({
-    inputId: 'f_model',
-    dropdownId: 'f_model_dropdown',
-    attachMode: true,
-    initialValue: initialValue || '',
-    initialLabel: initialValue || t('trend.allModels'),
-    getOptions: () => [
-      { value: '', label: t('trend.allModels') },
-      ...(window.availableLogsModels || []).map(m => ({ value: m, label: m }))
-    ],
-    onSelect: () => {
-      applyFilter();
-    }
-  });
-}
-
-async function initFilters(restoredFilters) {
-  const range = restoredFilters.range || 'today';
-  const authToken = restoredFilters.authToken || '';
-
-  window.initSavedDateRangeFilter({
-    selectId: 'f_hours',
-    defaultValue: 'today',
-    restoredValue: range,
-    onChange: async () => {
-      window.persistFilterState({
-        key: LOGS_FILTER_KEY,
-        getValues: getLogsFilters
-      });
-      currentLogsPage = 1;
-      await loadLogsModels(currentChannelType);
-      load();
-    }
-  });
-
-  initLogsChannelNameCombobox(restoredFilters.channelName || '');
-  initLogsModelCombobox(restoredFilters.model || '');
-  applyLogsFilterValues(restoredFilters);
-  await syncLogSourceVisibility();
-
-  authTokens = await window.initAuthTokenFilter({
-    selectId: 'f_auth_token',
-    value: authToken,
-    onChange: () => {
-      window.persistFilterState({
-        key: LOGS_FILTER_KEY,
-        getValues: getLogsFilters
-      });
-      currentLogsPage = 1;
-      load();
-    }
-  });
-
-  await loadLogsModels(currentChannelType, range);
 
   // 事件监听
   document.getElementById('btn_filter').addEventListener('click', applyFilter);
-  document.getElementById('f_log_source')?.addEventListener('change', applyFilter);
 
-  window.bindFilterApplyInputs({
-    apply: applyFilter,
-    debounceInputIds: ['f_status'],
-    enterInputIds: ['f_hours', 'f_status', 'f_auth_token', 'f_channel_type', 'f_log_source']
+  // 输入框自动筛选（防抖）
+  const debouncedFilter = debounce(applyFilter, 500);
+  ['f_id', 'f_name', 'f_model', 'f_status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', debouncedFilter);
+    }
   });
-}
 
-function initLogsPageActions() {
-  if (typeof window.initDelegatedActions === 'function') {
-    window.initDelegatedActions({
-      boundKey: 'logsPageActionsBound',
-      click: {
-        'first-logs-page': () => firstLogsPage(),
-        'prev-logs-page': () => prevLogsPage(),
-        'next-logs-page': () => nextLogsPage(),
-        'last-logs-page': () => lastLogsPage(),
-        'close-test-key-modal': () => closeTestKeyModal(),
-        'run-key-test': () => runKeyTest(),
-        'toggle-response': (actionTarget) => {
-          const responseTarget = actionTarget.dataset.responseTarget;
-          if (responseTarget && typeof window.toggleResponse === 'function') {
-            window.toggleResponse(responseTarget);
-          }
-        }
-      }
-    });
+  const resultTypeInput = document.getElementById('f_result_type');
+  if (resultTypeInput) {
+    resultTypeInput.addEventListener('change', applyFilter);
   }
 
-  const jumpPageInput = document.getElementById('logs_jump_page');
-  if (jumpPageInput && !jumpPageInput.dataset.bound) {
-    jumpPageInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        jumpToPage();
-      }
-    });
-    jumpPageInput.dataset.bound = '1';
-  }
+  // 回车键筛选
+  ['f_hours', 'f_id', 'f_name', 'f_model', 'f_result_type', 'f_status', 'f_auth_token', 'f_channel_type'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') applyFilter();
+      });
+    }
+  });
 }
 
 // 性能优化：避免 toLocaleString 的开销，使用手动格式化
@@ -1044,95 +916,72 @@ function updateTestKeyIndexInfo(text) {
 
 // localStorage key for logs page filters
 const LOGS_FILTER_KEY = 'logs.filters';
-const LOGS_FILTER_FIELDS = [
-  { key: 'range', queryKeys: ['range'], defaultValue: 'today' },
-  { key: 'channelName', queryKeys: ['channel_name_like', 'channel_name'], defaultValue: '' },
-  { key: 'model', queryKeys: ['model'], defaultValue: '' },
-  { key: 'logSource', queryKeys: ['log_source'], requestKey: 'log_source', defaultValue: 'proxy' },
-  { key: 'status', queryKeys: ['status_code'], defaultValue: '' },
-  { key: 'authToken', queryKeys: ['auth_token_id'], defaultValue: '' },
-  {
-    key: 'channelType',
-    queryKeys: ['channel_type'],
-    defaultValue: 'all',
-    includeInQuery(value) {
-      return Boolean(value) && value !== 'all';
-    },
-    includeInRequest(value) {
-      return Boolean(value) && value !== 'all';
-    }
-  }
-];
 
-function getLogsFilters() {
-  const { group: logSourceGroup, select: logSourceSelect } = getLogSourceFilterElements();
-  const logSource = !logSourceSelect || (logSourceGroup && logSourceGroup.hidden)
-    ? 'proxy'
-    : (logSourceSelect.value || 'proxy').trim();
-
-  return {
-    ...window.readFilterControlValues({
-      range: { id: 'f_hours', defaultValue: 'today', trim: true },
-      status: { id: 'f_status', trim: true },
-      authToken: { id: 'f_auth_token', trim: true }
-    }),
-    model: logsModelCombobox ? logsModelCombobox.getValue() : (document.getElementById('f_model')?.value || '').trim(),
-    channelName: logsChannelNameCombobox ? logsChannelNameCombobox.getValue() : (document.getElementById('f_name')?.value || '').trim(),
-    logSource,
-    channelType: document.getElementById('f_channel_type')?.value || 'all',
-  };
+function saveLogsFilters() {
+  try {
+    const filters = {
+      channelType: document.getElementById('f_channel_type')?.value || 'all',
+      range: document.getElementById('f_hours')?.value || 'today',
+      channelId: document.getElementById('f_id')?.value || '',
+      channelName: document.getElementById('f_name')?.value || '',
+      model: document.getElementById('f_model')?.value || '',
+      resultType: document.getElementById('f_result_type')?.value || 'all',
+      status: document.getElementById('f_status')?.value || '',
+      authToken: document.getElementById('f_auth_token')?.value || ''
+    };
+    localStorage.setItem(LOGS_FILTER_KEY, JSON.stringify(filters));
+  } catch (_) { }
 }
 
-function buildLogsRequestParams() {
-  return window.FilterQuery.buildRequestParams(getLogsFilters(), LOGS_FILTER_FIELDS, {
-    baseParams: {
-      limit: logsPageSize.toString(),
-      offset: ((currentLogsPage - 1) * logsPageSize).toString()
-    }
-  });
+function loadLogsFilters() {
+  try {
+    const saved = localStorage.getItem(LOGS_FILTER_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (_) { }
+  return null;
 }
 
 // 页面初始化
-window.initPageBootstrap({
-  topbarKey: 'logs',
-  run: async () => {
-  initLogsPageActions();
+document.addEventListener('DOMContentLoaded', async function () {
+  if (window.i18n) window.i18n.translatePage();
+  if (window.initTopbar) initTopbar('logs');
 
   // 优先从 URL 读取，其次从 localStorage 恢复，默认 all
   const u = new URLSearchParams(location.search);
   const hasUrlParams = u.toString().length > 0;
-  const savedFilters = window.FilterState.load(LOGS_FILTER_KEY);
-  const restoredFilters = window.FilterState.restore({
-    search: location.search,
-    savedFilters,
-    fields: LOGS_FILTER_FIELDS
-  });
-  currentChannelType = restoredFilters.channelType || 'all';
+  const savedFilters = loadLogsFilters();
+  currentChannelType = u.get('channel_type') || (!hasUrlParams && savedFilters?.channelType) || 'all';
 
   // 并行初始化：渠道类型 + 默认测试内容同时加载（节省一次 RTT）
   await Promise.all([
-    window.initChannelTypeFilter('f_channel_type', currentChannelType, async (value) => {
+    window.initChannelTypeFilter('f_channel_type', currentChannelType, (value) => {
       currentChannelType = value;
-      window.persistFilterState({
-        key: LOGS_FILTER_KEY,
-        getValues: getLogsFilters
-      });
+      saveLogsFilters();
       currentLogsPage = 1;
-      await loadLogsModels(value);
       load();
     }),
     loadDefaultTestContent()
   ]);
 
-  await initFilters(restoredFilters);
+  await initFilters();
 
+  // ✅ 修复：如果没有 URL 参数但有保存的筛选条件，先同步 URL 再加载数据
   if (!hasUrlParams && savedFilters) {
-    window.persistFilterState({
-      values: getLogsFilters(),
-      pathname: location.pathname,
-      fields: LOGS_FILTER_FIELDS,
-      historyMethod: 'replaceState'
-    });
+    const q = new URLSearchParams();
+    if (savedFilters.range) q.set('range', savedFilters.range);
+    if (savedFilters.channelId) q.set('channel_id', savedFilters.channelId);
+    if (savedFilters.channelName) q.set('channel_name_like', savedFilters.channelName);
+    if (savedFilters.model) q.set('model_like', savedFilters.model);
+    if (savedFilters.resultType && savedFilters.resultType !== 'all') q.set('result_type', savedFilters.resultType);
+    if (savedFilters.status) q.set('status_code', savedFilters.status);
+    if (savedFilters.authToken) q.set('auth_token_id', savedFilters.authToken);
+    if (savedFilters.channelType && savedFilters.channelType !== 'all') {
+      q.set('channel_type', savedFilters.channelType);
+    }
+    // 使用 replaceState 更新 URL，不触发页面刷新
+    if (q.toString()) {
+      history.replaceState(null, '', '?' + q.toString());
+    }
   }
 
   load();
@@ -1187,32 +1036,42 @@ window.initPageBootstrap({
       }
     });
   }
-  }
 });
 
 // 处理 bfcache（后退/前进缓存）：页面从缓存恢复时重新加载筛选条件
 window.addEventListener('pageshow', async function (event) {
   if (event.persisted) {
     // 页面从 bfcache 恢复，重新同步筛选器状态
-    const savedFilters = window.FilterState.load(LOGS_FILTER_KEY);
+    const savedFilters = loadLogsFilters();
     if (savedFilters) {
-      const restoredFilters = window.FilterState.restore({
-        search: '',
-        savedFilters,
-        fields: LOGS_FILTER_FIELDS
-      });
-
       // 重新加载令牌列表并设置值
       authTokens = await window.loadAuthTokensIntoSelect('f_auth_token');
-      if (restoredFilters.authToken) {
-        document.getElementById('f_auth_token').value = restoredFilters.authToken;
+      if (savedFilters.authToken) {
+        document.getElementById('f_auth_token').value = savedFilters.authToken;
       }
-
-      document.getElementById('f_hours').value = restoredFilters.range || 'today';
-      await loadLogsModels(restoredFilters.channelType || 'all', restoredFilters.range || 'today');
-      applyLogsFilterValues(restoredFilters);
-      await syncLogSourceVisibility();
-
+      // 同步其他筛选器
+      if (savedFilters.channelType) {
+        document.getElementById('f_channel_type').value = savedFilters.channelType;
+        currentChannelType = savedFilters.channelType;
+      }
+      if (savedFilters.range) {
+        document.getElementById('f_hours').value = savedFilters.range;
+      }
+      if (savedFilters.channelId) {
+        document.getElementById('f_id').value = savedFilters.channelId;
+      }
+      if (savedFilters.channelName) {
+        document.getElementById('f_name').value = savedFilters.channelName;
+      }
+      if (savedFilters.model) {
+        document.getElementById('f_model').value = savedFilters.model;
+      }
+      if (savedFilters.resultType) {
+        document.getElementById('f_result_type').value = savedFilters.resultType;
+      }
+      if (savedFilters.status) {
+        document.getElementById('f_status').value = savedFilters.status;
+      }
       // 重新加载数据
       currentLogsPage = 1;
       load();
@@ -1423,7 +1282,7 @@ function displayKeyTestResult(result) {
       details += `
             <div style="margin-top: 12px;">
               <h4 style="margin-bottom: 8px; color: var(--neutral-700);">完整 API 响应</h4>
-              <button type="button" class="btn btn-secondary btn-sm" data-action="toggle-response" data-response-target="${responseId}" style="margin-bottom: 8px;">显示/隐藏 JSON</button>
+              <button class="btn btn-secondary btn-sm" onclick="toggleResponse('${responseId}')" style="margin-bottom: 8px;">显示/隐藏 JSON</button>
               <div id="${responseId}" style="display: none; padding: 12px; background: var(--neutral-50); border-radius: 4px; border: 1px solid var(--neutral-200); color: var(--neutral-700); white-space: pre-wrap; font-family: monospace; font-size: 0.85em; max-height: 400px; overflow-y: auto;">${escapeHtml(JSON.stringify(result.api_response, null, 2))}</div>
             </div>
           `;
@@ -1450,7 +1309,7 @@ function displayKeyTestResult(result) {
       details += `
             <div style="margin-top: 12px;">
               <h4 style="margin-bottom: 8px; color: var(--neutral-700);">原始响应</h4>
-              <button type="button" class="btn btn-secondary btn-sm" data-action="toggle-response" data-response-target="${rawId}" style="margin-bottom: 8px;">显示/隐藏</button>
+              <button class="btn btn-secondary btn-sm" onclick="toggleResponse('${rawId}')" style="margin-bottom: 8px;">显示/隐藏</button>
               <div id="${rawId}" style="display: none; padding: 12px; background: var(--neutral-50); border-radius: 4px; border: 1px solid var(--neutral-200); color: var(--error-700); white-space: pre-wrap; font-family: monospace; font-size: 0.85em; max-height: 400px; overflow-y: auto;">${escapeHtml(result.raw_response)}</div>
             </div>
           `;

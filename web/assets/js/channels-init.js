@@ -38,7 +38,8 @@ function saveChannelsFilters() {
       channelType: filters.channelType,
       status: filters.status,
       model: filters.model,
-      search: filters.search
+      search: filters.search,
+      id: filters.id
     }));
   } catch (_) {}
 }
@@ -51,45 +52,13 @@ function loadChannelsFilters() {
   return null;
 }
 
-function initChannelsPageActions() {
-  if (typeof initChannelEditorActions === 'function') {
-    initChannelEditorActions();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Translate static elements first
+  if (window.i18n && window.i18n.translatePage) {
+    window.i18n.translatePage();
   }
 
-  if (typeof window.initDelegatedActions === 'function') {
-    window.initDelegatedActions({
-      boundKey: 'channelsPageActionsBound',
-      click: {
-        'show-add-modal': () => showAddModal(),
-        'batch-enable-channels': () => batchEnableSelectedChannels(),
-        'batch-disable-channels': () => batchDisableSelectedChannels(),
-        'batch-delete-channels': () => batchDeleteSelectedChannels(),
-        'batch-refresh-channels-merge': () => batchRefreshSelectedChannelsMerge(),
-        'batch-refresh-channels-replace': () => batchRefreshSelectedChannelsReplace(),
-        'clear-selected-channels': () => clearSelectedChannels(),
-        'close-test-modal': () => closeTestModal(),
-        'run-channel-test': () => runChannelTest(),
-        'run-batch-test': () => runBatchTest(),
-        'close-sort-modal': () => closeSortModal(),
-        'save-sort-order': () => saveSortOrder(),
-        'toggle-response': (actionTarget) => {
-          const responseTarget = actionTarget.dataset.responseTarget;
-          if (responseTarget && typeof window.toggleResponse === 'function') {
-            window.toggleResponse(responseTarget);
-          }
-        }
-      },
-      change: {
-        'update-test-url': () => updateTestURL()
-      }
-    });
-  }
-}
-
-window.initPageBootstrap({
-  topbarKey: 'channels',
-  run: async () => {
-  initChannelsPageActions();
+  if (window.initTopbar) initTopbar('channels');
   setupFilterListeners();
   setupImportExport();
   setupKeyImportPreview();
@@ -115,25 +84,29 @@ window.initPageBootstrap({
     filters.status = 'all';
     filters.model = 'all';
     filters.search = '';
+    filters.id = urlChannelId;
     document.getElementById('statusFilter').value = 'all';
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    } else {
-      const modelFilterEl = document.getElementById('modelFilter');
-      if (modelFilterEl) modelFilterEl.value = modelFilterInputValueFromFilterValue('all');
+    const modelFilterEl = document.getElementById('modelFilter');
+    if (modelFilterEl) {
+      modelFilterEl.value = 'all';
     }
+    document.getElementById('searchInput').value = '';
+    document.getElementById('idFilter').value = urlChannelId;
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) clearBtn.style.opacity = '0';
     saveChannelsFilters();
   } else if (savedFilters) {
     filters.status = savedFilters.status || 'all';
     filters.model = savedFilters.model || 'all';
     filters.search = savedFilters.search || '';
+    filters.id = savedFilters.id || '';
     document.getElementById('statusFilter').value = filters.status;
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue(filters.model, modelFilterInputValueFromFilterValue(filters.model));
-    } else {
-      const modelFilterEl = document.getElementById('modelFilter');
-      if (modelFilterEl) modelFilterEl.value = modelFilterInputValueFromFilterValue(filters.model);
+    const modelFilterEl = document.getElementById('modelFilter');
+    if (modelFilterEl) {
+      modelFilterEl.value = filters.model;
     }
+    document.getElementById('searchInput').value = filters.search;
+    document.getElementById('idFilter').value = filters.id;
   }
 
   // 初始化渠道类型筛选器（替换原Tab逻辑）
@@ -141,25 +114,29 @@ window.initPageBootstrap({
     filters.channelType = type;
     filters.model = 'all';
     filters.search = '';
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    } else {
-      const modelFilterEl = document.getElementById('modelFilter');
-      if (modelFilterEl) modelFilterEl.value = modelFilterInputValueFromFilterValue('all');
+    filters.id = '';
+    // 清空搜索输入框
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.value = '';
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.style.opacity = '0';
     }
-    if (typeof channelNameCombobox !== 'undefined' && channelNameCombobox) {
-      channelNameCombobox.setValue('', getChannelNameAllLabel());
+    // 清空ID筛选框
+    const idFilterEl = document.getElementById('idFilter');
+    if (idFilterEl) idFilterEl.value = '';
+    const modelFilterEl = document.getElementById('modelFilter');
+    if (modelFilterEl) {
+      modelFilterEl.value = 'all';
     }
     saveChannelsFilters();
     loadChannels(type);
-    if (typeof updateChannelNameOptions === 'function') updateChannelNameOptions();
   });
 
   await loadDefaultTestContent();
   await loadChannelStatsRange();
 
   await loadChannels(initialType);
-  if (typeof updateChannelNameOptions === 'function') updateChannelNameOptions();
   await loadChannelStats();
   highlightFromHash();
   window.addEventListener('hashchange', highlightFromHash);
@@ -169,7 +146,6 @@ window.initPageBootstrap({
     renderChannels();
     updateModelOptions();
   });
-  }
 });
 
 document.addEventListener('keydown', (e) => {

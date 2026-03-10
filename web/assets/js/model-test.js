@@ -1,3 +1,7 @@
+// 模型测试页面
+initTopbar('model-test');
+if (window.i18n) window.i18n.translatePage();
+
 const TEST_MODE_CHANNEL = 'channel';
 const TEST_MODE_MODEL = 'model';
 
@@ -8,17 +12,12 @@ let testMode = TEST_MODE_CHANNEL;
 let isDeletingModels = false;
 let isTestingModels = false;
 
-let channelSelectCombobox = null;
-let modelSelectCombobox = null;
-
 const headRow = document.getElementById('model-test-head-row');
 const tbody = document.getElementById('model-test-tbody');
-const toolbar = document.querySelector('.model-test-toolbar');
 const channelSelectorLabel = document.getElementById('channelSelectorLabel');
 const modelSelectorLabel = document.getElementById('modelSelectorLabel');
 const typeSelect = document.getElementById('testChannelType');
 const modelSelect = document.getElementById('testModelSelect');
-const mobileNameFilterInput = document.getElementById('modelTestMobileNameFilter');
 const fetchModelsBtn = document.getElementById('fetchModelsBtn');
 const deleteModelsBtn = document.getElementById('deleteModelsBtn');
 const runTestBtn = document.getElementById('runTestBtn');
@@ -31,8 +30,8 @@ const deletePreviewCloseBtn = document.getElementById('deletePreviewCloseBtn');
 const deletePreviewCancelBtn = document.getElementById('deletePreviewCancelBtn');
 const deletePreviewConfirmBtn = document.getElementById('deletePreviewConfirmBtn');
 
-const RESULT_TABLE_COLSPAN_WITH_FIRST_BYTE = 11;
-const RESULT_TABLE_COLSPAN_NO_FIRST_BYTE = 10;
+const RESULT_TABLE_COLSPAN_WITH_FIRST_BYTE = 10;
+const RESULT_TABLE_COLSPAN_NO_FIRST_BYTE = 9;
 const SORT_DIRECTION_ASC = 1;
 const SORT_DIRECTION_DESC = -1;
 const SORT_DIRECTION_NONE = 0;
@@ -40,30 +39,28 @@ let sortState = { key: '', direction: SORT_DIRECTION_NONE };
 let nameFilterKeyword = '';
 
 const CHANNEL_MODE_HEAD = `
-  <th class="table-col-select mobile-card-select-header"><input type="checkbox" id="selectAllCheckbox" data-change-action="toggle-all-models"></th>
-  <th class="table-col-name" data-i18n="common.model" data-sort-key="name">模型</th>
-  <th class="first-byte-col table-col-duration" data-i18n="modelTest.firstByteDuration" data-sort-key="firstByteDuration">首字</th>
-  <th class="table-col-duration" data-i18n="modelTest.totalDuration" data-sort-key="duration">总耗时</th>
-  <th class="table-col-metric" data-i18n="common.input" data-sort-key="inputTokens">输入</th>
-  <th class="table-col-metric" data-i18n="common.output" data-sort-key="outputTokens">输出</th>
-  <th class="table-col-speed" data-i18n="modelTest.speed" data-sort-key="speed">速度(tok/s)</th>
-  <th class="table-col-metric" data-i18n="modelTest.cacheRead" data-sort-key="cacheRead">缓读</th>
-  <th class="table-col-metric" data-i18n="modelTest.cacheCreate" data-sort-key="cacheCreate">缓建</th>
-  <th class="table-col-cost" data-i18n="common.cost" data-sort-key="cost">费用</th>
+  <th style="width: 30px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleAllModels(this.checked)"></th>
+  <th style="width: 200px;" data-i18n="common.model" data-sort-key="name">模型</th>
+  <th class="first-byte-col" style="width: 76px;" data-i18n="modelTest.firstByteDuration" data-sort-key="firstByteDuration">首字</th>
+  <th style="width: 76px;" data-i18n="modelTest.totalDuration" data-sort-key="duration">总耗时</th>
+  <th style="width: 65px;" data-i18n="common.input" data-sort-key="inputTokens">输入</th>
+  <th style="width: 65px;" data-i18n="common.output" data-sort-key="outputTokens">输出</th>
+  <th style="width: 65px;" data-i18n="modelTest.cacheRead" data-sort-key="cacheRead">缓读</th>
+  <th style="width: 65px;" data-i18n="modelTest.cacheCreate" data-sort-key="cacheCreate">缓建</th>
+  <th style="width: 80px;" data-i18n="common.cost" data-sort-key="cost">费用</th>
   <th data-i18n="modelTest.responseContent" data-sort-key="response">响应内容</th>
 `;
 
 const MODEL_MODE_HEAD = `
-  <th class="table-col-select mobile-card-select-header"><input type="checkbox" id="selectAllCheckbox" data-change-action="toggle-all-models"></th>
-  <th class="table-col-channel" data-i18n="modelTest.channelName" data-sort-key="name">渠道</th>
-  <th class="first-byte-col table-col-duration" data-i18n="modelTest.firstByteDuration" data-sort-key="firstByteDuration">首字</th>
-  <th class="table-col-duration" data-i18n="modelTest.totalDuration" data-sort-key="duration">总耗时</th>
-  <th class="table-col-metric" data-i18n="common.input" data-sort-key="inputTokens">输入</th>
-  <th class="table-col-metric" data-i18n="common.output" data-sort-key="outputTokens">输出</th>
-  <th class="table-col-speed" data-i18n="modelTest.speed" data-sort-key="speed">速度(tok/s)</th>
-  <th class="table-col-metric" data-i18n="modelTest.cacheRead" data-sort-key="cacheRead">缓读</th>
-  <th class="table-col-metric" data-i18n="modelTest.cacheCreate" data-sort-key="cacheCreate">缓建</th>
-  <th class="table-col-cost" data-i18n="common.cost" data-sort-key="cost">费用</th>
+  <th style="width: 30px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleAllModels(this.checked)"></th>
+  <th style="width: 280px;" data-i18n="modelTest.channelName" data-sort-key="name">渠道</th>
+  <th class="first-byte-col" style="width: 76px;" data-i18n="modelTest.firstByteDuration" data-sort-key="firstByteDuration">首字</th>
+  <th style="width: 76px;" data-i18n="modelTest.totalDuration" data-sort-key="duration">总耗时</th>
+  <th style="width: 65px;" data-i18n="common.input" data-sort-key="inputTokens">输入</th>
+  <th style="width: 65px;" data-i18n="common.output" data-sort-key="outputTokens">输出</th>
+  <th style="width: 65px;" data-i18n="modelTest.cacheRead" data-sort-key="cacheRead">缓读</th>
+  <th style="width: 65px;" data-i18n="modelTest.cacheCreate" data-sort-key="cacheCreate">缓建</th>
+  <th style="width: 80px;" data-i18n="common.cost" data-sort-key="cost">费用</th>
   <th data-i18n="modelTest.responseContent" data-sort-key="response">响应内容</th>
 `;
 
@@ -79,19 +76,6 @@ function formatDurationMs(durationMs) {
   return (typeof durationMs === 'number' && Number.isFinite(durationMs) && durationMs > 0)
     ? `${(durationMs / 1000).toFixed(2)}s`
     : '-';
-}
-
-function calculateTestSpeed(data, usage) {
-  const outputTokens = Number(
-    usage?.output_tokens
-      ?? usage?.completion_tokens
-      ?? usage?.candidatesTokenCount
-  );
-  const durationSeconds = Number(data?.duration_ms) / 1000;
-  if (!Number.isFinite(outputTokens) || outputTokens <= 0 || !Number.isFinite(durationSeconds) || durationSeconds <= 0) {
-    return null;
-  }
-  return outputTokens / durationSeconds;
 }
 
 function parseNumericCellValue(text) {
@@ -143,62 +127,6 @@ function getNameFilterPlaceholder() {
   return i18nText('modelTest.filterModelPlaceholder', '搜索模型名称...');
 }
 
-function syncNameFilterInputs() {
-  const placeholder = getNameFilterPlaceholder();
-  const headerInput = document.getElementById('modelTestNameFilter');
-
-  if (headerInput) {
-    headerInput.placeholder = placeholder;
-    headerInput.value = nameFilterKeyword;
-  }
-
-  if (mobileNameFilterInput) {
-    mobileNameFilterInput.placeholder = placeholder;
-    mobileNameFilterInput.value = nameFilterKeyword;
-  }
-}
-
-function setNameFilterKeyword(value) {
-  nameFilterKeyword = String(value || '');
-  syncNameFilterInputs();
-  applyNameFilter();
-}
-
-function getResultRowMobileLabels(nameKey, nameFallback) {
-  return {
-    mobileLabelSelect: '',
-    mobileLabelName: i18nText(nameKey, nameFallback),
-    mobileLabelFirstByte: i18nText('modelTest.firstByteDuration', '首字'),
-    mobileLabelDuration: i18nText('modelTest.totalDuration', '总耗时'),
-    mobileLabelInput: i18nText('common.input', '输入'),
-    mobileLabelOutput: i18nText('common.output', '输出'),
-    mobileLabelSpeed: i18nText('modelTest.speed', '速度(tok/s)'),
-    mobileLabelCacheRead: i18nText('modelTest.cacheRead', '缓读'),
-    mobileLabelCacheCreate: i18nText('modelTest.cacheCreate', '缓建'),
-    mobileLabelCost: i18nText('common.cost', '费用'),
-    mobileLabelResponse: i18nText('modelTest.responseContent', '响应内容')
-  };
-}
-
-function initModelTestActions() {
-  if (typeof window.initDelegatedActions !== 'function') return;
-
-  window.initDelegatedActions({
-    boundKey: 'modelTestActionsBound',
-    click: {
-      'set-test-mode': (actionTarget) => setTestMode(actionTarget.dataset.mode || ''),
-      'select-all-models': () => selectAllModels(),
-      'deselect-all-models': () => deselectAllModels(),
-      'fetch-and-add-models': () => fetchAndAddModels(),
-      'delete-selected-models': () => deleteSelectedModels(),
-      'run-model-tests': () => runModelTests()
-    },
-    change: {
-      'toggle-all-models': (actionTarget) => toggleAllModels(actionTarget.checked)
-    }
-  });
-}
-
 function renderNameFilterInHeader() {
   const nameTh = headRow.querySelector('th[data-sort-key="name"]');
   if (!nameTh) return;
@@ -245,7 +173,8 @@ function renderNameFilterInHeader() {
     input.addEventListener('click', (event) => event.stopPropagation());
     input.addEventListener('keydown', (event) => event.stopPropagation());
     input.addEventListener('input', () => {
-      setNameFilterKeyword(input.value || '');
+      nameFilterKeyword = input.value || '';
+      applyNameFilter();
     });
 
     headerLine.appendChild(input);
@@ -259,7 +188,8 @@ function renderNameFilterInHeader() {
 
   input.style.flex = `0 1 ${filterWidth}`;
   input.style.width = filterWidth;
-  syncNameFilterInputs();
+  input.placeholder = getNameFilterPlaceholder();
+  input.value = nameFilterKeyword;
 }
 
 function applyNameFilter() {
@@ -291,8 +221,6 @@ function getRowSortValue(row, key) {
       return parseNumericCellValue(row.querySelector('.input-tokens')?.textContent);
     case 'outputTokens':
       return parseNumericCellValue(row.querySelector('.output-tokens')?.textContent);
-    case 'speed':
-      return parseNumericCellValue(row.querySelector('.speed')?.textContent);
     case 'cacheRead':
       return parseNumericCellValue(row.querySelector('.cache-read')?.textContent);
     case 'cacheCreate':
@@ -472,55 +400,9 @@ function getModelInputValue() {
 
 function setModelInputValue(value) {
   const nextValue = String(value || '').trim();
-  if (modelSelectCombobox) {
-    modelSelectCombobox.setValue(nextValue, nextValue);
-    return;
-  }
-
   if (modelSelect) {
     modelSelect.value = nextValue;
   }
-}
-
-function ensureModelSelectCombobox() {
-  if (modelSelectCombobox || !modelSelect) return;
-  if (typeof window.createSearchableCombobox !== 'function') return;
-
-  modelSelectCombobox = window.createSearchableCombobox({
-    attachMode: true,
-    inputId: 'testModelSelect',
-    dropdownId: 'testModelSelectDropdown',
-    initialValue: selectedModelName,
-    initialLabel: selectedModelName,
-    getOptions: () => {
-      const channelType = typeSelect.value;
-      const models = getAllModelsInType(channelType);
-      const options = models.map(name => ({ value: name, label: name }));
-
-      const typedModel = getModelInputValue();
-      const hasExactMatch = typedModel
-        ? options.some(option => String(option.value).toLowerCase() === typedModel.toLowerCase())
-        : false;
-      const hasFuzzyMatch = typedModel
-        ? options.some(option => String(option.label).toLowerCase().includes(typedModel.toLowerCase()) || String(option.value).toLowerCase().includes(typedModel.toLowerCase()))
-        : false;
-
-      if (typedModel && !hasExactMatch && !hasFuzzyMatch) {
-        options.unshift({ value: typedModel, label: typedModel });
-      }
-
-      return options;
-    },
-    onSelect: (value) => {
-      selectedModelName = String(value || '').trim();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    },
-    onCancel: () => {
-      selectedModelName = getModelInputValue() || selectedModelName;
-    }
-  });
 }
 
 function clearProgress() {
@@ -593,7 +475,7 @@ function renderChannelModeRows() {
     const row = TemplateEngine.render('tpl-model-row', {
       model: modelName,
       displayName: modelName,
-      ...getResultRowMobileLabels('common.model', '模型')
+      nameStyle: ''
     });
     if (row) fragment.appendChild(row);
   });
@@ -604,25 +486,34 @@ function renderChannelModeRows() {
 }
 
 function populateModelSelector() {
+  if (!modelSelect) return;
+
   const channelType = typeSelect.value;
   const models = getAllModelsInType(channelType);
-  const typedModel = getModelInputValue();
+  modelSelect.innerHTML = '';
 
   if (models.length === 0) {
-    selectedModelName = typedModel || '';
-    setModelInputValue(selectedModelName);
-    modelSelectCombobox?.refresh();
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = i18nText('modelTest.noModelInType', '该类型下没有可用模型');
+    modelSelect.appendChild(emptyOption);
+    selectedModelName = '';
+    modelSelect.value = '';
     return;
   }
 
-  if (typedModel && models.includes(typedModel)) {
-    selectedModelName = typedModel;
-  } else if (!selectedModelName || !models.includes(selectedModelName)) {
+  models.forEach(name => {
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    modelSelect.appendChild(option);
+  });
+
+  if (!selectedModelName || !models.includes(selectedModelName)) {
     selectedModelName = models[0];
   }
 
-  setModelInputValue(selectedModelName);
-  modelSelectCombobox?.refresh();
+  modelSelect.value = selectedModelName;
 }
 
 function renderModelModeRows() {
@@ -639,13 +530,8 @@ function renderModelModeRows() {
   }
 
   if (!selectedModelName || !models.includes(selectedModelName)) {
-    const typedModel = getModelInputValue();
-    if (typedModel) {
-      selectedModelName = typedModel;
-    } else {
-      selectedModelName = models[0];
-      setModelInputValue(selectedModelName);
-    }
+    selectedModelName = models[0];
+    setModelInputValue(selectedModelName);
   }
 
   const channels = getChannelsSupportingModel(channelType, selectedModelName);
@@ -664,8 +550,7 @@ function renderModelModeRows() {
     const row = TemplateEngine.render('tpl-channel-row-by-model', {
       channelId: String(ch.id),
       channelName,
-      model: selectedModelName,
-      ...getResultRowMobileLabels('modelTest.channel', '渠道')
+      model: selectedModelName
     });
 
     if (row) {
@@ -701,7 +586,6 @@ function updateModeUI() {
   const modeTabModel = document.getElementById('modeTabModel');
   modeTabChannel.classList.toggle('active', !isModelMode);
   modeTabModel.classList.toggle('active', isModelMode);
-  toolbar?.classList.toggle('model-test-toolbar--model-mode', isModelMode);
 
   channelSelectorLabel.style.display = isModelMode ? 'none' : 'flex';
   modelSelectorLabel.style.display = isModelMode ? 'flex' : 'none';
@@ -754,7 +638,6 @@ function resetRowStatus(row) {
   row.querySelector('.duration').textContent = '-';
   row.querySelector('.input-tokens').textContent = '-';
   row.querySelector('.output-tokens').textContent = '-';
-  row.querySelector('.speed').textContent = '-';
   row.querySelector('.cache-read').textContent = '-';
   row.querySelector('.cache-create').textContent = '-';
   row.querySelector('.cost').textContent = '-';
@@ -771,15 +654,8 @@ function applyTestResultToRow(row, data) {
     row.style.background = 'rgba(16, 185, 129, 0.1)';
     const apiResp = data.api_response || {};
     const usage = apiResp.usage || apiResp.usageMetadata || data.usage || {};
-    const inputTokens = usage.input_tokens || usage.prompt_tokens || usage.promptTokenCount || '-';
-    const outputTokens = usage.output_tokens || usage.completion_tokens || usage.candidatesTokenCount || '-';
-    const testSpeed = calculateTestSpeed(data, usage);
-    const speedDisplay = testSpeed === null
-      ? '-'
-      : testSpeed.toFixed(1);
-    row.querySelector('.input-tokens').textContent = inputTokens;
-    row.querySelector('.output-tokens').textContent = outputTokens;
-    row.querySelector('.speed').textContent = speedDisplay;
+    row.querySelector('.input-tokens').textContent = usage.input_tokens || usage.prompt_tokens || usage.promptTokenCount || '-';
+    row.querySelector('.output-tokens').textContent = usage.output_tokens || usage.completion_tokens || usage.candidatesTokenCount || '-';
     row.querySelector('.cache-read').textContent = usage.cache_read_input_tokens || usage.cached_tokens || '-';
     row.querySelector('.cache-create').textContent = usage.cache_creation_input_tokens || '-';
     row.querySelector('.cost').textContent = (typeof data.cost_usd === 'number') ? formatCost(data.cost_usd) : '-';
@@ -801,29 +677,9 @@ function applyTestResultToRow(row, data) {
   }
 
   row.style.background = 'rgba(239, 68, 68, 0.1)';
-  let errMsg = '';
-  const apiError = data.api_error;
-  if (apiError && typeof apiError === 'object') {
-    if (typeof apiError.error === 'string' && apiError.error.trim()) {
-      errMsg = apiError.error.trim();
-    } else if (apiError.error && typeof apiError.error === 'object') {
-      if (typeof apiError.error.message === 'string' && apiError.error.message.trim()) {
-        errMsg = apiError.error.message.trim();
-      } else if (typeof apiError.error.error === 'string' && apiError.error.error.trim()) {
-        errMsg = apiError.error.error.trim();
-      } else if (typeof apiError.error.type === 'string' && apiError.error.type.trim()) {
-        errMsg = apiError.error.type.trim();
-      }
-    } else if (typeof apiError.message === 'string' && apiError.message.trim()) {
-      errMsg = apiError.message.trim();
-    }
-  }
-  if (!errMsg) {
-    errMsg = data.error || i18nText('modelTest.testFailed', '测试失败');
-  }
+  const errMsg = data.error || i18nText('modelTest.testFailed', '测试失败');
   row.querySelector('.response').textContent = errMsg;
   row.querySelector('.response').title = errMsg;
-  row.querySelector('.speed').textContent = '-';
   row.querySelector('.cost').textContent = '-';
 }
 
@@ -853,7 +709,6 @@ async function runBatchTests(targets) {
       row.style.background = 'rgba(239, 68, 68, 0.1)';
       row.querySelector('.first-byte-duration').textContent = '-';
       row.querySelector('.duration').textContent = '-';
-      row.querySelector('.speed').textContent = '-';
       row.querySelector('.response').textContent = i18nText('modelTest.requestFailed', '请求失败');
       row.querySelector('.response').title = e.message;
       row.querySelector('.cost').textContent = '-';
@@ -891,6 +746,8 @@ function setRunTestButtonDisabled(disabled) {
 
   runTestBtn.disabled = disabled;
   runTestBtn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+  runTestBtn.style.pointerEvents = disabled ? 'none' : '';
+  runTestBtn.style.cursor = disabled ? 'not-allowed' : '';
   runTestBtn.classList.toggle('is-disabled', disabled);
 
   if (disabled) {
@@ -1414,22 +1271,35 @@ async function onChannelChange() {
 }
 
 function renderSearchableChannelSelect() {
-  channelSelectCombobox = createSearchableCombobox({
-    container: 'testChannelSelectContainer',
-    inputId: 'testChannelSelect',
-    dropdownId: 'testChannelSelectDropdown',
-    placeholder: i18nText('modelTest.searchChannel', '搜索渠道...'),
-    minWidth: 250,
-    getOptions: () => channelsList.map(ch => ({
-      value: String(ch.id),
-      label: `[${getChannelType(ch)}] ${ch.name}`
-    })),
-    onSelect: async (value) => {
-      const channelId = parseInt(value, 10);
-      selectedChannel = channelsList.find(c => c.id === channelId) || null;
-      await onChannelChange();
-    }
+  const container = document.getElementById('testChannelSelectContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const select = document.createElement('select');
+  select.id = 'testChannelSelect';
+  select.className = 'filter-select';
+  select.style.minWidth = '250px';
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = i18nText('modelTest.searchChannel', '搜索渠道...');
+  select.appendChild(placeholderOption);
+
+  channelsList.forEach(ch => {
+    const option = document.createElement('option');
+    option.value = String(ch.id);
+    option.textContent = `[${getChannelType(ch)}] ${ch.name}`;
+    select.appendChild(option);
   });
+
+  select.value = selectedChannel ? String(selectedChannel.id) : '';
+  select.addEventListener('change', async (event) => {
+    const channelId = parseInt(event.target.value, 10);
+    selectedChannel = channelsList.find(c => c.id === channelId) || null;
+    await onChannelChange();
+  });
+
+  container.appendChild(select);
 }
 
 async function loadChannels() {
@@ -1466,7 +1336,6 @@ async function loadDefaultTestContent() {
 }
 
 function bindEvents() {
-  ensureModelSelectCombobox();
   const streamEnabled = document.getElementById('streamEnabled');
   if (streamEnabled) {
     streamEnabled.addEventListener('change', () => {
@@ -1483,37 +1352,14 @@ function bindEvents() {
     renderModelModeRows();
   });
 
-  if (!modelSelectCombobox && modelSelect) {
+  if (modelSelect) {
     modelSelect.addEventListener('change', () => {
       selectedModelName = getModelInputValue();
       if (testMode === TEST_MODE_MODEL) {
         renderModelModeRows();
       }
     });
-
-    modelSelect.addEventListener('input', () => {
-      selectedModelName = getModelInputValue();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    });
   }
-
-  if (mobileNameFilterInput) {
-    mobileNameFilterInput.addEventListener('input', () => {
-      setNameFilterKeyword(mobileNameFilterInput.value || '');
-    });
-  }
-
-  tbody.addEventListener('click', (event) => {
-    const channelBtn = event.target.closest('.channel-link[data-channel-id]');
-    if (testMode !== TEST_MODE_MODEL || !channelBtn) return;
-
-    const channelId = parseInt(channelBtn.dataset.channelId, 10);
-    if (Number.isFinite(channelId) && channelId > 0 && typeof openLogChannelEditor === 'function') {
-      openLogChannelEditor(channelId);
-    }
-  });
 
   tbody.addEventListener('change', (event) => {
     const target = event.target;
@@ -1550,7 +1396,6 @@ window.fetchAndAddModels = fetchAndAddModels;
 window.deleteSelectedModels = deleteSelectedModels;
 
 async function bootstrap() {
-  initModelTestActions();
   bindEvents();
   await loadChannels();
   await loadDefaultTestContent();
@@ -1559,9 +1404,4 @@ async function bootstrap() {
   renderRowsByMode();
 }
 
-window.initPageBootstrap({
-  topbarKey: 'model-test',
-  run: () => {
-    bootstrap();
-  }
-});
+bootstrap();

@@ -1,47 +1,8 @@
-    .tokens-hero-card {
-      padding: var(--space-6);
-    }
-    .tokens-hero-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .tokens-page-subtitle {
-      margin: 0;
-    }
-    .tokens-create-btn {
-      padding: 8px 16px;
-    }
-    .tokens-empty-state {
-      display: none;
-      padding: 60px 20px;
-      text-align: center;
-    }
-    .tokens-empty-icon {
-      margin-bottom: 16px;
-      color: var(--primary-500);
-    }
-    .tokens-empty-title {
-      margin-bottom: 8px;
-      color: var(--neutral-900);
-      font-weight: 600;
-    }
-    .tokens-empty-desc {
-      margin-bottom: 24px;
-      color: var(--neutral-700);
-      font-size: 15px;
-    }
-    .token-custom-expiry {
-      display: none;
-    }
     .token-table {
       width: 100%;
-      background: white;
+      background: var(--glass-bg);
       border-radius: 12px;
       overflow: hidden;
-      overflow-x: auto;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .token-table table {
@@ -64,95 +25,11 @@
       border-bottom: 1px solid var(--neutral-100);
       font-size: 14px;
     }
-    .tokens-table-head-center {
-      text-align: center !important;
-    }
     .token-table tbody tr:hover {
       background: var(--neutral-50);
     }
     .token-table tbody tr:last-child td {
       border-bottom: none;
-    }
-    .tokens-hero-card {
-      padding: var(--space-6);
-    }
-    .tokens-hero-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .tokens-page-subtitle {
-      margin: 0;
-    }
-    .tokens-create-btn {
-      padding: 8px 16px;
-    }
-    .tokens-empty-state {
-      display: none;
-      padding: 60px 20px;
-      text-align: center;
-    }
-    .tokens-empty-icon {
-      margin-bottom: 16px;
-      color: var(--primary-500);
-    }
-    .tokens-empty-title {
-      margin-bottom: 8px;
-      color: var(--neutral-900);
-      font-weight: 600;
-    }
-    .tokens-empty-desc {
-      margin-bottom: 24px;
-      color: var(--neutral-700);
-      font-size: 15px;
-    }
-    .token-custom-expiry {
-      display: none;
-    }
-    .token-cost-prefix {
-      color: var(--neutral-500);
-    }
-    .token-active-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-    .token-row-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-    .tokens-col-description {
-      font-weight: 500;
-    }
-    .token-row-meta {
-      margin-top: 4px;
-      color: var(--neutral-500);
-      font-size: 12px;
-    }
-    .tokens-col-calls,
-    .tokens-col-success-rate,
-    .tokens-col-rpm,
-    .tokens-col-token-usage,
-    .tokens-col-cost,
-    .tokens-col-stream,
-    .tokens-col-non-stream {
-      text-align: center;
-    }
-    .tokens-col-last-used {
-      color: var(--neutral-600);
-    }
-    .tokens-col-actions {
-      white-space: nowrap;
-    }
-    .token-row-actions .btn,
-    .token-row-action-btn {
-      padding: 4px 12px;
-      font-size: 13px;
     }
     .token-display {
       font-family: monospace;
@@ -177,38 +54,6 @@
       background: var(--error-50);
       color: var(--error-800);
       border: 1px solid var(--error-300);
-    }
-    .token-result-warning {
-      margin-bottom: 16px;
-      padding: 16px;
-      background: var(--warning-50);
-      border: 1px solid var(--warning-200);
-      border-radius: 8px;
-    }
-    .token-result-warning-title {
-      margin-bottom: 8px;
-      color: var(--warning-700);
-      font-weight: 600;
-    }
-    .token-result-warning-desc {
-      color: var(--warning-800);
-      font-size: 14px;
-    }
-    .token-result-value-wrap {
-      position: relative;
-    }
-    .token-result-value {
-      height: 80px;
-      resize: none;
-      font-family: monospace;
-      font-size: 13px;
-    }
-    .token-result-copy-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      padding: 4px 12px;
-      font-size: 13px;
     }
     .status-badge {
       display: inline-block;
@@ -259,65 +104,6 @@
       color: var(--neutral-600);
       margin-top: 2px;
     }
-    .token-value-muted {
-      color: var(--neutral-500);
-      font-size: 13px;
-    }
-    .token-call-stats {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-    .token-call-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-    }
-    .token-call-badge--success {
-      color: var(--success-700);
-    }
-    .token-call-badge--failure {
-      color: var(--error-700);
-    }
-    .token-call-icon {
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .token-call-icon--success {
-      color: var(--success-600);
-    }
-    .token-call-icon--failure {
-      color: var(--error-600);
-    }
-    .token-rpm {
-      font-weight: 500;
-    }
-    .token-rpm--low {
-      color: var(--success-600);
-    }
-    .token-rpm--medium {
-      color: var(--warning-600);
-    }
-    .token-rpm--high {
-      color: var(--error-600);
-    }
-    .token-cost {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-    }
-    .token-cost-value {
-      color: var(--success-700);
-      font-size: 15px;
-      font-weight: 700;
-    }
     /* 响应时间颜色 */
     .response-fast {
       color: var(--success-700);
@@ -331,45 +117,6 @@
       color: var(--error-700);
       font-weight: 600;
     }
-    .token-usage-metrics {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, max-content));
-      gap: 4px;
-      justify-content: center;
-    }
-    .token-usage-item {
-      display: inline-flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      min-width: 0;
-      padding: 0;
-      border-radius: 0;
-      font-size: 12px;
-      font-weight: 600;
-      white-space: nowrap;
-      background: transparent;
-    }
-    .token-usage-label {
-      color: inherit;
-    }
-    .token-usage-value {
-      color: var(--neutral-900);
-      font-variant-numeric: tabular-nums;
-      font-feature-settings: "tnum";
-    }
-    .token-usage-item--input {
-      color: var(--primary-700);
-    }
-    .token-usage-item--output {
-      color: var(--secondary-700);
-    }
-    .token-usage-item--cache-read {
-      color: var(--success-700);
-    }
-    .token-usage-item--cache-create {
-      color: var(--warning-700);
-    }
     .modal {
       display: none;
       position: fixed;
@@ -382,224 +129,13 @@
       animation: fadeIn 0.2s;
     }
     .modal-content {
-      background-color: white;
+      background-color: var(--glass-bg);
       margin: 5% auto;
       padding: 0;
       border-radius: 12px;
       max-width: 600px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.2);
       animation: slideUp 0.3s;
-    }
-    .modal-content--sm {
-      max-width: 500px;
-    }
-    .modal-content--md {
-      max-width: 600px;
-    }
-    .token-edit-modal {
-      display: flex;
-      flex-direction: column;
-      min-height: min(680px, calc(100vh - 32px));
-    }
-    .token-edit-body {
-      padding-top: 12px;
-      padding-bottom: 12px;
-      display: flex;
-      flex: 1 1 auto;
-      flex-direction: column;
-      gap: 12px;
-      overflow: hidden;
-    }
-    .token-edit-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 14px 16px;
-      border: 1px solid var(--neutral-200);
-      border-radius: 10px;
-      background: var(--neutral-50);
-    }
-    .token-edit-section--models {
-      flex: 1 1 auto;
-      min-height: 0;
-      background: white;
-    }
-    .token-edit-section-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px 12px;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-    .token-edit-section-title {
-      margin: 0;
-      color: var(--neutral-600);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-    .token-edit-custom-expiry {
-      display: none;
-      margin-bottom: 0;
-    }
-    .token-edit-field {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .token-edit-field .form-label {
-      margin-bottom: 0;
-      flex: 0 0 60px;
-      min-width: 60px;
-      white-space: nowrap;
-    }
-    .token-edit-field .form-row-inline__content,
-    .token-edit-field .field-grow {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .token-edit-token-value {
-      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-      font-size: 13px;
-    }
-    .token-edit-token-value[readonly] {
-      background: white;
-      color: var(--neutral-700);
-    }
-    .token-edit-cost-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-    }
-    .token-edit-cost-prefix {
-      color: var(--neutral-500);
-    }
-    .token-edit-cost-used {
-      color: var(--neutral-600);
-      font-size: 13px;
-      white-space: nowrap;
-    }
-    .token-edit-active-label {
-      margin: 0;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-    .token-edit-active-row {
-      margin-bottom: 0;
-    }
-    .token-edit-models-section {
-      min-height: 0;
-    }
-    .token-edit-models-header {
-      margin-bottom: 8px;
-    }
-    .token-edit-models-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      flex-wrap: wrap;
-    }
-    .token-edit-models-meta {
-      color: var(--neutral-500);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-    .token-edit-models-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      min-width: 0;
-    }
-    .token-edit-models-btn {
-      padding: 5px 10px;
-      font-size: 12px;
-    }
-    .token-edit-models-btn--batch:disabled {
-      opacity: 0.5;
-    }
-    .token-edit-models-actions .btn {
-      white-space: nowrap;
-    }
-    .token-edit-models-table {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      border: 1px solid var(--neutral-200);
-      border-radius: 6px;
-    }
-    .allowed-models-table-head {
-      background: var(--neutral-100);
-    }
-    .allowed-model-col-select-head,
-    .allowed-model-col-name-head,
-    .allowed-model-col-actions-head {
-      padding: 8px;
-    }
-    .allowed-model-col-select-head {
-      width: 40px;
-      text-align: center;
-    }
-    .allowed-model-col-name-head {
-      text-align: left;
-    }
-    .allowed-model-col-actions-head {
-      width: 60px;
-    }
-    .allowed-models-empty-cell {
-      padding: 16px;
-      text-align: center;
-      color: var(--neutral-500);
-    }
-    .allowed-model-col-select,
-    .allowed-model-col-actions {
-      padding: 8px;
-      text-align: center;
-    }
-    .allowed-model-col-name {
-      padding: 8px;
-      font-family: monospace;
-      font-size: 13px;
-    }
-    .allowed-model-remove-btn {
-      padding: 2px 8px;
-      font-size: 12px;
-    }
-    .token-result-warning {
-      margin-bottom: 16px;
-      padding: 16px;
-      background: var(--warning-50);
-      border: 1px solid var(--warning-200);
-      border-radius: 8px;
-    }
-    .token-result-warning-title {
-      margin-bottom: 8px;
-      color: var(--warning-700);
-      font-weight: 600;
-    }
-    .token-result-warning-desc {
-      color: var(--warning-800);
-      font-size: 14px;
-    }
-    .token-result-value-wrap {
-      position: relative;
-    }
-    .token-result-value {
-      height: 80px;
-      resize: none;
-      font-family: monospace;
-      font-size: 13px;
-    }
-    .token-result-copy-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
     }
     .modal-header {
       padding: 20px 24px;
@@ -618,104 +154,8 @@
       justify-content: flex-end;
       gap: 12px;
     }
-    #selectAllContainer {
-      display: none;
-      padding: 8px 12px;
-      border: 1px solid var(--neutral-200);
-      border-bottom: none;
-      border-radius: 6px 6px 0 0;
-      background: var(--neutral-50);
-    }
-    .model-select-all-label {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    .model-select-all-checkbox {
-      margin-right: 8px;
-    }
-    #visibleModelsCount {
-      margin-left: 8px;
-      color: var(--neutral-500);
-    }
-    .model-select-summary {
-      margin-top: 8px;
-      color: var(--neutral-500);
-      font-size: 12px;
-    }
-    #availableModelsContainer.available-models-container--standalone {
-      border-radius: 6px;
-    }
-    #availableModelsContainer.available-models-container--stacked {
-      border-radius: 0 0 6px 6px;
-    }
-    .available-models-empty {
-      padding: 24px;
-      text-align: center;
-      color: var(--neutral-500);
-    }
-    .model-option-item {
-      display: flex;
-      align-items: center;
-      padding: 8px 12px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--neutral-100);
-    }
-    .model-option-checkbox {
-      margin-right: 8px;
-    }
-    .model-option-label {
-      font-family: monospace;
-      font-size: 13px;
-    }
     .model-option-item:hover {
       background: var(--neutral-50);
-    }
-    .token-model-import-body {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .model-import-group {
-      margin-bottom: 0;
-    }
-    .model-import-label {
-      margin-bottom: 8px;
-    }
-    .model-import-hint {
-      color: var(--neutral-500);
-      font-size: 13px;
-      font-weight: 400;
-    }
-    .model-import-textarea {
-      min-height: 160px;
-      resize: vertical;
-      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-      font-size: 13px;
-    }
-    .token-model-import-tip {
-      margin-bottom: 0;
-      padding: 10px 12px;
-      color: var(--neutral-700);
-      font-size: 12px;
-      background: var(--info-50);
-      border: 1px solid var(--info-200);
-      border-radius: 6px;
-    }
-    .token-model-import-code {
-      padding: 2px 4px;
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 3px;
-    }
-    .token-model-import-preview {
-      display: none;
-      padding: 10px 12px;
-      color: var(--success-700);
-      font-size: 13px;
-      background: var(--success-50);
-      border: 1px solid var(--success-200);
-      border-radius: 6px;
     }
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -725,266 +165,53 @@
       from { transform: translateY(50px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
-    .tokens-actions-col {
-      width: 260px;
+
+    :root[data-theme="dark"] .token-table,
+    :root[data-theme="dark"] .modal-content,
+    :root[data-theme="dark"] .token-display,
+    :root[data-resolved-theme="dark"] .token-table,
+    :root[data-resolved-theme="dark"] .modal-content,
+    :root[data-resolved-theme="dark"] .token-display {
+      background: var(--glass-bg) !important;
+      color: var(--text);
+      border-color: var(--glass-border);
     }
-    @media (max-width: 768px) {
-      .token-table {
-        overflow: visible;
-        background: transparent;
-        box-shadow: none;
-        border-radius: 0;
+
+    :root[data-theme="dark"] .token-table thead,
+    :root[data-theme="dark"] .token-table tbody tr:hover,
+    :root[data-resolved-theme="dark"] .token-table thead,
+    :root[data-resolved-theme="dark"] .token-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    :root[data-theme="dark"] .token-table th,
+    :root[data-theme="dark"] .token-table td,
+    :root[data-theme="dark"] .metric-value,
+    :root[data-resolved-theme="dark"] .token-table th,
+    :root[data-resolved-theme="dark"] .token-table td,
+    :root[data-resolved-theme="dark"] .metric-value {
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) .token-table,
+      :root:not([data-theme]) .modal-content,
+      :root:not([data-theme]) .token-display {
+        background: var(--glass-bg) !important;
+        color: var(--text);
+        border-color: var(--glass-border);
       }
-      .tokens-hero-bar {
-        align-items: stretch;
+
+      :root:not([data-theme]) .token-table thead,
+      :root:not([data-theme]) .token-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.06);
       }
-      .tokens-create-btn {
-        width: 100%;
-      }
-      .tokens-table .tokens-col-description,
-      .tokens-table .tokens-col-token,
-      .tokens-table .tokens-col-token-usage,
-      .tokens-table .tokens-col-last-used,
-      .tokens-table .tokens-col-actions {
-        grid-column: 1 / -1;
-      }
-      .tokens-table .tokens-col-description {
-        order: 1;
-      }
-      .tokens-table .tokens-col-token {
-        order: 2;
-      }
-      .tokens-table .tokens-col-calls {
-        order: 10;
-      }
-      .tokens-table .tokens-col-success-rate {
-        order: 11;
-      }
-      .tokens-table .tokens-col-rpm {
-        order: 12;
-      }
-      .tokens-table .tokens-col-token-usage {
-        order: 20;
-      }
-      .tokens-table .tokens-col-cost {
-        order: 21;
-      }
-      .tokens-table .tokens-col-stream {
-        order: 22;
-      }
-      .tokens-table .tokens-col-non-stream {
-        order: 23;
-      }
-      .tokens-table .tokens-col-last-used {
-        order: 24;
-      }
-      .tokens-table .tokens-col-actions {
-        order: 30;
-      }
-      .tokens-table .tokens-col-description,
-      .tokens-table .tokens-col-token {
-        display: flex !important;
-        align-items: center;
-        gap: 8px 12px;
-      }
-      .tokens-table .tokens-col-description::before,
-      .tokens-table .tokens-col-token::before {
-        width: auto !important;
-        margin-bottom: 0 !important;
-        flex: 0 0 auto;
-        white-space: nowrap;
-      }
-      .tokens-table .tokens-col-token {
-        flex-wrap: wrap;
-      }
-      .tokens-table .tokens-col-token > div:first-of-type {
-        flex: 0 0 auto;
-        min-width: 0;
-      }
-      .tokens-table .tokens-col-token > div:last-of-type {
-        flex: 0 0 100%;
-        margin-top: 0 !important;
-      }
-      .tokens-table .tokens-col-calls,
-      .tokens-table .tokens-col-success-rate,
-      .tokens-table .tokens-col-rpm,
-      .tokens-table .tokens-col-token-usage,
-      .tokens-table .tokens-col-cost,
-      .tokens-table .tokens-col-stream,
-      .tokens-table .tokens-col-non-stream,
-      .tokens-table .tokens-col-last-used {
-        display: flex !important;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-      .tokens-table .tokens-col-calls::before,
-      .tokens-table .tokens-col-success-rate::before,
-      .tokens-table .tokens-col-rpm::before,
-      .tokens-table .tokens-col-token-usage::before,
-      .tokens-table .tokens-col-cost::before,
-      .tokens-table .tokens-col-stream::before,
-      .tokens-table .tokens-col-non-stream::before,
-      .tokens-table .tokens-col-last-used::before {
-        width: auto !important;
-        margin-bottom: 0 !important;
-        flex: 0 0 auto;
-        white-space: nowrap;
-      }
-      .tokens-table .tokens-col-calls > div,
-      .tokens-table .tokens-col-cost > div {
-        align-items: flex-end !important;
-        text-align: right;
-      }
-      .tokens-table .tokens-col-token-usage > .token-usage-metrics {
-        justify-content: flex-end;
-        grid-template-columns: repeat(2, minmax(0, max-content));
-      }
-      .tokens-table .tokens-col-token-usage > .token-usage-metrics .token-usage-item {
-        justify-content: space-between;
-        flex-wrap: nowrap;
-      }
-      .tokens-table .token-row-actions {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        max-width: 100%;
-      }
-      .tokens-table .tokens-col-actions .btn {
-        margin-right: 0 !important;
-        flex: 0 0 auto;
-      }
-      .tokens-table .tokens-col-token .token-display {
-        word-break: break-all;
-      }
-      .token-row-actions {
-        justify-content: center;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        max-width: 100%;
-      }
-      .token-row-actions::-webkit-scrollbar {
-        display: none;
-      }
-      .allowed-models-table tbody .mobile-inline-row {
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 8px 12px;
-      }
-      .allowed-models-table tbody .mobile-inline-row .allowed-model-col-select,
-      .allowed-models-table tbody .mobile-inline-row .allowed-model-col-name,
-      .allowed-models-table tbody .mobile-inline-row .allowed-model-col-actions {
-        grid-column: auto;
-      }
-      .allowed-models-table tbody .mobile-inline-row td.allowed-model-col-select {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .allowed-models-table tbody .mobile-inline-row td.allowed-model-col-name {
-        grid-column: auto;
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        white-space: nowrap;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-width: none;
-      }
-      .allowed-models-table tbody .mobile-inline-row td.allowed-model-col-name::-webkit-scrollbar {
-        display: none;
-      }
-      .allowed-models-table tbody .mobile-inline-row td.allowed-model-col-actions {
-        grid-column: auto;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-      }
-      .allowed-models-table .mobile-inline-row .allowed-model-col-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding-top: 0;
-        border-top: none;
-        text-align: right !important;
-      }
-      .allowed-models-table tbody .mobile-inline-row td.allowed-model-col-name::before,
-      .allowed-models-table tbody .mobile-inline-row td.allowed-model-col-actions::before {
-        content: none;
-        display: none;
-      }
-      .modal {
-        padding: 12px;
-      }
-      .modal-content {
-        width: min(720px, calc(100vw - 24px));
-        max-width: none;
-        margin: 0 auto;
-      }
-      .token-edit-modal {
-        min-height: auto;
-      }
-      .token-edit-body {
-        gap: 12px;
-      }
-      .token-edit-field {
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-      }
-      .token-edit-field .form-label {
-        flex: 0 0 60px;
-        min-width: 60px;
-        white-space: nowrap;
-      }
-      .token-edit-field .form-row-inline__content,
-      .token-edit-field .field-grow {
-        width: auto;
-      }
-      .token-edit-field .form-label,
-      .token-edit-active-row label,
-      .token-edit-models-title {
-        margin-bottom: 0;
-      }
-      .token-edit-cost-row,
-      .token-edit-models-actions {
-        display: flex;
-        align-items: center;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      .token-edit-cost-row::-webkit-scrollbar,
-      .token-edit-models-actions::-webkit-scrollbar {
-        display: none;
-      }
-      .token-edit-cost-row .field-grow {
-        min-width: 120px;
-      }
-      .token-edit-models-header {
-        align-items: flex-start;
-      }
-      .token-edit-models-actions {
-        width: 100%;
-        gap: 8px;
-      }
-      .token-edit-models-actions .btn,
-      .token-edit-cost-row #editCostUsedDisplay {
-        flex: 0 0 auto;
-      }
-      .modal-header,
-      .modal-body,
-      .modal-footer {
-        padding-left: 16px;
-        padding-right: 16px;
-      }
-      .modal-footer {
-        flex-wrap: wrap;
-      }
-      .modal-footer .btn {
-        flex: 1 1 140px;
+
+      :root:not([data-theme]) .token-table th,
+      :root:not([data-theme]) .token-table td,
+      :root:not([data-theme]) .metric-value {
+        color: var(--text);
+        border-color: var(--line);
       }
     }

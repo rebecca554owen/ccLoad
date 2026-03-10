@@ -16,7 +16,6 @@
   <script defer src="/web/assets/js/i18n.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/template-engine.js?v=__VERSION__"></script>
-  <script defer src="/web/assets/js/date-range-selector.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/channels-state.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/channels-render.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/channels-filters.js?v=__VERSION__"></script>
@@ -34,24 +33,27 @@
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-        <header class="mt-2 mb-2">
+        <header class="mb-2">
+        </header>
+        <header class="mb-2">
           <div class="glass-card" style="padding: var(--space-6);">
-            <div class="channel-page-hero">
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
               <p class="page-subtitle" style="margin: 0;" data-i18n="channels.description">
                 配置API渠道、优先级和模型支持（<b>优先请求高优先级渠道，相同优先级按Key数量加权随机</b>）</p>
-              <div class="channel-page-actions">
-                <button id="exportCsvBtn" type="button" class="btn btn-secondary channel-page-action-btn"
-                  data-i18n-title="channels.exportCsvTitle"
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button id="exportCsvBtn" type="button" class="btn btn-secondary"
+                  style="padding: 8px 16px; font-size: 14px;" data-i18n-title="channels.exportCsvTitle"
                   title="导出渠道列表为CSV">
                   <span data-i18n="channels.exportCsv">导出 CSV</span>
                 </button>
-                <button id="importCsvBtn" type="button" class="btn btn-secondary channel-page-action-btn"
-                  data-i18n-title="channels.importCsvTitle"
+                <button id="importCsvBtn" type="button" class="btn btn-secondary"
+                  style="padding: 8px 16px; font-size: 14px;" data-i18n-title="channels.importCsvTitle"
                   title="从CSV导入渠道">
                   <span data-i18n="channels.importCsv">导入 CSV</span>
                 </button>
-                <button type="button" data-action="show-add-modal" class="btn btn-primary channel-page-action-btn"
-                  data-i18n-title="channels.addChannelTitle" title="添加新渠道">
+                <button onclick="showAddModal()" type="button" class="btn btn-primary"
+                  style="padding: 8px 16px; font-size: 14px;" data-i18n-title="channels.addChannelTitle" title="添加新渠道">
                   <span data-i18n="channels.addChannel">+ 添加渠道</span>
                 </button>
                 <input type="file" id="importCsvInput" accept=".csv" style="display: none;" />
@@ -62,18 +64,24 @@
 
         <!-- Filter Bar -->
         <div class="filter-bar">
-          <div class="filter-controls channels-filter-controls">
+          <div class="filter-controls">
             <!-- 渠道类型筛选 -->
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterChannelType">渠道类型</label>
-              <select id="channelTypeFilter" class="filter-select filter-control--compact">
+              <select id="channelTypeFilter" class="filter-select" style="min-width: 120px;">
                 <!-- 动态加载渠道类型选项 -->
               </select>
             </div>
 
+            <div class="">
+              <label class="filter-label" data-i18n="channels.filterChannelId">渠道ID</label>
+              <input type="text" id="idFilter" class="filter-input" data-i18n-placeholder="channels.filterIdPlaceholder"
+                placeholder="输入ID..." style="max-width: 100px;">
+            </div>
+
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterStatus">状态</label>
-              <select id="statusFilter" class="filter-select filter-control--compact">
+              <select id="statusFilter" class="filter-select" style="min-width: 100px;">
                 <option value="all" data-i18n="channels.statusAll">所有状态</option>
                 <option value="enabled" data-i18n="channels.statusEnabled">已启用</option>
                 <option value="disabled" data-i18n="channels.statusDisabled">已禁用</option>
@@ -83,31 +91,34 @@
 
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterModel">模型</label>
-              <div class="filter-combobox-wrapper filter-control--compact">
-                <input id="modelFilter" class="filter-select filter-combobox" type="text" autocomplete="off"
-                  spellcheck="false" />
-                <div id="modelFilterDropdown" class="filter-dropdown" role="listbox" aria-label="模型"></div>
-              </div>
+              <select id="modelFilter" class="filter-select" style="min-width: 160px;"></select>
             </div>
             <div class="filter-group">
-              <label class="filter-label" data-i18n="channels.filterSearch">渠道名称</label>
-              <div class="filter-combobox-wrapper filter-control--compact">
-                <input id="searchInput" class="filter-select filter-combobox" type="text" autocomplete="off"
-                  spellcheck="false" />
-                <div id="searchInputDropdown" class="filter-dropdown" role="listbox" aria-label="渠道名称"></div>
+              <label class="filter-label" data-i18n="channels.filterSearch">搜索渠道</label>
+              <div style="position: relative; flex: 1; min-width: 140px;">
+                <input type="text" id="searchInput" class="filter-input"
+                  data-i18n-placeholder="channels.searchPlaceholder" placeholder="输入渠道名称..."
+                  style="padding-right: 36px;">
+                <button id="clearSearchBtn" type="button"
+                  style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--neutral-500); cursor: pointer; padding: 2px; opacity: 0; transition: opacity 0.2s; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center;"
+                  data-i18n-title="common.clearSearch" title="清空搜索"
+                  onmouseover="this.style.background='var(--neutral-100)'" onmouseout="this.style.background='none'">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true" focusable="false">
+                    <path d="M4 4L10 10M10 4L4 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                  </svg>
+                </button>
               </div>
             </div>
-            <div class="channel-filter-summary">
-              <div class="filter-info" id="filterInfo"><span id="filteredCount">0</span> / <span id="totalCount">0</span>
-                <span data-i18n="channels.channelCount">个渠道</span>
-              </div>
+            <div class="filter-info" id="filterInfo"><span id="filteredCount">0</span> / <span id="totalCount">0</span>
+              <span data-i18n="channels.channelCount">个渠道</span>
+            </div>
 
-              <div class="channel-toolbar-actions">
-                <button id="btn_sort" type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;"
-                  data-i18n="channels.sortBtn">排序</button>
-                <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;"
-                  data-i18n="channels.filterBtn">筛选</button>
-              </div>
+            <div class="channel-toolbar-actions">
+              <button id="btn_sort" type="button" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;"
+                data-i18n="channels.sortBtn">排序</button>
+              <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;"
+                data-i18n="channels.filterBtn">筛选</button>
             </div>
           </div>
         </div>
@@ -118,91 +129,71 @@
 
         <div id="batchFloatingMenu" class="channel-batch-float" aria-hidden="true">
           <div class="channel-batch-float__content">
-            <div class="channel-batch-float__header">
-              <div class="channel-batch-selection">
-                <span id="selectedChannelsCountBadge" class="channel-batch-count-badge">0</span>
-                <div class="channel-batch-selection-meta">
-                  <span id="selectedChannelsSummary" class="channel-batch-summary">渠道已选择</span>
-                </div>
+            <div class="channel-batch-selection">
+              <span id="selectedChannelsCountBadge" class="channel-batch-count-badge">0</span>
+              <div class="channel-batch-selection-meta">
+                <span id="selectedChannelsSummary" class="channel-batch-summary">渠道已选择</span>
               </div>
-              <span class="channel-batch-divider" aria-hidden="true"></span>
             </div>
-            <div class="channel-batch-actions">
-              <button id="batchEnableChannelsBtn" type="button"
-                class="btn btn-sm channel-batch-action channel-batch-action--enable"
-                data-action="batch-enable-channels" disabled>
-                <span class="channel-batch-action__icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4.5 10.3L8.15 13.95L15.35 6.75" stroke="currentColor" stroke-width="2.2"
-                      stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span data-i18n="channels.batchEnableChannels">批量启用</span>
-              </button>
-              <button id="batchDisableChannelsBtn" type="button"
-                class="btn btn-sm channel-batch-action channel-batch-action--disable"
-                data-action="batch-disable-channels" disabled>
-                <span class="channel-batch-action__icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8" />
-                    <path d="M5.5 5.5L14.5 14.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <span data-i18n="channels.batchDisableChannels">批量禁用</span>
-              </button>
-              <button id="batchDeleteChannelsBtn" type="button"
-                class="btn btn-sm channel-batch-action channel-batch-action--delete"
-                data-action="batch-delete-channels" disabled>
-                <span class="channel-batch-action__icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6.2 6.2H13.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    <path d="M7.3 6.2V4.9C7.3 4.4 7.7 4 8.2 4H11.8C12.3 4 12.7 4.4 12.7 4.9V6.2" stroke="currentColor"
-                      stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M7.1 8.1V13.2C7.1 13.9 7.6 14.4 8.3 14.4H11.7C12.4 14.4 12.9 13.9 12.9 13.2V8.1"
-                      stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M8.9 8.9V12.6M11.1 8.9V12.6" stroke="currentColor" stroke-width="1.8"
-                      stroke-linecap="round" />
-                  </svg>
-                </span>
-                <span data-i18n="channels.batchDeleteChannels">批量删除</span>
-              </button>
-              <button id="batchRefreshMergeBtn" type="button"
-                class="btn btn-sm channel-batch-action channel-batch-action--refresh"
-                data-action="batch-refresh-channels-merge" disabled>
-                <span class="channel-batch-action__icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15.9 7.5A6.6 6.6 0 0 0 4.2 7.1" stroke="currentColor" stroke-width="1.8"
-                      stroke-linecap="round" />
-                    <path d="M15.8 4.3V7.7H12.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                    <path d="M4.1 12.5A6.6 6.6 0 0 0 15.8 12.9" stroke="currentColor" stroke-width="1.8"
-                      stroke-linecap="round" />
-                    <path d="M4.2 15.7V12.3H7.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span data-i18n="channels.batchRefreshMerge">模型增量刷新</span>
-              </button>
-              <button id="batchRefreshReplaceBtn" type="button"
-                class="btn btn-sm channel-batch-action channel-batch-action--refresh"
-                data-action="batch-refresh-channels-replace" disabled>
-                <span class="channel-batch-action__icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15.9 7.5A6.6 6.6 0 0 0 4.2 7.1" stroke="currentColor" stroke-width="1.8"
-                      stroke-linecap="round" />
-                    <path d="M15.8 4.3V7.7H12.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                    <path d="M4.1 12.5A6.6 6.6 0 0 0 15.8 12.9" stroke="currentColor" stroke-width="1.8"
-                      stroke-linecap="round" />
-                    <path d="M4.2 15.7V12.3H7.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span data-i18n="channels.batchRefreshReplace">模型覆盖刷新</span>
-              </button>
-            </div>
+            <span class="channel-batch-divider" aria-hidden="true"></span>
+            <button id="batchEnableChannelsBtn" type="button"
+              class="btn btn-sm channel-batch-action channel-batch-action--enable"
+              onclick="batchEnableSelectedChannels()" disabled>
+              <span class="channel-batch-action__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4.5 10.3L8.15 13.95L15.35 6.75" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span data-i18n="channels.batchEnableChannels">批量启用</span>
+            </button>
+            <button id="batchDisableChannelsBtn" type="button"
+              class="btn btn-sm channel-batch-action channel-batch-action--disable"
+              onclick="batchDisableSelectedChannels()" disabled>
+              <span class="channel-batch-action__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M5.5 5.5L14.5 14.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span data-i18n="channels.batchDisableChannels">批量禁用</span>
+            </button>
+            <button id="batchRefreshMergeBtn" type="button"
+              class="btn btn-sm channel-batch-action channel-batch-action--refresh"
+              onclick="batchRefreshSelectedChannelsMerge()" disabled>
+              <span class="channel-batch-action__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15.9 7.5A6.6 6.6 0 0 0 4.2 7.1" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" />
+                  <path d="M15.8 4.3V7.7H12.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="M4.1 12.5A6.6 6.6 0 0 0 15.8 12.9" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" />
+                  <path d="M4.2 15.7V12.3H7.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span data-i18n="channels.batchRefreshMerge">模型增量刷新</span>
+            </button>
+            <button id="batchRefreshReplaceBtn" type="button"
+              class="btn btn-sm channel-batch-action channel-batch-action--refresh"
+              onclick="batchRefreshSelectedChannelsReplace()" disabled>
+              <span class="channel-batch-action__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15.9 7.5A6.6 6.6 0 0 0 4.2 7.1" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" />
+                  <path d="M15.8 4.3V7.7H12.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="M4.1 12.5A6.6 6.6 0 0 0 15.8 12.9" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" />
+                  <path d="M4.2 15.7V12.3H7.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span data-i18n="channels.batchRefreshReplace">模型覆盖刷新</span>
+            </button>
             <button id="batchFloatingMenuCloseBtn" type="button" class="channel-batch-close"
-              data-action="clear-selected-channels" data-i18n-title="common.close" title="关闭" disabled>
+              onclick="clearSelectedChannels()" data-i18n-title="common.close" title="关闭" disabled>
               <svg width="26" height="26" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true" focusable="false">
                 <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
@@ -216,40 +207,44 @@
 
   <!-- 添加/编辑渠道模态框 -->
   <div id="channelModal" class="modal">
-    <div class="modal-content channel-editor-modal">
+    <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title" id="modalTitle" data-i18n="channels.modalAddTitle">添加渠道</h2>
-        <button type="button" class="close-btn" data-action="close-channel-modal">&times;</button>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
       </div>
-      <form id="channelForm" class="channel-editor-form">
-        <div class="form-group channel-editor-group">
-          <div class="channel-editor-primary-row">
-            <div class="channel-editor-primary-field channel-editor-primary-field--name">
-              <label class="form-label channel-editor-inline-label" data-i18n="channels.channelName">渠道名称
+      <form id="channelForm" onsubmit="saveChannel(event)">
+        <div class="form-group">
+          <!-- 渠道名称和类型在第一行 -->
+          <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+              <label class="form-label" style="margin: 0; white-space: nowrap;" data-i18n="channels.channelName">渠道名称
                 *</label>
-              <input type="text" id="channelName" class="form-input channel-editor-input" required>
+              <input type="text" id="channelName" class="form-input" required style="flex: 1;">
             </div>
 
-            <div class="channel-editor-primary-field channel-editor-primary-field--type">
-              <label class="channel-editor-inline-label channel-editor-inline-label--muted"
+            <div style="display: flex; align-items: center; gap: 8px; flex: 0 0 550px;">
+              <label style="margin: 0; font-size: 13px; white-space: nowrap; color: var(--neutral-700);"
                 data-i18n="channels.channelType">渠道类型</label>
-              <div class="channel-editor-radio-group" id="channelTypeRadios">
+              <div style="display: flex; gap: 6px;" id="channelTypeRadios">
                 <!-- 动态加载渠道类型 -->
               </div>
             </div>
           </div>
         </div>
 
-        <div class="form-group channel-editor-group">
+        <div class="form-group">
           <!-- API URL和Key策略在第二行 -->
           <div>
-            <div class="channel-editor-section-header channel-editor-section-header--inline">
-              <label class="form-label channel-editor-section-title">
-                <span data-i18n="channels.apiUrl">API URL *</span> <span class="models-hint channel-editor-section-meta"><span data-i18n="channels.keyCountPrefix">共</span> <span
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap;">
+              <label class="form-label" style="margin: 0; font-size: 13px; color: var(--neutral-700);">
+                <span data-i18n="channels.apiUrl">API URL *</span> <span class="models-hint"
+                  style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
                     id="inlineUrlCount">0</span> <span data-i18n="channels.urlCountSuffix">个URL</span></span>
               </label>
-              <div class="channel-editor-section-actions">
-                <button type="button" class="btn btn-secondary btn-sm channel-editor-action-btn" data-action="add-inline-url"
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addInlineURL()"
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
                   data-i18n-title="channels.addUrlTitle" title="添加URL">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 3.5V12.5M3.5 8H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -257,9 +252,9 @@
                   </svg>
                   <span data-i18n="channels.addUrl">添加URL</span>
                 </button>
-                <button type="button" id="batchDeleteUrlsBtn" data-action="batch-delete-urls" disabled
+                <button type="button" id="batchDeleteUrlsBtn" onclick="batchDeleteSelectedURLs()" disabled
                   data-i18n-title="channels.batchDeleteUrlsTitle" title="批量删除选中的URL" class="btn btn-secondary btn-sm"
-                  style="opacity: 0.5;">
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
                   <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -273,13 +268,13 @@
             <!-- 隐藏字段：与后端保持兼容，提交时按换行拼接 -->
             <input type="hidden" id="channelUrl" required>
 
-            <div class="inline-table-container mobile-inline-table-container">
-              <table class="inline-table mobile-inline-table inline-url-table">
+            <div class="inline-table-container">
+              <table class="inline-table">
                 <thead>
                   <tr>
                     <th class="inline-url-col-select">
                       <div style="display: flex; align-items: center; gap: 6px;">
-                        <input type="checkbox" id="selectAllURLs" data-change-action="toggle-select-all-urls"
+                        <input type="checkbox" id="selectAllURLs" onchange="toggleSelectAllURLs(this.checked)"
                           style="width: 16px; height: 16px;" data-i18n-title="common.selectAll" title="全选/取消全选">
                         <span>#</span>
                       </div>
@@ -301,69 +296,73 @@
           </div>
         </div>
 
-        <div class="form-group channel-editor-group">
+        <div class="form-group">
           <!-- API Key标签行：包含标签、Key计数和操作按钮 -->
-          <div class="channel-editor-section-header">
-            <div class="form-label channel-editor-section-title channel-editor-section-title--key">
-                <span data-i18n="channels.apiKey">API Key *</span> <span class="models-hint channel-editor-section-meta"><span data-i18n="channels.keyCountPrefix">共</span> <span
-                    id="inlineKeyCount">0</span> <span data-i18n="channels.keyCountSuffix">个Key</span> <span
-                    id="virtualScrollHint" style="display: none; color: var(--primary-600); font-weight: 600;"
-                    data-i18n="channels.virtualScrollEnabled">· 虚拟滚动已启用</span></span>
-              <div class="channel-editor-inline-strategy">
-                <label class="channel-editor-inline-label channel-editor-inline-label--muted"
-                  data-i18n="channels.keyStrategy">Key 策略</label>
-                <div class="channel-editor-radio-group channel-editor-radio-group--strategy" id="keyStrategyRadios">
-                  <label class="channel-editor-radio-option">
-                    <input type="radio" name="keyStrategy" value="sequential" checked>
-                    <span data-i18n="channels.keyStrategySequential">顺序</span>
-                  </label>
-                  <label class="channel-editor-radio-option">
-                    <input type="radio" name="keyStrategy" value="round_robin">
-                    <span data-i18n="channels.keyStrategyRoundRobin">轮询</span>
-                  </label>
-                </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label class="form-label" style="margin: 0;">
+              <span data-i18n="channels.apiKey">API Key *</span> <span class="models-hint"
+                style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
+                  id="inlineKeyCount">0</span> <span data-i18n="channels.keyCountSuffix">个Key</span> <span
+                  id="virtualScrollHint" style="display: none; color: var(--primary-600); font-weight: 600;"
+                  data-i18n="channels.virtualScrollEnabled">· 虚拟滚动已启用</span></span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <label style="margin: 0; font-size: 13px; white-space: nowrap; color: var(--neutral-700);"
+                data-i18n="channels.keyStrategy">Key 策略</label>
+              <div style="display: flex; gap: 6px; margin-right: 8px;" id="keyStrategyRadios">
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 13px;">
+                  <input type="radio" name="keyStrategy" value="sequential" checked>
+                  <span data-i18n="channels.keyStrategySequential">顺序</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 13px;">
+                  <input type="radio" name="keyStrategy" value="round_robin">
+                  <span data-i18n="channels.keyStrategyRoundRobin">轮询</span>
+                </label>
               </div>
-            </div>
-            <div class="channel-editor-section-actions channel-editor-section-actions--keys">
-              <button type="button" class="btn btn-secondary btn-sm channel-editor-action-btn" data-action="open-key-import-modal">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 3.5V12M8 12L5 9M8 12L11 9" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M2 13.5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-                <span data-i18n="channels.importKeys">导入</span>
-              </button>
-              <button type="button" id="exportKeysBtn" class="btn btn-secondary btn-sm" data-action="open-key-export-modal"
-                disabled
-                style="opacity: 0.5;">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 12.5V4M8 4L5 7M8 4L11 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                  <path d="M2 2.5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-                <span data-i18n="channels.exportKeys">导出</span>
-              </button>
-              <button type="button" id="toggleInlineKeyBtn" class="channel-hover-key-toggle-btn" data-action="toggle-inline-key-visibility"
-                style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--neutral-300); background: white; color: var(--neutral-500); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                data-i18n-title="channels.toggleKeyVisibility" title="显示/隐藏API Key">
-                <svg id="inlineEyeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
-                  xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M1.5 8C1.5 8 3.5 3.5 8 3.5C12.5 3.5 14.5 8 14.5 8C14.5 8 12.5 12.5 8 12.5C3.5 12.5 1.5 8 1.5 8Z"
-                    stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-                <svg id="inlineEyeOffIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
-                  xmlns="http://www.w3.org/2000/svg" style="display: none;">
-                  <path
-                    d="M2 2L14 14M6.5 6.5C6.96785 6.03214 7.60786 5.75 8.3 5.75C9.73071 5.75 10.9 6.91929 10.9 8.35C10.9 9.04214 10.6179 9.68215 10.15 10.15M4.5 4.5C2.73 5.67 1.5 8 1.5 8C1.5 8 3.5 12.5 8 12.5C9.35 12.5 10.58 11.97 11.55 11.5M12.85 11.85C13.97 10.73 14.5 8 14.5 8C14.5 8 12.5 3.5 8 3.5C7.23 3.5 6.5 3.73 5.85 4.05"
-                    stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-              <button type="button" id="batchDeleteKeysBtn" data-action="batch-delete-keys" disabled
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openKeyImportModal()"
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 3.5V12M8 12L5 9M8 12L11 9" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M2 13.5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                  <span data-i18n="channels.importKeys">导入</span>
+                </button>
+                <button type="button" id="exportKeysBtn" class="btn btn-secondary btn-sm" onclick="openKeyExportModal()"
+                  disabled
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12.5V4M8 4L5 7M8 4L11 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                    <path d="M2 2.5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                  <span data-i18n="channels.exportKeys">导出</span>
+                </button>
+                <button type="button" id="toggleInlineKeyBtn" onclick="toggleInlineKeyVisibility()"
+                  style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                  data-i18n-title="channels.toggleKeyVisibility" title="显示/隐藏API Key"
+                  onmouseover="this.style.background='rgba(255,255,255,0.18)'; this.style.borderColor='var(--glass-border)';"
+                  onmouseout="this.style.background='var(--surface-soft)'; this.style.borderColor='var(--line)';">
+                  <svg id="inlineEyeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M1.5 8C1.5 8 3.5 3.5 8 3.5C12.5 3.5 14.5 8 14.5 8C14.5 8 12.5 12.5 8 12.5C3.5 12.5 1.5 8 1.5 8Z"
+                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <svg id="inlineEyeOffIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
+                    xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                    <path
+                      d="M2 2L14 14M6.5 6.5C6.96785 6.03214 7.60786 5.75 8.3 5.75C9.73071 5.75 10.9 6.91929 10.9 8.35C10.9 9.04214 10.6179 9.68215 10.15 10.15M4.5 4.5C2.73 5.67 1.5 8 1.5 8C1.5 8 3.5 12.5 8 12.5C9.35 12.5 10.58 11.97 11.55 11.5M12.85 11.85C13.97 10.73 14.5 8 14.5 8C14.5 8 12.5 3.5 8 3.5C7.23 3.5 6.5 3.73 5.85 4.05"
+                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+              <button type="button" id="batchDeleteKeysBtn" onclick="batchDeleteSelectedKeys()" disabled
                 data-i18n-title="channels.batchDeleteKeysTitle" title="批量删除选中的Keys" class="btn btn-secondary btn-sm"
-                style="opacity: 0.5;">
+                style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -378,21 +377,21 @@
           <input type="hidden" id="channelApiKey" required>
 
           <!-- Key表格容器（最多显示5行+滚动） -->
-          <div class="inline-table-container mobile-inline-table-container">
-            <table class="inline-table mobile-inline-table inline-key-table">
+          <div class="inline-table-container">
+            <table class="inline-table">
               <thead>
                 <tr>
                   <th style="width: 70px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                      <input type="checkbox" id="selectAllKeys" data-change-action="toggle-select-all-keys"
+                      <input type="checkbox" id="selectAllKeys" onchange="toggleSelectAllKeys(this.checked)"
                         style="width: 16px; height: 16px;" data-i18n-title="common.selectAll" title="全选/取消全选">
                       <span>#</span>
                     </div>
                   </th>
                   <th data-i18n="channels.tableApiKey">API Key</th>
                   <th style="width: 200px;">
-                    <select id="keyStatusFilter" class="modal-inline-select" data-change-action="filter-keys-by-status"
-                      style="width: 100%; padding: 4px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; background: white;">
+                    <select id="keyStatusFilter" onchange="filterKeysByStatus(this.value)"
+                      style="width: 100%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface-soft); color: var(--text);">
                       <option value="all" data-i18n="channels.keyStatusAll">全部</option>
                       <option value="normal" data-i18n="channels.keyStatusNormal">正常</option>
                       <option value="cooldown" data-i18n="channels.keyStatusCooldown">冷却中</option>
@@ -407,16 +406,18 @@
             </table>
           </div>
         </div>
-        <div class="form-group channel-editor-group">
+        <div class="form-group">
           <!-- 模型配置标签行：包含标签、添加按钮组和删除按钮 -->
-          <div class="channel-editor-section-header">
-            <label class="form-label channel-editor-section-title">
-              <span data-i18n="channels.modelConfig">模型配置 *</span> <span class="models-hint channel-editor-section-meta"><span data-i18n="channels.keyCountPrefix">共</span> <span
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label class="form-label" style="margin: 0;">
+              <span data-i18n="channels.modelConfig">模型配置 *</span> <span class="models-hint"
+                style="margin-left: 8px; margin-top: 0;"><span data-i18n="channels.keyCountPrefix">共</span> <span
                   id="redirectCount">0</span> <span data-i18n="channels.modelCountSuffix">个模型</span></span>
             </label>
-            <div class="channel-editor-section-actions channel-editor-section-actions--models">
-              <div class="channel-editor-action-row">
-                <button type="button" class="btn btn-secondary btn-sm" data-action="add-common-models"
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addCommonModels()"
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
                   data-i18n-title="channels.addCommonModelsTitle" title="添加当前渠道类型的常用模型">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 1L10 5.5L15 6L11.5 9.5L12.5 14.5L8 12L3.5 14.5L4.5 9.5L1 6L6 5.5L8 1Z"
@@ -424,7 +425,8 @@
                   </svg>
                   <span data-i18n="channels.commonModels">常用模型</span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" data-action="fetch-models-from-api"
+                <button type="button" class="btn btn-secondary btn-sm" onclick="fetchModelsFromAPI()"
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
                   data-i18n-title="channels.fetchModelsTitle" title="从渠道API获取可用模型列表">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -433,7 +435,8 @@
                   </svg>
                   <span data-i18n="channels.fetchModels">获取模型</span>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" data-action="add-redirect-row"
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addRedirectRow()"
+                  style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
                   data-i18n-title="channels.addModelManualTitle" title="手动添加模型">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 3.5V12.5M3.5 8H12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -442,10 +445,10 @@
                   <span data-i18n="channels.addModel">添加模型</span>
                 </button>
               </div>
-              <button type="button" id="batchLowercaseModelsBtn" data-action="batch-lowercase-models" disabled
+              <button type="button" id="batchLowercaseModelsBtn" onclick="batchLowercaseSelectedModels()" disabled
                 data-i18n-title="channels.batchLowercaseModelsTitle" title="批量转换选中模型为小写"
                 class="btn btn-secondary btn-sm"
-                style="opacity: 0.5;">
+                style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M1.5 10.5L3.5 4H5L7 10.5M2.5 8.5H6M8.5 10.5V7.5C8.5 6.5 9.5 6 10.5 6C11.5 6 12.5 6.5 12.5 7.5V10.5M8.5 8.5H12.5"
@@ -453,9 +456,9 @@
                 </svg>
                 <span data-i18n="channels.lowercaseSelected">转小写</span>
               </button>
-              <button type="button" id="batchDeleteModelsBtn" data-action="batch-delete-models" disabled
+              <button type="button" id="batchDeleteModelsBtn" onclick="batchDeleteSelectedModels()" disabled
                 data-i18n-title="channels.batchDeleteModelsTitle" title="批量删除选中的模型" class="btn btn-secondary btn-sm"
-                style="opacity: 0.5;">
+                style="padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.5;">
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -467,13 +470,13 @@
           </div>
 
           <!-- 模型表格容器 -->
-          <div class="inline-table-container mobile-inline-table-container tall">
-            <table class="inline-table mobile-inline-table redirect-model-table">
+          <div class="inline-table-container tall">
+            <table class="inline-table">
               <thead>
                 <tr>
                   <th style="width: 70px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                      <input type="checkbox" id="selectAllModels" data-change-action="toggle-select-all-models"
+                      <input type="checkbox" id="selectAllModels" onchange="toggleSelectAllModels(this.checked)"
                         style="width: 16px; height: 16px;" data-i18n-title="common.selectAll" title="全选/取消全选">
                       <span>#</span>
                     </div>
@@ -481,9 +484,14 @@
                   <th style="width: 42%;">
                     <input type="text" id="modelFilterInput" class="table-filter-input"
                       data-i18n-placeholder="channels.searchModelPlaceholder" placeholder="搜索模型名称..."
-                      data-input-action="filter-models-by-keyword">
+                      oninput="filterModelsByKeyword(this.value)">
                   </th>
-                  <th style="width: 42%;" data-i18n="channels.redirectTarget">重定向目标（可选）</th>
+                  <th style="width: 42%;">
+                    <div class="redirect-targets-header">
+                      <span data-i18n="channels.redirectTarget">重定向目标（可选）</span>
+                      <span class="redirect-targets-header-hint" data-i18n="channels.multiTargetInputHint">一行一个目标，支持 `目标 * 权重`</span>
+                    </div>
+                  </th>
                   <th style="width: 60px;"></th>
                 </tr>
               </thead>
@@ -493,44 +501,27 @@
             </table>
           </div>
         </div>
-        <div class="form-group channel-editor-group">
-          <div class="channel-editor-footer">
-            <label class="form-label channel-editor-checkbox-label">
+        <div class="form-group">
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <label class="form-label" style="margin: 0;">
               <input type="checkbox" id="channelEnabled" checked> <span data-i18n="channels.enableChannel">启用渠道</span>
             </label>
-            <label id="channelScheduledCheckEnabledWrapper" class="form-label channel-editor-checkbox-label" hidden>
-              <input type="checkbox" id="channelScheduledCheckEnabled"> <span data-i18n="channels.enableScheduledCheck">启用定时检测</span>
-            </label>
-            <div class="channel-editor-footer-fields">
-              <div id="channelScheduledCheckModelWrapper" class="channel-editor-inline-field channel-editor-inline-field--scheduled-model" hidden>
-                <label class="form-label channel-editor-inline-label" for="channelScheduledCheckModelInput"
-                  data-i18n="channels.scheduledCheckModel">检测模型</label>
-                <div class="filter-combobox-wrapper channel-editor-scheduled-model-control">
-                  <input id="channelScheduledCheckModelInput" class="filter-select filter-combobox" type="text"
-                    autocomplete="off" spellcheck="false">
-                  <div id="channelScheduledCheckModelDropdown" class="filter-dropdown" role="listbox"></div>
-                  <input type="hidden" id="channelScheduledCheckModel" value="">
-                </div>
-              </div>
-              <div class="channel-editor-inline-field">
-                <label class="form-label channel-editor-inline-label" for="channelPriority"
-                  data-i18n="channels.priority">优先级</label>
-                <input type="number" id="channelPriority" class="form-input" value="0" min="-99999" max="99999"
-                  style="width: 100px; min-width: 100px;">
-              </div>
-              <div class="channel-editor-inline-field channel-editor-inline-field--currency">
-                <label class="form-label channel-editor-inline-label" for="channelDailyCostLimit"
-                  data-i18n="channels.dailyCostLimit">每日限额</label>
-                <div class="channel-editor-inline-field-input">
-                  <input type="number" id="channelDailyCostLimit" class="form-input" value="0" min="0" step="0.01"
-                    style="width: 100px; min-width: 100px;" data-i18n-placeholder="channels.dailyCostLimitPlaceholder"
-                    placeholder="0=无限制">
-                  <span style="color: var(--neutral-500); font-size: 12px;">$</span>
-                </div>
-              </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label class="form-label" for="channelPriority" style="margin: 0; white-space: nowrap;"
+                data-i18n="channels.priority">优先级</label>
+              <input type="number" id="channelPriority" class="form-input" value="0" min="-99999" max="99999"
+                style="width: 100px; min-width: 100px;">
             </div>
-            <div class="channel-editor-footer-actions">
-              <button type="button" class="btn btn-secondary" data-action="close-channel-modal"
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label class="form-label" for="channelDailyCostLimit" style="margin: 0; white-space: nowrap;"
+                data-i18n="channels.dailyCostLimit">每日限额</label>
+              <input type="number" id="channelDailyCostLimit" class="form-input" value="0" min="0" step="0.01"
+                style="width: 100px; min-width: 100px;" data-i18n-placeholder="channels.dailyCostLimitPlaceholder"
+                placeholder="0=无限制">
+              <span style="color: var(--neutral-500); font-size: 12px;">$</span>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 12px;">
+              <button type="button" class="btn btn-secondary" onclick="closeModal()"
                 data-i18n="common.cancel">取消</button>
               <button type="submit" id="channelSaveBtn" class="btn btn-primary" data-i18n="common.save">保存</button>
             </div>
@@ -544,11 +535,12 @@
   <div id="deleteModal" class="modal">
     <div class="modal-content confirm-modal">
       <h2 class="modal-title" data-i18n="channels.confirmDeleteTitle">确认删除</h2>
-      <p id="deleteModalMessage" data-i18n="channels.confirmDeleteMsg">确定要删除渠道吗？</p>
+      <p><span data-i18n="channels.confirmDeleteMsg">确定要删除渠道</span> "<span id="deleteChannelName"></span>" <span
+          data-i18n="channels.confirmDeleteMsgSuffix">吗？</span></p>
       <p style="color: var(--error-600); font-size: 0.875rem;" data-i18n="channels.deleteWarning">此操作不可恢复！</p>
       <div class="confirm-actions">
-        <button type="button" class="btn btn-secondary" data-action="close-delete-modal" data-i18n="common.cancel">取消</button>
-        <button type="button" class="btn btn-danger" data-action="confirm-delete-channel" data-i18n="common.delete">删除</button>
+        <button class="btn btn-secondary" onclick="closeDeleteModal()" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-danger" onclick="confirmDelete()" data-i18n="common.delete">删除</button>
       </div>
     </div>
   </div>
@@ -559,11 +551,11 @@
       <div class="modal-header">
         <h2 class="modal-title"><span data-i18n="channels.testChannelTitle">测试渠道</span> - <span
             id="testChannelName"></span></h2>
-        <button type="button" class="close-btn" data-action="close-test-modal">&times;</button>
+        <button class="close-btn" onclick="closeTestModal()">&times;</button>
       </div>
       <div class="form-group">
         <label class="form-label" for="testChannelType" data-i18n="channels.channelType">渠道类型</label>
-        <select id="testChannelType" class="form-input" data-change-action="update-test-url">
+        <select id="testChannelType" class="form-input" onchange="updateTestURL()">
           <!-- 动态加载渠道类型 -->
         </select>
       </div>
@@ -575,10 +567,10 @@
         </select>
       </div>
 
-      <div class="form-group hidden" id="testKeySelectGroup">
+      <div class="form-group" id="testKeySelectGroup" style="display: none;">
         <label class="form-label" for="testKeySelect">
           <span data-i18n="channels.selectApiKey">选择 API Key</span>
-          <span class="models-hint channel-test-inline-hint" data-i18n="channels.testKeyHint">单次测试时使用的
+          <span class="models-hint" style="margin-left: 8px;" data-i18n="channels.testKeyHint">单次测试时使用的
             Key（最多显示前10个）</span>
         </label>
         <select id="testKeySelect" class="form-input">
@@ -588,14 +580,15 @@
 
       <div class="form-group">
         <label class="form-label" for="testContentInput" data-i18n="channels.testContent">测试内容</label>
-        <textarea id="testContentInput" class="form-input channel-test-textarea" rows="3"
-          data-i18n-placeholder="channels.testContentPlaceholder" placeholder="输入测试内容..."></textarea>
+        <textarea id="testContentInput" class="form-input" rows="3"
+          data-i18n-placeholder="channels.testContentPlaceholder" placeholder="输入测试内容..."
+          style="resize: vertical; min-height: 80px;"></textarea>
         <div class="models-hint" data-i18n="channels.testContentHint">默认内容从系统设置加载，可在"系统设置"页面修改</div>
       </div>
 
       <div class="form-group">
-        <label class="form-label channel-test-checkbox-label">
-          <input type="checkbox" id="testStreamEnabled" class="control-checkbox">
+        <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="testStreamEnabled" style="width: 18px; height: 18px;">
           <span data-i18n="channels.enableStream">启用流式请求（Stream）</span>
         </label>
         <div id="streamHint" class="models-hint" data-i18n="channels.streamHint">默认使用非流模式测试，可根据需要开启流式</div>
@@ -604,11 +597,10 @@
       <div class="form-group">
         <label class="form-label" for="testConcurrency">
           <span data-i18n="channels.batchConcurrency">批量测试并发数</span>
-          <span class="models-hint channel-test-inline-hint"
+          <span class="models-hint" style="margin-left: 8px;"
             data-i18n="channels.batchConcurrencyHint">同时测试的Key数量（建议5-20）。冷却策略由服务器端自动应用（指数退避：2min→4min→8min→30min）</span>
         </label>
-        <input type="number" id="testConcurrency" class="form-input channel-test-concurrency-input" value="10" min="1"
-          max="50">
+        <input type="number" id="testConcurrency" class="form-input" value="10" min="1" max="50" style="width: 150px;">
       </div>
 
       <!-- 测试进度 -->
@@ -618,15 +610,19 @@
       </div>
 
       <!-- 批量测试进度 -->
-      <div id="batchTestProgress" class="channel-batch-progress hidden">
-        <div class="channel-batch-progress-header">
-          <span class="channel-batch-progress-title" data-i18n="channels.batchTestProgress">批量测试进度</span>
-          <span id="batchTestCounter" class="channel-batch-progress-counter">0 / 0</span>
+      <div id="batchTestProgress"
+        style="display: none; margin-top: 16px; padding: 16px; background: var(--neutral-50); border-radius: 8px; border: 1px solid var(--neutral-200);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-weight: 600; color: var(--neutral-700);"
+            data-i18n="channels.batchTestProgress">批量测试进度</span>
+          <span id="batchTestCounter" style="color: var(--neutral-600);">0 / 0</span>
         </div>
-        <div class="channel-batch-progress-track">
-          <div id="batchTestProgressBar" class="channel-batch-progress-bar"></div>
+        <div style="width: 100%; height: 8px; background: var(--neutral-200); border-radius: 4px; overflow: hidden;">
+          <div id="batchTestProgressBar"
+            style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary-500), var(--primary-600)); transition: width 0.3s;">
+          </div>
         </div>
-        <div id="batchTestStatus" class="channel-batch-progress-status"></div>
+        <div id="batchTestStatus" style="margin-top: 8px; font-size: 13px; color: var(--neutral-600);"></div>
       </div>
 
       <!-- 测试结果 -->
@@ -636,10 +632,10 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" data-action="close-test-modal" data-i18n="common.close">关闭</button>
-        <button type="button" id="runTestBtn" class="btn btn-primary" data-action="run-channel-test"
+        <button type="button" class="btn btn-secondary" onclick="closeTestModal()" data-i18n="common.close">关闭</button>
+        <button type="button" id="runTestBtn" class="btn btn-primary" onclick="runChannelTest()"
           data-i18n="channels.singleTest">单个测试</button>
-        <button type="button" id="batchTestBtn" class="btn btn-primary hidden" data-action="run-batch-test"
+        <button type="button" id="batchTestBtn" class="btn btn-primary" onclick="runBatchTest()" style="display: none;"
           data-i18n="channels.batchTestAllKeys">批量测试所有Key</button>
       </div>
     </div>
@@ -647,37 +643,41 @@
 
   <!-- Key导入模态框 -->
   <div id="keyImportModal" class="modal">
-    <div class="modal-content modal-content--md">
+    <div class="modal-content" style="max-width: 600px;">
       <div class="modal-header">
         <h2 class="modal-title" data-i18n="channels.importKeysTitle">批量导入 API Keys</h2>
-        <button type="button" class="close-btn channel-modal-close-btn channel-hover-modal-close-btn"
-          data-action="close-key-import-modal">
+        <button class="close-btn" onclick="closeKeyImportModal()"
+          style="width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--neutral-100); color: var(--neutral-600); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
+          onmouseover="this.style.background='var(--neutral-200)'"
+          onmouseout="this.style.background='var(--neutral-100)'">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
               stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="channel-import-modal-body">
-        <div class="form-group">
-          <label class="form-label"><span data-i18n="channels.pasteApiKeys">粘贴API
-              Keys</span> <span class="channel-import-hint"
+      <div style="padding: 5px;">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="margin-bottom: 8px;"><span data-i18n="channels.pasteApiKeys">粘贴API
+              Keys</span> <span style="color: var(--neutral-500); font-size: 13px; font-weight: normal;"
               data-i18n="channels.keysSeparatorHint">(支持逗号或换行分隔)</span></label>
-          <textarea id="keyImportTextarea" class="form-input channel-import-textarea" rows="10"
-            placeholder="sk-ant-key1,sk-ant-key2&#10;sk-ant-key3&#10;sk-ant-key4"></textarea>
+          <textarea id="keyImportTextarea" class="form-input" rows="10"
+            placeholder="sk-ant-key1,sk-ant-key2&#10;sk-ant-key3&#10;sk-ant-key4"
+            style="resize: vertical; min-height: 200px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"></textarea>
         </div>
-        <div class="channel-import-info channel-import-info--compact">
-          <div class="channel-import-info-row">
+        <div
+          style="padding: 2px; background: var(--info-50); border: 1px solid var(--info-500); border-radius: 6px; color: var(--neutral-700); font-size: 13px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 8px;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
-              class="channel-import-info-icon">
+              style="flex-shrink: 0; margin-top: 2px;">
               <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" />
               <path d="M8 5V8.5M8 11H8.005" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
             <div>
               <strong data-i18n="channels.usageInstructions">使用说明：</strong>
-              <ul class="channel-import-info-list">
+              <ul style="margin: 6px 0 0 0; padding-left: 16px; line-height: 1.6;">
                 <li><span data-i18n="channels.commaSeparated">支持逗号分隔：</span><code
-                    class="channel-import-code">key1,key2,key3</code>
+                    style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px;">key1,key2,key3</code>
                 </li>
                 <li data-i18n="channels.newlineSeparated">支持换行分隔：每行一个Key</li>
                 <li data-i18n="channels.autoDedup">自动去除空格、空行和重复Key</li>
@@ -685,9 +685,10 @@
             </div>
           </div>
         </div>
-        <div id="keyImportPreview" class="channel-import-preview">
-          <div id="keyImportPreviewContent" class="channel-import-preview-content hidden">
-            <div class="channel-import-preview-row">
+        <div id="keyImportPreview" style="margin-bottom: 2px; min-height: 44px;">
+          <div id="keyImportPreviewContent"
+            style="display: none; padding: 12px; background: var(--success-50); border: 1px solid var(--success-500); border-radius: 6px; color: var(--success-600);">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 8L6.5 11.5L13 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                   stroke-linejoin="round" />
@@ -699,9 +700,9 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" data-action="close-key-import-modal"
+        <button type="button" class="btn btn-secondary" onclick="closeKeyImportModal()"
           data-i18n="common.cancel">取消</button>
-        <button type="button" class="btn btn-primary" data-action="confirm-inline-key-import"
+        <button type="button" class="btn btn-primary" onclick="confirmInlineKeyImport()"
           data-i18n="channels.confirmImport">确认导入</button>
       </div>
     </div>
@@ -709,28 +710,30 @@
 
   <!-- Key导出模态框 -->
   <div id="keyExportModal" class="modal">
-    <div class="modal-content modal-content--sm">
+    <div class="modal-content" style="max-width: 500px;">
       <div class="modal-header">
         <h2 class="modal-title" data-i18n="channels.exportKeysTitle">导出 API Keys</h2>
-        <button type="button" class="close-btn channel-modal-close-btn channel-hover-modal-close-btn"
-          data-action="close-key-export-modal">
+        <button class="close-btn" onclick="closeKeyExportModal()"
+          style="width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--neutral-100); color: var(--neutral-600); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
+          onmouseover="this.style.background='var(--neutral-200)'"
+          onmouseout="this.style.background='var(--neutral-100)'">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
               stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="channel-export-modal-body">
+      <div style="padding: 15px;">
         <!-- 分隔符选项 -->
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 15px;">
           <label class="form-label" data-i18n="channels.exportSeparator">分隔方式</label>
-          <div class="channel-export-options">
-            <label class="channel-export-option">
-              <input type="radio" name="exportSeparator" value="newline" checked data-change-action="update-export-preview">
+          <div style="display: flex; gap: 20px; margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="exportSeparator" value="newline" checked onchange="updateExportPreview()">
               <span data-i18n="channels.separatorNewline">换行分隔</span>
             </label>
-            <label class="channel-export-option">
-              <input type="radio" name="exportSeparator" value="comma" data-change-action="update-export-preview">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="radio" name="exportSeparator" value="comma" onchange="updateExportPreview()">
               <span data-i18n="channels.separatorComma">逗号分隔</span>
             </label>
           </div>
@@ -738,14 +741,15 @@
         <!-- 预览区域 -->
         <div class="form-group">
           <label class="form-label" data-i18n="channels.exportPreview">预览</label>
-          <textarea id="keyExportPreview" class="form-input channel-export-preview" rows="8" readonly></textarea>
+          <textarea id="keyExportPreview" class="form-input" rows="8" readonly
+            style="resize: vertical; min-height: 150px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"></textarea>
         </div>
       </div>
-      <div class="form-actions channel-export-actions">
-        <button type="button" class="btn btn-secondary" data-action="close-key-export-modal"
+      <div class="form-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeKeyExportModal()"
           data-i18n="common.cancel">取消</button>
-        <button type="button" class="btn btn-secondary" data-action="copy-export-keys" data-i18n="common.copy">复制</button>
-        <button type="button" class="btn btn-primary" data-action="download-export-keys"
+        <button type="button" class="btn btn-secondary" onclick="copyExportKeys()" data-i18n="common.copy">复制</button>
+        <button type="button" class="btn btn-primary" onclick="downloadExportKeys()"
           data-i18n="channels.exportToFile">导出文件</button>
       </div>
     </div>
@@ -753,37 +757,41 @@
 
   <!-- 模型导入模态框 -->
   <div id="modelImportModal" class="modal">
-    <div class="modal-content modal-content--md">
+    <div class="modal-content" style="max-width: 600px;">
       <div class="modal-header">
         <h2 class="modal-title" data-i18n="channels.importModelsTitle">批量添加模型</h2>
-        <button type="button" class="close-btn channel-modal-close-btn channel-hover-modal-close-btn"
-          data-action="close-model-import-modal">
+        <button class="close-btn" onclick="closeModelImportModal()"
+          style="width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--neutral-100); color: var(--neutral-600); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
+          onmouseover="this.style.background='var(--neutral-200)'"
+          onmouseout="this.style.background='var(--neutral-100)'">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5"
               stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
       </div>
-      <div class="channel-import-modal-body">
-        <div class="form-group">
-          <label class="form-label"><span data-i18n="channels.inputModelNames">输入模型名称</span>
-            <span class="channel-import-hint"
+      <div style="padding: 5px;">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="margin-bottom: 8px;"><span data-i18n="channels.inputModelNames">输入模型名称</span>
+            <span style="color: var(--neutral-500); font-size: 13px; font-weight: normal;"
               data-i18n="channels.keysSeparatorHint">(支持逗号或换行分隔)</span></label>
-          <textarea id="modelImportTextarea" class="form-input channel-import-textarea" rows="10"
-            placeholder="gpt-4o,gpt-4o-mini&#10;claude-3-5-sonnet-20241022&#10;claude-3-5-haiku-latest"></textarea>
+          <textarea id="modelImportTextarea" class="form-input" rows="10"
+            placeholder="gpt-4o,gpt-4o-mini&#10;claude-3-5-sonnet-20241022&#10;claude-3-5-haiku-latest"
+            style="resize: vertical; min-height: 200px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;"></textarea>
         </div>
-        <div class="channel-import-info">
-          <div class="channel-import-info-row">
+        <div
+          style="padding: 12px; background: var(--info-50); border: 1px solid var(--info-500); border-radius: 6px; color: var(--neutral-700); font-size: 13px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 8px;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
-              class="channel-import-info-icon">
+              style="flex-shrink: 0; margin-top: 2px;">
               <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" />
               <path d="M8 5V8.5M8 11H8.005" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
             <div>
               <strong data-i18n="channels.usageInstructions">使用说明：</strong>
-              <ul class="channel-import-info-list">
+              <ul style="margin: 6px 0 0 0; padding-left: 2px; line-height: 1.6;">
                 <li><span data-i18n="channels.commaSeparatedModel">支持逗号分隔：</span><code
-                    class="channel-import-code">model1,model2,model3</code>
+                    style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px;">model1,model2,model3</code>
                 </li>
                 <li data-i18n="channels.newlineSeparatedModel">支持换行分隔：每行一个模型</li>
                 <li data-i18n="channels.autoDedupModel">自动去除空格、空行和重复模型</li>
@@ -791,9 +799,10 @@
             </div>
           </div>
         </div>
-        <div id="modelImportPreview" class="channel-import-preview">
-          <div id="modelImportPreviewContent" class="channel-import-preview-content hidden">
-            <div class="channel-import-preview-row">
+        <div id="modelImportPreview" style="margin-bottom: 2px; min-height: 44px;">
+          <div id="modelImportPreviewContent"
+            style="display: none; padding: 12px; background: var(--success-50); border: 1px solid var(--success-500); border-radius: 6px; color: var(--success-600);">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 8L6.5 11.5L13 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                   stroke-linejoin="round" />
@@ -805,9 +814,9 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" data-action="close-model-import-modal"
+        <button type="button" class="btn btn-secondary" onclick="closeModelImportModal()"
           data-i18n="common.cancel">取消</button>
-        <button type="button" class="btn btn-primary" data-action="confirm-model-import"
+        <button type="button" class="btn btn-primary" onclick="confirmModelImport()"
           data-i18n="channels.confirmAdd">确认添加</button>
       </div>
     </div>
@@ -815,30 +824,32 @@
 
   <!-- 渠道排序模态框 -->
   <div id="sortModal" class="modal">
-    <div class="modal-content modal-content--xl modal-content--tall channel-sort-modal">
+    <div class="modal-content" style="max-width: 800px; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <h2 class="modal-title" data-i18n="channels.sortModalTitle">渠道排序</h2>
-        <button type="button" class="close-btn" data-action="close-sort-modal">&times;</button>
+        <button class="close-btn" onclick="closeSortModal()">&times;</button>
       </div>
-      <div class="channel-sort-modal-body">
+      <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
         <!-- 排序列表容器 -->
-        <div id="sortListContainer" class="channel-sort-list">
+        <div id="sortListContainer"
+          style="flex: 1; overflow-y: auto; border: 1px solid var(--neutral-200); border-radius: 8px; background: var(--neutral-50); padding: 12px;">
           <!-- 动态渲染渠道列表 -->
         </div>
       </div>
-      <div class="form-actions channel-sort-actions">
-        <div class="channel-sort-hint">
+      <div class="form-actions"
+        style="margin-top: 0; padding-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; color: var(--neutral-600); font-size: 12px;">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
-            class="channel-sort-hint-icon">
+            style="flex-shrink: 0; color: var(--info-500);">
             <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" />
             <path d="M8 5V8.5M8 11H8.005" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
           </svg>
           <span data-i18n="channels.sortHint">拖动卡片调整顺序 · 保存后相邻优先级相差10</span>
         </div>
-        <div class="channel-sort-action-buttons">
-          <button type="button" class="btn btn-secondary" data-action="close-sort-modal"
+        <div style="display: flex; gap: 12px;">
+          <button type="button" class="btn btn-secondary" onclick="closeSortModal()"
             data-i18n="common.cancel">取消</button>
-          <button type="button" class="btn btn-primary" data-action="save-sort-order"
+          <button type="button" class="btn btn-primary" onclick="saveSortOrder()"
             data-i18n="channels.saveSortOrder">保存排序</button>
         </div>
       </div>
@@ -848,20 +859,20 @@
 
   <!-- HTML模板定义 (分离HTML与JS) -->
   <template id="tpl-key-row">
-    <tr draggable="true" class="mobile-inline-row inline-key-row draggable-key-row" data-index="{{index}}"
+    <tr draggable="true" class="draggable-key-row" data-index="{{index}}"
       style="border-bottom: 1px solid var(--neutral-200); height: 42px;">
-      <td class="inline-key-col-select mobile-inline-no-label" style="padding: 6px 10px;">
+      <td style="padding: 6px 10px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" class="key-checkbox" data-index="{{index}}" style="width: 16px; height: 16px;">
           <span style="color: var(--neutral-600); font-weight: 500; font-size: 13px;">{{displayIndex}}</span>
         </div>
       </td>
-      <td class="inline-key-col-key" style="padding: 6px 10px;" data-mobile-label="{{mobileLabelKey}}">
+      <td style="padding: 6px 10px;">
         <input type="{{inputType}}" value="{{key}}" class="inline-key-input modal-inline-input" data-index="{{index}}"
           style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px; transition: all 0.2s;">
       </td>
-      <td class="inline-key-col-status" style="padding: 6px 10px;" data-mobile-label="{{mobileLabelStatus}}">{{{cooldownHtml}}}</td>
-      <td class="inline-key-col-actions" style="padding: 6px 10px; text-align: center;" data-mobile-label="{{mobileLabelActions}}">{{{actionsHtml}}}</td>
+      <td style="padding: 6px 10px;">{{{cooldownHtml}}}</td>
+      <td style="padding: 6px 10px; text-align: center;">{{{actionsHtml}}}</td>
     </tr>
   </template>
 
@@ -884,10 +895,10 @@
   </template>
 
   <template id="tpl-key-actions">
-    <div class="inline-key-actions" style="display: flex; gap: 6px; justify-content: center;">
+    <div style="display: flex; gap: 6px; justify-content: center;">
       <button type="button" class="key-action-btn" data-action="copy" data-index="{{index}}"
         data-i18n-title="channels.copyThisKey" title="复制此Key"
-        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M4.5 2H10.5C11.0523 2 11.5 2.44772 11.5 3V4H12.5C13.0523 4 13.5 4.44772 13.5 5V13C13.5 13.5523 13.0523 14 12.5 14H6.5C5.94772 14 5.5 13.5523 5.5 13V12H4.5C3.94772 12 3.5 11.5523 3.5 11V3C3.5 2.44772 3.94772 2 4.5 2Z"
@@ -897,14 +908,14 @@
       </button>
       <button type="button" class="key-action-btn" data-action="test" data-index="{{index}}"
         data-i18n-title="channels.testThisKey" title="测试此Key"
-        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
         </svg>
       </button>
       <button type="button" class="key-action-btn" data-action="delete" data-index="{{index}}"
         data-i18n-title="channels.deleteThisKey" title="删除此Key"
-        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -915,31 +926,31 @@
   </template>
 
   <template id="tpl-url-row">
-    <tr class="mobile-inline-row inline-url-row" style="border-bottom: 1px solid var(--neutral-200);">
-      <td class="inline-url-col-select mobile-inline-no-label">
+    <tr style="border-bottom: 1px solid var(--neutral-200);">
+      <td class="inline-url-col-select">
         <div style="display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" class="url-checkbox" data-index="{{index}}"
-            style="width: 16px; height: 16px;">
+            onchange="toggleURLSelection({{index}}, this.checked)" style="width: 16px; height: 16px;">
           <span style="color: var(--neutral-600); font-weight: 500; font-size: 13px;">{{displayIndex}}</span>
         </div>
       </td>
-      <td class="inline-url-col-url" data-mobile-label="{{mobileLabelUrl}}">
+      <td class="inline-url-col-url">
         <input type="text" value="{{url}}" class="inline-url-input modal-inline-input" data-index="{{index}}"
-          placeholder="https://api.example.com"
+          onchange="updateInlineURL({{index}}, this.value)" placeholder="https://api.example.com"
           style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 13px;">
       </td>
-      <td class="inline-url-col-actions inline-url-cell-center" data-mobile-label="{{mobileLabelActions}}">
+      <td class="inline-url-col-actions inline-url-cell-center">
         <div class="inline-url-actions">
-          <button type="button" class="inline-url-test-btn" data-index="{{index}}" data-i18n-title="channels.testThisUrl"
+          <button type="button" onclick="testInlineURL({{index}}, this)" data-i18n-title="channels.testThisUrl"
             title="测试此URL"
-            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
             </svg>
           </button>
-          <button type="button" class="inline-url-delete-btn" data-index="{{index}}" data-i18n-title="channels.deleteThisUrl"
+          <button type="button" onclick="deleteInlineURL({{index}})" data-i18n-title="channels.deleteThisUrl"
             title="删除此URL"
-            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -974,16 +985,16 @@
         <div class="ch-url-line" title="{{url}}">{{url}}</div>
         {{{healthHtml}}}
       </td>
-      <td class="ch-col-models" data-mobile-label="{{mobileLabelModels}}">
-        <span class="ch-models-text" title="{{modelsText}}">{{modelsText}}</span>
+      <td class="ch-col-models">
+        <div class="ch-models-text" title="{{modelsText}}">{{{modelsHtml}}}</div>
       </td>
-      <td class="ch-col-priority" data-mobile-label="{{mobileLabelPriority}}">
+      <td class="ch-col-priority">
         {{{effectivePriorityHtml}}}
       </td>
-      <td class="ch-col-duration {{durationCellClass}}" data-mobile-label="{{mobileLabelDuration}}">{{{durationHtml}}}</td>
-      <td class="ch-col-usage {{usageCellClass}}" data-mobile-label="{{mobileLabelUsage}}">{{{usageHtml}}}</td>
-      <td class="ch-col-cost {{costCellClass}}" data-mobile-label="{{mobileLabelCost}}">{{{costHtml}}}</td>
-      <td class="ch-col-actions" data-mobile-label="{{mobileLabelActions}}">
+      <td class="ch-col-duration">{{{durationHtml}}}</td>
+      <td class="ch-col-usage">{{{usageHtml}}}</td>
+      <td class="ch-col-cost">{{{costHtml}}}</td>
+      <td class="ch-col-actions">
         <div class="ch-action-group">
           <button class="btn-icon channel-action-btn" data-action="edit" data-channel-id="{{id}}"
             data-i18n-title="common.edit" title="编辑" data-i18n="common.edit">编辑</button>
@@ -1005,18 +1016,21 @@
 
   <!-- 重定向规则行模板 -->
   <template id="tpl-redirect-row">
-    <tr class="mobile-inline-row redirect-row">
-      <td class="redirect-col-select mobile-inline-no-label">
-        <div class="redirect-row-select">
-          <input type="checkbox" class="model-checkbox redirect-row-checkbox" data-index="{{index}}">
-          <span class="redirect-row-index">{{displayIndex}}</span>
+    <tr style="border-bottom: 1px solid var(--neutral-200);">
+      <td style="padding: 4px 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" class="model-checkbox" data-index="{{index}}"
+            onchange="toggleModelSelection({{index}}, this.checked)" style="width: 16px; height: 16px;">
+          <span style="color: var(--neutral-600); font-weight: 500; font-size: 13px;">{{displayIndex}}</span>
         </div>
       </td>
-      <td class="redirect-col-model" data-mobile-label="{{mobileLabelModel}}">
-        <div class="redirect-model-field">
+      <td style="padding: 4px 10px;">
+        <div style="display: flex; align-items: center; gap: 4px;">
           <input type="text" class="redirect-from-input modal-inline-input" data-index="{{index}}" value="{{from}}"
-            placeholder="claude-3-opus-20240229">
-          <button type="button" class="lowercase-btn redirect-lowercase-btn" data-index="{{index}}"
+            placeholder="claude-3-opus-20240229"
+            style="flex: 1; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+          <button type="button" class="lowercase-btn" data-index="{{index}}"
+            style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;"
             data-i18n-title="channels.toLowercase" title="转为小写">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -1026,12 +1040,19 @@
           </button>
         </div>
       </td>
-      <td class="redirect-col-target" data-mobile-label="{{mobileLabelTarget}}">
-        <input type="text" class="redirect-to-input modal-inline-input" data-index="{{index}}" value="{{to}}"
-          placeholder="{{toPlaceholder}}">
+      <td style="padding: 4px 10px;">
+        <div class="redirect-targets-cell">
+          <textarea class="redirect-targets-input modal-inline-input" data-index="{{index}}" rows="2"
+            placeholder="{{targetsPlaceholder}}">{{targetsInput}}</textarea>
+          <div class="redirect-targets-meta">
+            <span class="redirect-targets-help">{{targetsHint}}</span>
+            <div class="redirect-targets-preview"></div>
+          </div>
+        </div>
       </td>
-      <td class="redirect-col-actions" data-mobile-label="{{mobileLabelActions}}">
+      <td style="padding: 4px 10px; text-align: center;">
         <button type="button" class="redirect-delete-btn" data-index="{{index}}"
+          style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
           data-i18n-title="channels.deleteThisModel" title="删除此模型">
           <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -1046,7 +1067,7 @@
   <!-- 重定向规则空状态模板 -->
   <template id="tpl-redirect-empty">
     <tr>
-      <td colspan="4" class="redirect-empty-cell">
+      <td colspan="4" style="padding: 20px; text-align: center; color: var(--neutral-500);">
         {{message}}
       </td>
     </tr>
@@ -1054,18 +1075,19 @@
 
   <!-- 排序卡片模板 -->
   <template id="tpl-sort-item">
-    <div class="sort-item" data-channel-id="{{id}}" draggable="true">
-      <div class="sort-item-body">
-        <div class="sort-item-main">
+    <div class="sort-item" data-channel-id="{{id}}" draggable="true"
+      style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; cursor: move; transition: all 0.2s;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
-            class="sort-item-handle" aria-hidden="true" focusable="false">
+            style="color: var(--neutral-400); flex-shrink: 0;">
             <path d="M2 4H14M2 8H14M2 12H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
           </svg>
-          <span class="sort-item-name">{{name}}</span>
-          <span class="sort-item-id">(ID: {{id}})</span>
+          <span style="font-weight: 600; color: var(--neutral-900);">{{name}}</span>
+          <span style="color: var(--neutral-500); font-size: 13px;">(ID: {{id}})</span>
         </div>
-        <div class="sort-item-meta">
-          <span class="sort-item-priority-label" data-i18n="channels.currentPriority">当前优先级:</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--neutral-600); font-size: 13px;" data-i18n="channels.currentPriority">当前优先级:</span>
           <strong>{{priority}}</strong>
           {{{statusBadge}}}
         </div>
@@ -1075,8 +1097,8 @@
 
   <!-- 测试结果头部模板 -->
   <template id="tpl-test-result-header">
-    <div class="test-result-header">
-      <span class="test-result-header-icon">{{icon}}</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 18px;">{{icon}}</span>
       <strong>{{message}}</strong>
     </div>
   </template>
@@ -1084,17 +1106,15 @@
   <!-- 响应区块模板 -->
   <template id="tpl-response-section">
     <div class="response-section">
-      <div class="response-section-header">
-        <h4 class="response-section-title">{{title}}</h4>
-        {{{toggleBtn}}}
-      </div>
+      <h4>{{title}}</h4>
+      {{{toggleBtn}}}
       <div id="{{contentId}}" class="response-content" style="display: {{display}};">{{{content}}}</div>
     </div>
   </template>
 
   <!-- 批量测试失败详情模板 -->
   <template id="tpl-batch-fail-item">
-    <li class="batch-fail-item"><strong>Key #{{keyNum}}</strong> ({{keyMask}}): {{error}}</li>
+    <li style="margin: 4px 0;"><strong>Key #{{keyNum}}</strong> ({{keyMask}}): {{error}}</li>
   </template>
 
 </body>

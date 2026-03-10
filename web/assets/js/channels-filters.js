@@ -1,20 +1,9 @@
 // Filter channels based on current filters
 let filteredChannels = []; // 存储筛选后的渠道列表
 let modelFilterOptions = [];
-let modelFilterCombobox = null; // 通用组件实例
-let channelNameCombobox = null; // 渠道名筛选组合框实例
 
 function getModelAllLabel() {
   return (window.t && window.t('channels.modelAll')) || '所有模型';
-}
-
-function getChannelNameAllLabel() {
-  return (window.t && window.t('channels.channelNameAll')) || '所有渠道';
-}
-
-function modelFilterInputValueFromFilterValue(filterValue) {
-  if (!filterValue || filterValue === 'all') return getModelAllLabel();
-  return filterValue;
 }
 
 function normalizeModelFilterOption() {
@@ -28,8 +17,18 @@ function normalizeModelFilterOption() {
 
 function filterChannels() {
   const filtered = channels.filter(channel => {
-    if (filters.search && channel.name !== filters.search) {
+    if (filters.search && !channel.name.toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
+    }
+
+    if (filters.id) {
+      const idStr = filters.id.trim();
+      if (idStr) {
+        const ids = idStr.split(',').map(id => id.trim()).filter(id => id);
+        if (ids.length > 0 && !ids.includes(String(channel.id))) {
+          return false;
+        }
+      }
     }
 
     if (filters.channelType !== 'all') {
@@ -106,103 +105,104 @@ function updateModelOptions() {
 
   normalizeModelFilterOption();
 
-  // 使用通用组件刷新下拉框
-  if (modelFilterCombobox) {
-    modelFilterCombobox.setValue(filters.model, modelFilterInputValueFromFilterValue(filters.model));
-    modelFilterCombobox.refresh();
-  } else {
-    const modelFilterInput = document.getElementById('modelFilter');
-    if (modelFilterInput) {
-      modelFilterInput.value = modelFilterInputValueFromFilterValue(filters.model);
-    }
-  }
-}
+  const modelFilterSelect = document.getElementById('modelFilter');
+  if (modelFilterSelect) {
+    const previousValue = filters.model && (filters.model === 'all' || modelFilterOptions.includes(filters.model))
+      ? filters.model
+      : 'all';
+    modelFilterSelect.innerHTML = '';
 
-// 更新渠道名称下拉选项（getOptions 回调动态读取，refresh 触发重算）
-function updateChannelNameOptions() {
-  if (!channelNameCombobox) return;
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = getModelAllLabel();
+    modelFilterSelect.appendChild(allOption);
 
-  // 检查当前选值是否仍合法
-  const currentVal = channelNameCombobox.getValue();
-  if (currentVal) {
-    const typeFilter = (filters && filters.channelType) ? filters.channelType : 'all';
-    const stillExists = channels.some(ch => {
-      if (typeFilter !== 'all' && (ch.channel_type || 'anthropic') !== typeFilter) return false;
-      return ch.name === currentVal;
+    modelFilterOptions.forEach(modelName => {
+      const option = document.createElement('option');
+      option.value = modelName;
+      option.textContent = modelName;
+      modelFilterSelect.appendChild(option);
     });
-    if (!stillExists) {
-      channelNameCombobox.setValue('', getChannelNameAllLabel());
-      filters.search = '';
-      if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-    }
-  }
 
-  channelNameCombobox.refresh();
+    modelFilterSelect.value = previousValue;
+  }
 }
 
 // Setup filter event listeners
 function setupFilterListeners() {
+  const searchInput = document.getElementById('searchInput');
+  const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+  const debouncedFilter = debounce(() => {
+    filters.search = searchInput.value;
+    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    filterChannels();
+    updateClearButton();
+  }, 300);
+
+  searchInput.addEventListener('input', debouncedFilter);
+
+  clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    filters.search = '';
+    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    filterChannels();
+    updateClearButton();
+    searchInput.focus();
+  });
+
+  function updateClearButton() {
+    clearSearchBtn.style.opacity = searchInput.value ? '1' : '0';
+  }
+
+  const idFilter = document.getElementById('idFilter');
+  const debouncedIdFilter = debounce(() => {
+    filters.id = idFilter.value;
+    if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+    filterChannels();
+  }, 300);
+  idFilter.addEventListener('input', debouncedIdFilter);
+
   document.getElementById('statusFilter').addEventListener('change', (e) => {
     filters.status = e.target.value;
     if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
     filterChannels();
   });
 
-  // 模型筛选 combobox
-  const modelFilterInput = document.getElementById('modelFilter');
-  if (modelFilterInput) {
-    modelFilterCombobox = createSearchableCombobox({
-      attachMode: true,
-      inputId: 'modelFilter',
-      dropdownId: 'modelFilterDropdown',
-      initialValue: filters.model,
-      initialLabel: modelFilterInputValueFromFilterValue(filters.model),
-      getOptions: () => {
-        const allLabel = getModelAllLabel();
-        return [{ value: 'all', label: allLabel }].concat(
-          modelFilterOptions.map(m => ({ value: m, label: m }))
-        );
-      },
-      onSelect: (value) => {
-        filters.model = value;
-        if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-        filterChannels();
-      }
-    });
-  }
-
-  // 渠道名称筛选 combobox
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    const allLabel = getChannelNameAllLabel();
-    channelNameCombobox = createSearchableCombobox({
-      attachMode: true,
-      inputId: 'searchInput',
-      dropdownId: 'searchInputDropdown',
-      initialValue: filters.search,
-      initialLabel: filters.search || allLabel,
-      getOptions: () => {
-        const nameSet = new Set();
-        const typeFilter = (filters && filters.channelType) ? filters.channelType : 'all';
-        channels.forEach(ch => {
-          if (typeFilter !== 'all' && (ch.channel_type || 'anthropic') !== typeFilter) return;
-          if (ch.name) nameSet.add(ch.name);
-        });
-        return [{ value: '', label: allLabel }].concat(
-          Array.from(nameSet).sort().map(name => ({ value: name, label: name }))
-        );
-      },
-      onSelect: (value) => {
-        filters.search = value;
-        if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-        filterChannels();
-      }
+  const modelFilterSelect = document.getElementById('modelFilter');
+  if (modelFilterSelect) {
+    modelFilterSelect.addEventListener('change', (e) => {
+      filters.model = e.target.value || 'all';
+      if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+      filterChannels();
     });
   }
 
   // 筛选按钮：手动触发筛选
   document.getElementById('btn_filter').addEventListener('click', () => {
+    // 收集当前输入框的值
+    filters.search = document.getElementById('searchInput').value;
+    filters.id = document.getElementById('idFilter').value;
+
+    // 保存筛选条件
     if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+
+    // 执行筛选
     filterChannels();
+  });
+
+  // 回车键触发筛选
+  ['searchInput', 'idFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          filters.search = document.getElementById('searchInput').value;
+          filters.id = document.getElementById('idFilter').value;
+          if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+          filterChannels();
+        }
+      });
+    }
   });
 }

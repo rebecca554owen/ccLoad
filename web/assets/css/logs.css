@@ -145,25 +145,6 @@
       visibility: hidden;
     }
 
-    .logs-mono-text {
-      font-family: var(--font-family-mono);
-      font-size: 0.85em;
-      color: var(--neutral-600);
-    }
-
-    .logs-api-key-group {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      justify-content: center;
-    }
-
-    .logs-api-key-actions {
-      display: inline-flex;
-      align-items: center;
-      gap: 1px;
-    }
-
     .logs-table th,
     .logs-table td {
       padding: var(--space-2) var(--space-1);
@@ -231,7 +212,7 @@
       outline: none;
       border-color: var(--primary-500);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      background: white;
+      background: rgba(255, 255, 255, 0.7);
     }
 
     .logs-jump-input::placeholder {
@@ -247,20 +228,24 @@
       min-width: 0;
     }
 
-    .logs-filter-group[hidden] {
-      display: none !important;
+    .logs-filter-group--sm {
+      flex: 0 1 180px;
+      max-width: 220px;
     }
 
-    .logs-filter-group--range {
-      flex: 0 1 116px;
+    .logs-filter-group--id {
+      flex: 0 1 140px;
+      max-width: 170px;
     }
 
-    .logs-filter-group--channel-id {
-      flex: 0 1 134px;
+    .logs-filter-group--status {
+      flex: 0 1 160px;
+      max-width: 190px;
     }
 
-    .logs-filter-group--token {
-      flex: 0 1 134px;
+    .logs-filter-group--md {
+      flex: 0 1 220px;
+      max-width: 280px;
     }
 
     .logs-filter-group .filter-input,
@@ -269,251 +254,27 @@
       min-width: 0;
     }
 
-    .logs-filter-control--range {
-      max-width: 80px;
-    }
-
-    .logs-filter-control--channel-id {
-      max-width: 72px;
-    }
-
-    .logs-filter-control--token {
-      max-width: 100px;
-    }
-
     .logs-filter-info {
+      flex: none;
       white-space: nowrap;
-    }
-
-    .log-source-badge {
-      display: inline-flex;
-      align-items: center;
-      margin-right: 6px;
-      padding: 1px 6px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.5;
-      vertical-align: middle;
-    }
-
-    .log-source-badge--scheduled {
-      color: var(--primary-700);
-      background: var(--primary-100);
-    }
-
-    .log-source-badge--manual {
-      color: var(--success-700);
-      background: var(--success-100);
-    }
-
-    .logs-filter-summary-row {
-      display: contents;
     }
 
     .logs-filter-actions {
       flex: none;
     }
 
-    .logs-pagination-card {
-      padding: var(--space-2);
-    }
-
-    .logs-test-key-display {
-      display: block;
-      padding: 8px;
-      background: var(--neutral-100);
-      border-radius: 4px;
-      color: var(--neutral-700);
-    }
-
-    .logs-test-key-index,
-    .logs-test-key-hint {
-      display: block;
-      color: var(--neutral-600);
-      font-size: 0.85em;
-    }
-
-    .logs-test-key-index {
-      margin-top: 6px;
-    }
-
-    .logs-test-key-hint {
-      margin-top: 4px;
-    }
-
-    .logs-test-key-original {
-      color: var(--neutral-700);
-    }
-
-    .logs-stream-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-
-    .logs-stream-toggle .form-label {
-      margin: 0;
-    }
-
-    .log-timing-pair {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 4px;
-      white-space: nowrap;
-    }
-
     @media (max-width: 768px) {
-      .logs-table-container {
-        overflow-x: visible;
-        border: none;
-        background: transparent;
-        box-shadow: none;
-        padding: 0;
-      }
-
-      .logs-table .logs-col-message {
-        grid-column: 1 / -1;
-      }
-
-      .logs-table .logs-col-time {
-        order: 1;
-      }
-
-      .logs-table .logs-col-status {
-        order: 2;
-      }
-
-      .logs-table .logs-col-channel {
-        order: 3;
-      }
-
-      .logs-table .logs-col-model {
-        order: 4;
-      }
-
-      .logs-table .logs-col-api-key {
-        order: 5;
-      }
-
-      .logs-table .logs-col-ip {
-        order: 6;
-      }
-
-      .logs-table .logs-col-timing {
-        order: 7;
-      }
-
-      .logs-table .logs-col-speed {
-        order: 8;
-      }
-
-      .logs-table .logs-col-input {
-        order: 10;
-      }
-
-      .logs-table .logs-col-output {
-        order: 11;
-      }
-
-      .logs-table .logs-col-cache-read {
-        order: 12;
-      }
-
-      .logs-table .logs-col-cache-write {
-        order: 13;
-      }
-
-      .logs-table .logs-col-cost {
-        order: 14;
-      }
-
-      .logs-table .logs-col-message {
-        order: 30;
-        word-break: break-word;
-        white-space: pre-wrap;
-      }
-
-      .logs-table .logs-col-time,
-      .logs-table .logs-col-status,
-      .logs-table .logs-col-channel,
-      .logs-table .logs-col-model,
-      .logs-table .logs-col-api-key,
-      .logs-table .logs-col-ip,
-      .logs-table .logs-col-timing,
-      .logs-table .logs-col-speed,
-      .logs-table .logs-col-input,
-      .logs-table .logs-col-output,
-      .logs-table .logs-col-cache-read,
-      .logs-table .logs-col-cache-write,
-      .logs-table .logs-col-cost,
-      .logs-table .logs-col-message {
-        display: flex !important;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        text-align: right !important;
-      }
-
-      .logs-table .logs-col-time::before,
-      .logs-table .logs-col-status::before,
-      .logs-table .logs-col-channel::before,
-      .logs-table .logs-col-model::before,
-      .logs-table .logs-col-api-key::before,
-      .logs-table .logs-col-ip::before,
-      .logs-table .logs-col-timing::before,
-      .logs-table .logs-col-speed::before,
-      .logs-table .logs-col-input::before,
-      .logs-table .logs-col-output::before,
-      .logs-table .logs-col-cache-read::before,
-      .logs-table .logs-col-cache-write::before,
-      .logs-table .logs-col-cost::before,
-      .logs-table .logs-col-message::before {
-        width: auto !important;
-        margin-bottom: 0 !important;
-        flex: 0 0 auto;
-        white-space: nowrap;
-      }
-
-      .logs-table .logs-col-channel,
-      .logs-table .logs-col-model,
-      .logs-table .logs-col-message {
-        align-items: flex-start;
-      }
-
-      .logs-table .logs-col-channel .channel-link,
-      .logs-table .logs-col-model .model-tag,
-      .logs-table .logs-col-message {
-        min-width: 0;
-      }
-
-      .logs-table .logs-col-api-key code {
-        word-break: break-all;
-      }
-
-      .logs-table .logs-col-timing .log-timing-pair {
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 2px;
-      }
-
-      .logs-table .logs-col-timing .log-timing-separator {
-        display: none;
-      }
-
       .logs-filter-controls {
-        gap: 6px;
+        gap: 8px;
       }
 
       .logs-filter-group {
         display: grid;
         grid-template-columns: 72px minmax(0, 1fr);
         align-items: center;
-        gap: 6px;
-        flex: none;
+        gap: 8px;
         width: 100%;
+        max-width: none;
       }
 
       .logs-filter-group .filter-label {
@@ -521,28 +282,18 @@
         text-align: right;
       }
 
-      .logs-filter-summary-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
-        align-items: center;
+      .logs-filter-info {
+        width: 100%;
+        text-align: center;
+        justify-self: stretch;
       }
 
-      .logs-filter-summary-row .logs-filter-info {
-        width: auto;
-        min-width: 0;
-        text-align: left;
-        justify-self: start;
+      .logs-filter-actions {
+        width: 100%;
       }
 
-      .logs-filter-summary-row .logs-filter-actions {
-        width: auto;
-        justify-self: end;
-      }
-
-      .logs-filter-summary-row .logs-filter-actions .btn {
-        width: auto;
-        padding: 8px 12px;
+      .logs-filter-actions .btn {
+        width: 100%;
       }
 
       .logs-pagination-controls {
@@ -696,4 +447,55 @@
 
     .logs-table tr.pending-row:hover td {
       background: var(--warning-100);
+    }
+
+    :root[data-theme="dark"] .test-progress,
+    :root[data-theme="dark"] .logs-jump-input,
+    :root[data-theme="dark"] .logs-table tbody td:nth-child(odd),
+    :root[data-theme="dark"] .logs-table tbody td:nth-child(even),
+    :root[data-resolved-theme="dark"] .test-progress,
+    :root[data-resolved-theme="dark"] .logs-jump-input,
+    :root[data-resolved-theme="dark"] .logs-table tbody td:nth-child(odd),
+    :root[data-resolved-theme="dark"] .logs-table tbody td:nth-child(even) {
+      background: var(--glass-bg) !important;
+      color: var(--text);
+      border-color: var(--glass-border);
+    }
+
+    :root[data-theme="dark"] .logs-jump-input:focus,
+    :root[data-resolved-theme="dark"] .logs-jump-input:focus {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    :root[data-theme="dark"] .logs-pagination-info,
+    :root[data-theme="dark"] .logs-pagination-info #logs_current_page2,
+    :root[data-theme="dark"] .logs-pagination-info #logs_total_pages2,
+    :root[data-theme="dark"] .test-progress p,
+    :root[data-resolved-theme="dark"] .logs-pagination-info,
+    :root[data-resolved-theme="dark"] .logs-pagination-info #logs_current_page2,
+    :root[data-resolved-theme="dark"] .logs-pagination-info #logs_total_pages2,
+    :root[data-resolved-theme="dark"] .test-progress p {
+      color: var(--text);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) .test-progress,
+      :root:not([data-theme]) .logs-jump-input,
+      :root:not([data-theme]) .logs-table tbody td:nth-child(odd),
+      :root:not([data-theme]) .logs-table tbody td:nth-child(even) {
+        background: var(--glass-bg) !important;
+        color: var(--text);
+        border-color: var(--glass-border);
+      }
+
+      :root:not([data-theme]) .logs-jump-input:focus {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      :root:not([data-theme]) .logs-pagination-info,
+      :root:not([data-theme]) .logs-pagination-info #logs_current_page2,
+      :root:not([data-theme]) .logs-pagination-info #logs_total_pages2,
+      :root:not([data-theme]) .test-progress p {
+        color: var(--text);
+      }
     }

@@ -6,107 +6,6 @@ function setChannelModalTitle(i18nKey) {
   titleEl.textContent = window.t(i18nKey);
 }
 
-async function syncScheduledCheckVisibility() {
-  const scheduledCheckWrapper = document.getElementById('channelScheduledCheckEnabledWrapper');
-  const scheduledCheckModelWrapper = document.getElementById('channelScheduledCheckModelWrapper');
-  if (!scheduledCheckWrapper) return false;
-
-  let scheduledCheckEnabledByConfig = false;
-  try {
-    const setting = await fetchDataWithAuth('/admin/settings/channel_check_interval_hours');
-    const intervalHours = Number(setting && setting.value);
-    scheduledCheckEnabledByConfig = Number.isFinite(intervalHours) && intervalHours > 0;
-  } catch (error) {
-    console.warn('Failed to load channel check interval setting', error);
-  }
-
-  scheduledCheckWrapper.hidden = !scheduledCheckEnabledByConfig;
-  if (scheduledCheckModelWrapper) {
-    scheduledCheckModelWrapper.hidden = !scheduledCheckEnabledByConfig;
-  }
-  syncScheduledCheckModelState();
-  return scheduledCheckEnabledByConfig;
-}
-
-function setScheduledCheckModelHint(i18nKey) {
-  const hint = document.getElementById('channelScheduledCheckModelHint');
-  if (!hint) return;
-  hint.setAttribute('data-i18n', i18nKey);
-  hint.textContent = window.t(i18nKey);
-}
-
-let scheduledCheckModelCombobox = null;
-
-function getScheduledCheckModelNames() {
-  return redirectTableData
-    .map(entry => (entry && entry.model ? entry.model.trim() : ''))
-    .filter(Boolean);
-}
-
-function getScheduledCheckModelDefaultLabel() {
-  return window.t('channels.scheduledCheckModelDefault');
-}
-
-function scheduledCheckModelInputValueFromValue(value) {
-  return value || getScheduledCheckModelDefaultLabel();
-}
-
-function getScheduledCheckModelOptions() {
-  return [{ value: '', label: getScheduledCheckModelDefaultLabel() }].concat(
-    getScheduledCheckModelNames().map(modelName => ({ value: modelName, label: modelName }))
-  );
-}
-
-function ensureScheduledCheckModelCombobox() {
-  if (scheduledCheckModelCombobox) return scheduledCheckModelCombobox;
-
-  const hiddenInput = document.getElementById('channelScheduledCheckModel');
-  const input = document.getElementById('channelScheduledCheckModelInput');
-  const dropdown = document.getElementById('channelScheduledCheckModelDropdown');
-  if (!hiddenInput || !input || !dropdown || typeof createSearchableCombobox !== 'function') return null;
-
-  scheduledCheckModelCombobox = createSearchableCombobox({
-    attachMode: true,
-    inputId: 'channelScheduledCheckModelInput',
-    dropdownId: 'channelScheduledCheckModelDropdown',
-    initialValue: hiddenInput.value || '',
-    initialLabel: scheduledCheckModelInputValueFromValue(hiddenInput.value || ''),
-    getOptions: () => getScheduledCheckModelOptions(),
-    onSelect: (value) => {
-      hiddenInput.value = value;
-      setScheduledCheckModelHint('channels.scheduledCheckModelHint');
-    }
-  });
-
-  return scheduledCheckModelCombobox;
-}
-
-function syncScheduledCheckModelState() {
-  const wrapper = document.getElementById('channelScheduledCheckModelWrapper');
-  const hiddenInput = document.getElementById('channelScheduledCheckModel');
-  const input = document.getElementById('channelScheduledCheckModelInput');
-  const checkbox = document.getElementById('channelScheduledCheckEnabled');
-  if (!wrapper || !hiddenInput || !input || !checkbox) return;
-
-  const modelNames = getScheduledCheckModelNames();
-  const currentValue = hiddenInput.value || '';
-  const isValid = currentValue === '' || modelNames.includes(currentValue);
-  const nextValue = isValid ? currentValue : '';
-  hiddenInput.value = nextValue;
-  setScheduledCheckModelHint(isValid ? 'channels.scheduledCheckModelHint' : 'channels.scheduledCheckModelFallback');
-
-  const combobox = ensureScheduledCheckModelCombobox();
-  const nextLabel = scheduledCheckModelInputValueFromValue(nextValue);
-  if (combobox) {
-    combobox.setValue(nextValue, nextLabel);
-    combobox.refresh();
-  } else {
-    input.value = nextLabel;
-  }
-
-  input.disabled = wrapper.hidden || !checkbox.checked;
-}
-
 async function resolveEditableChannel(id) {
   const cachedChannel = Array.isArray(channels) ? channels.find(c => c.id === id) : null;
   if (cachedChannel) {
@@ -119,6 +18,109 @@ async function resolveEditableChannel(id) {
     console.error('Failed to fetch channel', error);
     return null;
   }
+}
+
+function normalizeRedirectTargets(targets, redirectModel, modelName) {
+  const seen = new Set();
+  const normalized = [];
+
+  if (Array.isArray(targets)) {
+    targets.forEach((target) => {
+      const targetModel = (target?.target_model || target?.targetModel || '').trim();
+      if (!targetModel) return;
+      const key = targetModel.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      normalized.push({
+        target_model: targetModel,
+        weight: Number.isFinite(Number(target?.weight)) && Number(target.weight) > 0 ? Number(target.weight) : 1
+      });
+    });
+  }
+
+  const redirect = (redirectModel || '').trim();
+  const model = (modelName || '').trim();
+  if (normalized.length === 0 && redirect && redirect !== model) {
+    normalized.push({ target_model: redirect, weight: 1 });
+  }
+
+  return normalized;
+}
+
+function getPrimaryRedirectModel(targets, modelName) {
+  if (!Array.isArray(targets) || targets.length !== 1) return '';
+  const target = (targets[0]?.target_model || '').trim();
+  const model = (modelName || '').trim();
+  if (!target || target === model) return '';
+  return target;
+}
+
+function normalizeRedirectEditorRow(entry) {
+  const model = (entry?.model || '').trim();
+  const targets = normalizeRedirectTargets(entry?.targets, entry?.redirect_model, model);
+  return {
+    model,
+    redirect_model: getPrimaryRedirectModel(targets, model),
+    targets
+  };
+}
+
+function formatTargetsForInput(targets) {
+  if (!Array.isArray(targets) || targets.length === 0) return '';
+  return targets.map((target) => {
+    const targetModel = (target?.target_model || '').trim();
+    const weight = Number(target?.weight) > 0 ? Number(target.weight) : 1;
+    return weight > 1 ? `${targetModel} * ${weight}` : targetModel;
+  }).join('\n');
+}
+
+function parseTargetsInput(input) {
+  const seen = new Set();
+  return String(input || '')
+    .split(/[\n,]+/)
+    .map(item => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const match = item.match(/^(.*?)\s*(?:[*xX@]\s*(\d+))?$/);
+      const targetModel = (match?.[1] || item).trim();
+      const weight = match?.[2] ? parseInt(match[2], 10) : 1;
+      return {
+        target_model: targetModel,
+        weight: Number.isFinite(weight) && weight > 0 ? weight : 1
+      };
+    })
+    .filter((item) => {
+      const key = item.target_model.toLowerCase();
+      if (!item.target_model || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function syncRedirectRow(row) {
+  if (!row) return;
+  row.targets = normalizeRedirectTargets(row.targets, row.redirect_model, row.model);
+  row.redirect_model = getPrimaryRedirectModel(row.targets, row.model);
+}
+
+function renderRedirectTargetsPreview(container, targets) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (!Array.isArray(targets) || targets.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'redirect-targets-empty';
+    empty.textContent = window.t('channels.leaveEmptyNoRedirect');
+    container.appendChild(empty);
+    return;
+  }
+
+  targets.forEach((target) => {
+    const pill = document.createElement('span');
+    pill.className = 'redirect-target-chip';
+    const weight = Number(target.weight) > 0 ? Number(target.weight) : 1;
+    pill.textContent = weight > 1 ? `${target.target_model} × ${weight}` : target.target_model;
+    container.appendChild(pill);
+  });
 }
 
 async function handleChannelSaveSuccess({ isNewChannel, newChannelType, savedChannelId, response }) {
@@ -152,85 +154,13 @@ async function handleChannelSaveSuccess({ isNewChannel, newChannelType, savedCha
   }
 }
 
-function invokeChannelEditorAction(actionName, ...args) {
-  const action = window[actionName];
-  if (typeof action === 'function') {
-    return action(...args);
-  }
-  return undefined;
-}
-
-function initChannelEditorActions() {
-  if (typeof window.initDelegatedActions === 'function') {
-    window.initDelegatedActions({
-      root: document.body,
-      boundElement: document.body,
-      boundKey: 'channelEditorActionsBound',
-      click: {
-        'close-channel-modal': () => invokeChannelEditorAction('closeModal'),
-        'add-inline-url': () => invokeChannelEditorAction('addInlineURL'),
-        'batch-delete-urls': () => invokeChannelEditorAction('batchDeleteSelectedURLs'),
-        'open-key-import-modal': () => invokeChannelEditorAction('openKeyImportModal'),
-        'open-key-export-modal': () => invokeChannelEditorAction('openKeyExportModal'),
-        'toggle-inline-key-visibility': () => invokeChannelEditorAction('toggleInlineKeyVisibility'),
-        'batch-delete-keys': () => invokeChannelEditorAction('batchDeleteSelectedKeys'),
-        'add-common-models': () => invokeChannelEditorAction('addCommonModels'),
-        'fetch-models-from-api': () => invokeChannelEditorAction('fetchModelsFromAPI'),
-        'add-redirect-row': () => invokeChannelEditorAction('addRedirectRow'),
-        'batch-lowercase-models': () => invokeChannelEditorAction('batchLowercaseSelectedModels'),
-        'batch-delete-models': () => invokeChannelEditorAction('batchDeleteSelectedModels'),
-        'close-delete-modal': () => invokeChannelEditorAction('closeDeleteModal'),
-        'confirm-delete-channel': () => invokeChannelEditorAction('confirmDelete'),
-        'close-key-import-modal': () => invokeChannelEditorAction('closeKeyImportModal'),
-        'confirm-inline-key-import': () => invokeChannelEditorAction('confirmInlineKeyImport'),
-        'close-key-export-modal': () => invokeChannelEditorAction('closeKeyExportModal'),
-        'copy-export-keys': () => invokeChannelEditorAction('copyExportKeys'),
-        'download-export-keys': () => invokeChannelEditorAction('downloadExportKeys'),
-        'close-model-import-modal': () => invokeChannelEditorAction('closeModelImportModal'),
-        'confirm-model-import': () => invokeChannelEditorAction('confirmModelImport')
-      },
-      change: {
-        'toggle-select-all-urls': (actionTarget) => invokeChannelEditorAction('toggleSelectAllURLs', actionTarget.checked),
-        'toggle-select-all-keys': (actionTarget) => invokeChannelEditorAction('toggleSelectAllKeys', actionTarget.checked),
-        'filter-keys-by-status': (actionTarget) => invokeChannelEditorAction('filterKeysByStatus', actionTarget.value),
-        'toggle-select-all-models': (actionTarget) => invokeChannelEditorAction('toggleSelectAllModels', actionTarget.checked),
-        'update-export-preview': () => invokeChannelEditorAction('updateExportPreview')
-      },
-      input: {
-        'filter-models-by-keyword': (actionTarget) => invokeChannelEditorAction('filterModelsByKeyword', actionTarget.value)
-      }
-    });
-  }
-
-  const channelForm = document.getElementById('channelForm');
-  if (channelForm && !channelForm.dataset.channelFormBound) {
-    channelForm.addEventListener('submit', (event) => {
-      saveChannel(event);
-    });
-    channelForm.dataset.channelFormBound = '1';
-  }
-
-  const scheduledCheckCheckbox = document.getElementById('channelScheduledCheckEnabled');
-  if (scheduledCheckCheckbox && !scheduledCheckCheckbox.dataset.bound) {
-    scheduledCheckCheckbox.addEventListener('change', () => {
-      syncScheduledCheckModelState();
-    });
-    scheduledCheckCheckbox.dataset.bound = '1';
-  }
-
-  ensureScheduledCheckModelCombobox();
-}
-
-async function showAddModal() {
+function showAddModal() {
   editingChannelId = null;
   currentChannelKeyCooldowns = [];
-  await syncScheduledCheckVisibility();
 
   setChannelModalTitle('channels.addChannel');
   document.getElementById('channelForm').reset();
   document.getElementById('channelEnabled').checked = true;
-  document.getElementById('channelScheduledCheckEnabled').checked = false;
-  document.getElementById('channelScheduledCheckModel').value = '';
   document.querySelector('input[name="channelType"][value="anthropic"]').checked = true;
   document.querySelector('input[name="keyStrategy"][value="sequential"]').checked = true;
 
@@ -240,7 +170,6 @@ async function showAddModal() {
   const modelFilterInput = document.getElementById('modelFilterInput');
   if (modelFilterInput) modelFilterInput.value = '';
   renderRedirectTable();
-  syncScheduledCheckModelState();
 
   inlineURLTableData = [''];
   selectedURLIndices.clear();
@@ -259,7 +188,6 @@ async function showAddModal() {
 async function editChannel(id) {
   const channel = await resolveEditableChannel(id);
   if (!channel) return;
-  await syncScheduledCheckVisibility();
 
   editingChannelId = id;
 
@@ -311,20 +239,14 @@ async function editChannel(id) {
   document.getElementById('channelPriority').value = channel.priority;
   document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
   document.getElementById('channelEnabled').checked = channel.enabled;
-  document.getElementById('channelScheduledCheckEnabled').checked = !!channel.scheduled_check_enabled;
-  document.getElementById('channelScheduledCheckModel').value = channel.scheduled_check_model || '';
 
   // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
-  redirectTableData = (channel.models || []).map(m => ({
-    model: m.model || '',
-    redirect_model: m.redirect_model || ''
-  }));
+  redirectTableData = (channel.models || []).map(normalizeRedirectEditorRow);
   selectedModelIndices.clear();
   currentModelFilter = '';
   const modelFilterInput = document.getElementById('modelFilterInput');
   if (modelFilterInput) modelFilterInput.value = '';
   renderRedirectTable();
-  syncScheduledCheckModelState();
 
   resetChannelFormDirty();
   document.getElementById('channelModal').classList.add('show');
@@ -359,10 +281,12 @@ async function saveChannel(event) {
 
   // 构建模型配置（新格式：models 数组）
   const models = redirectTableData
+    .map(normalizeRedirectEditorRow)
     .filter(r => r.model && r.model.trim())
     .map(r => ({
       model: r.model.trim(),
-      redirect_model: (r.redirect_model || '').trim()
+      redirect_model: r.redirect_model,
+      targets: r.targets
     }));
   const seenModels = new Set();
   const duplicateModels = [];
@@ -397,9 +321,7 @@ async function saveChannel(event) {
     priority: parseInt(document.getElementById('channelPriority').value) || 0,
     daily_cost_limit: parseFloat(document.getElementById('channelDailyCostLimit').value) || 0,
     models: models,
-    enabled: document.getElementById('channelEnabled').checked,
-    scheduled_check_enabled: document.getElementById('channelScheduledCheckEnabled').checked,
-    scheduled_check_model: document.getElementById('channelScheduledCheckModel').value.trim()
+    enabled: document.getElementById('channelEnabled').checked
   };
 
   if (!formData.name || !formData.url || !formData.api_key || formData.models.length === 0) {
@@ -437,60 +359,33 @@ async function saveChannel(event) {
 }
 
 function deleteChannel(id, name) {
-  deletingChannelRequest = {
-    type: 'single',
-    channelIDs: [id],
-    url: `/admin/channels/${id}`,
-    options: {
-      method: 'DELETE'
-    }
-  };
-  const messageEl = document.getElementById('deleteModalMessage');
-  if (messageEl) {
-    messageEl.textContent = window.t('channels.confirmDeleteNamed', { name });
-  }
+  deletingChannelId = id;
+  document.getElementById('deleteChannelName').textContent = name;
   document.getElementById('deleteModal').classList.add('show');
 }
 
 function closeDeleteModal() {
   document.getElementById('deleteModal').classList.remove('show');
-  deletingChannelRequest = null;
+  deletingChannelId = null;
 }
 
 async function confirmDelete() {
-  if (!deletingChannelRequest) return;
+  if (!deletingChannelId) return;
 
   try {
-    const { channelIDs, options, type, url } = deletingChannelRequest;
-    const resp = await fetchAPIWithAuth(url, options);
+    const resp = await fetchAPIWithAuth(`/admin/channels/${deletingChannelId}`, {
+      method: 'DELETE'
+    });
 
     if (!resp.success) throw new Error(resp.error || window.t('common.failed'));
 
     closeDeleteModal();
-    channelIDs.forEach((channelID) => {
-      selectedChannelIds.delete(normalizeSelectedChannelID(channelID));
-    });
     clearChannelsCache();
     await loadChannels(filters.channelType);
-    if (window.showSuccess) {
-      if (type === 'batch') {
-        const data = resp.data || {};
-        window.showSuccess(window.t('channels.batchDeleteSummary', {
-          deleted: data.deleted || 0,
-          notFound: data.not_found_count || 0
-        }));
-      } else {
-        window.showSuccess(window.t('channels.channelDeleted'));
-      }
-    }
+    if (window.showSuccess) window.showSuccess(window.t('channels.channelDeleted'));
   } catch (e) {
     console.error('Delete channel failed', e);
-    if (window.showError) {
-      const errorKey = deletingChannelRequest && deletingChannelRequest.type === 'batch'
-        ? 'channels.batchOperationFailed'
-        : 'channels.saveFailed';
-      window.showError(window.t(errorKey, { error: e.message }));
-    }
+    if (window.showError) window.showError(window.t('channels.saveFailed', { error: e.message }));
   }
 }
 
@@ -552,6 +447,7 @@ function renderBatchSummary(selectedCount) {
 
 function updateBatchChannelSelectionUI() {
   const selectedCount = getSelectedChannelIDs().length;
+  const hasAnySelection = selectedCount > 0;
   const visibleChannels = getVisibleChannelsForSelection();
   const visibleCount = visibleChannels.length;
   let visibleSelectedCount = 0;
@@ -584,18 +480,13 @@ function updateBatchChannelSelectionUI() {
   const selectionToggle = document.getElementById('visibleSelectionToggle');
   const selectionCheckbox = document.getElementById('visibleSelectionCheckbox');
   const selectionText = document.getElementById('visibleSelectionToggleText');
-  const selectionI18nKey = visibleSelectedCount > 0
-    ? 'channels.batchDeselectVisible'
-    : 'channels.batchSelectVisible';
-  const selectionLabel = window.t(selectionI18nKey);
+  const selectionLabel = window.t(hasAnySelection ? 'channels.batchInvertVisible' : 'channels.batchSelectVisible');
 
   if (selectionText) {
-    selectionText.setAttribute('data-i18n', selectionI18nKey);
     selectionText.textContent = selectionLabel;
   }
   if (selectionToggle) {
     selectionToggle.classList.toggle('is-disabled', visibleCount === 0);
-    selectionToggle.setAttribute('data-i18n-title', selectionI18nKey);
     selectionToggle.title = selectionLabel;
   }
   if (selectionCheckbox) {
@@ -607,7 +498,6 @@ function updateBatchChannelSelectionUI() {
   const actionBtnIDs = [
     'batchEnableChannelsBtn',
     'batchDisableChannelsBtn',
-    'batchDeleteChannelsBtn',
     'batchRefreshMergeBtn',
     'batchRefreshReplaceBtn'
   ];
@@ -634,26 +524,14 @@ function selectAllVisibleChannels() {
 }
 
 function toggleVisibleChannelsSelection() {
-  const visibleChannels = getVisibleChannelsForSelection();
-
-  if (visibleChannels.length === 0) {
-    return;
-  }
-
-  const hasSelectedVisibleChannel = visibleChannels.some((ch) => {
-    const channelID = normalizeSelectedChannelID(ch.id);
-    return channelID && selectedChannelIds.has(channelID);
-  });
-
-  if (!hasSelectedVisibleChannel) {
+  if (getSelectedChannelIDs().length === 0) {
     selectAllVisibleChannels();
     return;
   }
-
-  deselectVisibleChannels();
+  invertVisibleChannelsSelection();
 }
 
-function deselectVisibleChannels() {
+function invertVisibleChannelsSelection() {
   const visibleChannels = getVisibleChannelsForSelection();
 
   if (visibleChannels.length === 0) {
@@ -663,7 +541,11 @@ function deselectVisibleChannels() {
   visibleChannels.forEach((ch) => {
     const channelID = normalizeSelectedChannelID(ch.id);
     if (!channelID) return;
-    selectedChannelIds.delete(channelID);
+    if (selectedChannelIds.has(channelID)) {
+      selectedChannelIds.delete(channelID);
+    } else {
+      selectedChannelIds.add(channelID);
+    }
   });
   filterChannels();
 }
@@ -708,30 +590,6 @@ async function batchSetSelectedChannelsEnabled(enabled) {
   }
 }
 
-function batchDeleteSelectedChannels() {
-  const channelIDs = getSelectedChannelIDs();
-  if (channelIDs.length === 0) {
-    if (window.showWarning) window.showWarning(window.t('channels.batchNoSelection'));
-    return;
-  }
-
-  deletingChannelRequest = {
-    type: 'batch',
-    channelIDs,
-    url: '/admin/channels/batch-delete',
-    options: {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel_ids: channelIDs })
-    }
-  };
-  const messageEl = document.getElementById('deleteModalMessage');
-  if (messageEl) {
-    messageEl.textContent = window.t('channels.confirmBatchDeleteMsg', { count: channelIDs.length });
-  }
-  document.getElementById('deleteModal').classList.add('show');
-}
-
 async function batchRefreshSelectedChannels(mode) {
   const channelIDs = getSelectedChannelIDs();
   if (channelIDs.length === 0) {
@@ -744,7 +602,7 @@ async function batchRefreshSelectedChannels(mode) {
   }
 
   // 禁用批量操作按钮
-  const actionBtnIDs = ['batchRefreshMergeBtn', 'batchRefreshReplaceBtn', 'batchEnableChannelsBtn', 'batchDisableChannelsBtn', 'batchDeleteChannelsBtn'];
+  const actionBtnIDs = ['batchRefreshMergeBtn', 'batchRefreshReplaceBtn', 'batchEnableChannelsBtn', 'batchDisableChannelsBtn'];
   actionBtnIDs.forEach(id => { const btn = document.getElementById(id); if (btn) btn.disabled = true; });
 
   const total = channelIDs.length;
@@ -778,9 +636,13 @@ async function batchRefreshSelectedChannels(mode) {
   detailSpan.style.cssText = 'font-size:0.85em;color:var(--neutral-600)';
   progressEl.appendChild(detailSpan);
 
-  const host = typeof window.ensureNotifyHost === 'function'
-    ? window.ensureNotifyHost()
-    : document.body;
+  let host = document.getElementById('notify-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'notify-host';
+    host.style.cssText = 'position:fixed;top:var(--space-6);right:var(--space-6);display:flex;flex-direction:column;gap:var(--space-2);z-index:9999;pointer-events:none';
+    document.body.appendChild(host);
+  }
   host.appendChild(progressEl);
   requestAnimationFrame(() => { progressEl.style.opacity = '1'; progressEl.style.transform = 'translateX(0)'; });
 
@@ -906,7 +768,6 @@ function batchRefreshSelectedChannelsReplace() {
 async function copyChannel(id, name) {
   const channel = channels.find(c => c.id === id);
   if (!channel) return;
-  await syncScheduledCheckVisibility();
 
   const copiedName = generateCopyName(name);
 
@@ -946,20 +807,14 @@ async function copyChannel(id, name) {
   document.getElementById('channelPriority').value = channel.priority;
   document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
   document.getElementById('channelEnabled').checked = true;
-  document.getElementById('channelScheduledCheckEnabled').checked = !!channel.scheduled_check_enabled;
-  document.getElementById('channelScheduledCheckModel').value = channel.scheduled_check_model || '';
 
   // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
-  redirectTableData = (channel.models || []).map(m => ({
-    model: m.model || '',
-    redirect_model: m.redirect_model || ''
-  }));
+  redirectTableData = (channel.models || []).map(normalizeRedirectEditorRow);
   selectedModelIndices.clear();
   currentModelFilter = '';
   const modelFilterInput = document.getElementById('modelFilterInput');
   if (modelFilterInput) modelFilterInput.value = '';
   renderRedirectTable();
-  syncScheduledCheckModelState();
 
   resetChannelFormDirty();
   document.getElementById('channelModal').classList.add('show');
@@ -1025,7 +880,8 @@ function parseModels(input) {
 
     if (!seen.has(modelKey)) {
       seen.add(modelKey);
-      result.push({ model, redirect_model: redirect });
+      const targets = redirect && redirect !== model ? [{ target_model: redirect, weight: 1 }] : [];
+      result.push({ model, redirect_model: redirect !== model ? redirect : '', targets });
     }
   }
 
@@ -1038,7 +894,7 @@ function addRedirectRow() {
 
 function openModelImportModal() {
   document.getElementById('modelImportTextarea').value = '';
-  document.getElementById('modelImportPreviewContent').classList.add('hidden');
+  document.getElementById('modelImportPreviewContent').style.display = 'none';
   document.getElementById('modelImportModal').classList.add('show');
   setTimeout(() => document.getElementById('modelImportTextarea').focus(), 100);
 }
@@ -1060,12 +916,12 @@ function setupModelImportPreview() {
       const models = parseModels(input);
       if (models.length > 0) {
         countSpan.textContent = models.length;
-        previewContent.classList.remove('hidden');
+        previewContent.style.display = 'block';
       } else {
-        previewContent.classList.add('hidden');
+        previewContent.style.display = 'none';
       }
     } else {
-      previewContent.classList.add('hidden');
+      previewContent.style.display = 'none';
     }
   });
 }
@@ -1096,7 +952,7 @@ function confirmModelImport() {
   newModels.forEach(entry => {
     const modelKey = entry.model.toLowerCase();
     if (!existingModels.has(modelKey)) {
-      redirectTableData.push({ model: entry.model, redirect_model: entry.redirect_model });
+      redirectTableData.push(normalizeRedirectEditorRow(entry));
       existingModels.add(modelKey);
       addedCount++;
     }
@@ -1137,20 +993,29 @@ function deleteRedirectRow(index) {
 function updateRedirectRow(index, field, value) {
   if (redirectTableData[index]) {
     const nextValue = value.trim();
-    if (redirectTableData[index][field] === nextValue) return;
-
-    redirectTableData[index][field] = nextValue;
-
-    // 当模型名称变化时，更新重定向目标的 placeholder
-    if (field === 'model') {
-      const tbody = document.getElementById('redirectTableBody');
-      const row = tbody?.children[index];
-      if (row) {
-        const toInput = row.querySelector('.redirect-to-input');
-        if (toInput) {
-          toInput.placeholder = nextValue || window.t('channels.leaveEmptyNoRedirect');
-        }
+    if (field === 'targets_input') {
+      const nextTargets = parseTargetsInput(nextValue);
+      const currentSerialized = JSON.stringify(redirectTableData[index].targets || []);
+      const nextSerialized = JSON.stringify(nextTargets);
+      if (currentSerialized === nextSerialized) return;
+      redirectTableData[index].targets = nextTargets;
+      redirectTableData[index].redirect_model = getPrimaryRedirectModel(nextTargets, redirectTableData[index].model);
+    } else {
+      if (redirectTableData[index][field] === nextValue) return;
+      redirectTableData[index][field] = nextValue;
+      if (field === 'model') {
+        syncRedirectRow(redirectTableData[index]);
       }
+    }
+
+    const tbody = document.getElementById('redirectTableBody');
+    const row = tbody?.querySelector(`tr[data-model-index="${index}"]`);
+    if (row) {
+      const targetsInput = row.querySelector('.redirect-targets-input');
+      if (targetsInput && field === 'model' && !targetsInput.value.trim()) {
+        targetsInput.placeholder = nextValue || window.t('channels.leaveEmptyNoRedirect');
+      }
+      renderRedirectTargetsPreview(row.querySelector('.redirect-targets-preview'), redirectTableData[index].targets);
     }
 
     markChannelFormDirty();
@@ -1164,16 +1029,15 @@ function updateRedirectRow(index, field, value) {
  * @returns {HTMLElement|null} 表格行元素
  */
 function createRedirectRow(redirect, index) {
+  const normalizedRedirect = normalizeRedirectEditorRow(redirect);
   const modelName = redirect.model || '';
   const rowData = {
     index: index,
     displayIndex: index + 1,
     from: modelName,
-    to: redirect.redirect_model || '',
-    toPlaceholder: modelName || window.t('channels.leaveEmptyNoRedirect'),
-    mobileLabelModel: window.t('channels.modal.modelName'),
-    mobileLabelTarget: window.t('channels.modal.redirectTarget'),
-    mobileLabelActions: window.t('common.actions')
+    targetsInput: formatTargetsForInput(normalizedRedirect.targets),
+    targetsPlaceholder: modelName || window.t('channels.leaveEmptyNoRedirect'),
+    targetsHint: window.t('channels.multiTargetInputHint')
   };
 
   const row = TemplateEngine.render('tpl-redirect-row', rowData);
@@ -1188,6 +1052,9 @@ function createRedirectRow(redirect, index) {
     checkbox.checked = selectedModelIndices.has(index);
   }
 
+  row.dataset.modelIndex = String(index);
+  renderRedirectTargetsPreview(row.querySelector('.redirect-targets-preview'), normalizedRedirect.targets);
+
   return row;
 }
 
@@ -1201,25 +1068,18 @@ function initRedirectTableEventDelegation() {
   tbody.dataset.delegated = 'true';
 
   // 处理输入框变更
-  tbody.addEventListener('change', (e) => {
-    const checkbox = e.target.closest('.model-checkbox');
-    if (checkbox) {
-      const index = parseInt(checkbox.dataset.index, 10);
-      toggleModelSelection(index, checkbox.checked);
-      return;
-    }
-
+  tbody.addEventListener('input', (e) => {
     const fromInput = e.target.closest('.redirect-from-input');
     if (fromInput) {
-      const index = parseInt(fromInput.dataset.index, 10);
+      const index = parseInt(fromInput.dataset.index);
       updateRedirectRow(index, 'model', fromInput.value);
       return;
     }
 
-    const toInput = e.target.closest('.redirect-to-input');
-    if (toInput) {
-      const index = parseInt(toInput.dataset.index, 10);
-      updateRedirectRow(index, 'redirect_model', toInput.value);
+    const targetsInput = e.target.closest('.redirect-targets-input');
+    if (targetsInput) {
+      const index = parseInt(targetsInput.dataset.index);
+      updateRedirectRow(index, 'targets_input', targetsInput.value);
     }
   });
 
@@ -1227,14 +1087,14 @@ function initRedirectTableEventDelegation() {
   tbody.addEventListener('click', (e) => {
     const deleteBtn = e.target.closest('.redirect-delete-btn');
     if (deleteBtn) {
-      const index = parseInt(deleteBtn.dataset.index, 10);
+      const index = parseInt(deleteBtn.dataset.index);
       deleteRedirectRow(index);
       return;
     }
 
     const lowercaseBtn = e.target.closest('.lowercase-btn');
     if (lowercaseBtn) {
-      const index = parseInt(lowercaseBtn.dataset.index, 10);
+      const index = parseInt(lowercaseBtn.dataset.index);
       const row = lowercaseBtn.closest('tr');
       const fromInput = row?.querySelector('.redirect-from-input');
       if (fromInput && fromInput.value) {
@@ -1290,8 +1150,8 @@ function getVisibleModelIndices() {
   return redirectTableData
     .map((item, index) => {
       const model = (item.model || '').toLowerCase();
-      const redirect = (item.redirect_model || '').toLowerCase();
-      if (model.includes(keyword) || redirect.includes(keyword)) {
+      const targets = formatTargetsForInput(item.targets || []).toLowerCase();
+      if (model.includes(keyword) || targets.includes(keyword)) {
         return index;
       }
       return null;
@@ -1314,7 +1174,6 @@ function renderRedirectTable() {
   // 计数所有有效模型（只要有模型名称就算）
   const validCount = redirectTableData.filter(r => r.model && r.model.trim()).length;
   countSpan.textContent = validCount;
-  syncScheduledCheckModelState();
 
   // 初始化事件委托（仅一次）
   initRedirectTableEventDelegation();
@@ -1591,9 +1450,10 @@ async function fetchModelsFromAPI() {
       const modelName = typeof entry === 'string' ? entry : entry.model;
       const modelKey = (modelName || '').trim().toLowerCase();
       if (modelName && !existingModels.has(modelKey)) {
-        // 使用返回的 redirect_model，如果没有则使用 model
-        const redirectModel = (typeof entry === 'object' && entry.redirect_model) ? entry.redirect_model : modelName;
-        redirectTableData.push({ model: modelName, redirect_model: redirectModel });
+        const normalizedEntry = typeof entry === 'object'
+          ? normalizeRedirectEditorRow(entry)
+          : normalizeRedirectEditorRow({ model: modelName });
+        redirectTableData.push(normalizedEntry);
         existingModels.add(modelKey);
         addedCount++;
       }
@@ -1633,8 +1493,7 @@ const COMMON_MODELS = {
     'gpt-5.2',
     'gpt-5.2-codex',
     'gpt-5.3-codex',
-    'gpt-5.4',
-    'gpt-5.4-mini'
+    'gpt-5.4'
   ],
   gemini: [
     'gemini-2.5-flash',
@@ -1670,7 +1529,7 @@ function addCommonModels() {
   for (const modelName of commonModels) {
     const modelKey = modelName.toLowerCase();
     if (!existingModels.has(modelKey)) {
-      redirectTableData.push({ model: modelName, redirect_model: '' });
+      redirectTableData.push(normalizeRedirectEditorRow({ model: modelName }));
       existingModels.add(modelKey);
       addedCount++;
     }

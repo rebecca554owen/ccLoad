@@ -210,6 +210,7 @@ window.I18N_LOCALES['en'] = {
   'channels.batchDeleteModelsTitle': 'Batch delete selected models',
   'channels.searchModelPlaceholder': 'Search model name...',
   'channels.redirectTarget': 'Redirect Target (Optional)',
+  'channels.multiTargetInputHint': 'One target per line, supports `target * weight`',
   'channels.enableChannel': 'Enable Channel',
   'channels.enableScheduledCheck': 'Enable Scheduled Checks',
   'channels.priority': 'Priority',
@@ -647,6 +648,10 @@ window.I18N_LOCALES['en'] = {
   // Logs
   // ============================================================
   'logs.title': 'Request Logs - Claude Code & Codex Proxy',
+  'logs.resultType': 'Result',
+  'logs.resultAll': 'All',
+  'logs.resultSuccess': 'Success (2xx)',
+  'logs.resultError': 'Error (non-2xx)',
   'logs.statusCode': 'Status',
   'logs.logSource': 'Source',
   'logs.statusPlaceholder': 'e.g. 200 / 403',
