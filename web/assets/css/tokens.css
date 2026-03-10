@@ -74,15 +74,53 @@
       background: var(--error-100);
       color: var(--error-700);
     }
-    .stats-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      background: var(--neutral-100);
-      color: var(--neutral-700);
-    }
+.stats-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--neutral-100);
+  color: var(--neutral-700);
+}
+.token-usage-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.token-usage-row {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.token-usage-badge {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+.token-usage-badge--input {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary-700);
+}
+.token-usage-badge--output {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: var(--text);
+}
+.token-usage-badge--cache-read {
+  background: rgba(var(--success-rgb), 0.12);
+  border-color: rgba(var(--success-rgb), 0.2);
+  color: var(--success-700);
+}
+.token-usage-badge--cache-create {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #b45309;
+}
     .success-rate-high {
       background: var(--success-100);
       color: var(--success-700);
@@ -184,20 +222,48 @@
       background: rgba(255, 255, 255, 0.06);
     }
 
-    :root[data-theme="dark"] .token-table th,
-    :root[data-theme="dark"] .token-table td,
-    :root[data-theme="dark"] .metric-value,
-    :root[data-resolved-theme="dark"] .token-table th,
-    :root[data-resolved-theme="dark"] .token-table td,
-    :root[data-resolved-theme="dark"] .metric-value {
-      color: var(--text);
-      border-color: var(--line);
-    }
+:root[data-theme="dark"] .token-table th,
+:root[data-theme="dark"] .token-table td,
+:root[data-theme="dark"] .metric-value,
+:root[data-resolved-theme="dark"] .token-table th,
+:root[data-resolved-theme="dark"] .token-table td,
+:root[data-resolved-theme="dark"] .metric-value {
+  color: var(--text);
+  border-color: var(--line);
+}
 
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme]) .token-table,
-      :root:not([data-theme]) .modal-content,
-      :root:not([data-theme]) .token-display {
+:root[data-theme="dark"] .token-usage-badge--input,
+:root[data-resolved-theme="dark"] .token-usage-badge--input {
+  background: rgba(var(--primary-rgb), 0.18);
+  border-color: rgba(var(--primary-rgb), 0.28);
+  color: color-mix(in srgb, var(--primary-200) 78%, white 22%);
+}
+
+:root[data-theme="dark"] .token-usage-badge--output,
+:root[data-resolved-theme="dark"] .token-usage-badge--output {
+  background: rgba(148, 163, 184, 0.16);
+  border-color: rgba(148, 163, 184, 0.24);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .token-usage-badge--cache-read,
+:root[data-resolved-theme="dark"] .token-usage-badge--cache-read {
+  background: rgba(var(--success-rgb), 0.18);
+  border-color: rgba(var(--success-rgb), 0.28);
+  color: #bbf7d0;
+}
+
+:root[data-theme="dark"] .token-usage-badge--cache-create,
+:root[data-resolved-theme="dark"] .token-usage-badge--cache-create {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.28);
+  color: #fde68a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .token-table,
+  :root:not([data-theme]) .modal-content,
+  :root:not([data-theme]) .token-display {
         background: var(--glass-bg) !important;
         color: var(--text);
         border-color: var(--glass-border);
@@ -208,13 +274,37 @@
         background: rgba(255, 255, 255, 0.06);
       }
 
-      :root:not([data-theme]) .token-table th,
-      :root:not([data-theme]) .token-table td,
-      :root:not([data-theme]) .metric-value {
-        color: var(--text);
-        border-color: var(--line);
-      }
-    }
+  :root:not([data-theme]) .token-table th,
+  :root:not([data-theme]) .token-table td,
+  :root:not([data-theme]) .metric-value {
+    color: var(--text);
+    border-color: var(--line);
+  }
+
+  :root:not([data-theme]) .token-usage-badge--input {
+    background: rgba(var(--primary-rgb), 0.18);
+    border-color: rgba(var(--primary-rgb), 0.28);
+    color: color-mix(in srgb, var(--primary-200) 78%, white 22%);
+  }
+
+  :root:not([data-theme]) .token-usage-badge--output {
+    background: rgba(148, 163, 184, 0.16);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: var(--text);
+  }
+
+  :root:not([data-theme]) .token-usage-badge--cache-read {
+    background: rgba(var(--success-rgb), 0.18);
+    border-color: rgba(var(--success-rgb), 0.28);
+    color: #bbf7d0;
+  }
+
+  :root:not([data-theme]) .token-usage-badge--cache-create {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.28);
+    color: #fde68a;
+  }
+}
 
 .token-action-edit {
   background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
