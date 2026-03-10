@@ -310,24 +310,24 @@
   background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
   border-color: rgba(var(--primary-rgb), 0.22);
   color: #fff;
-  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.24);
+  box-shadow: none;
 }
 
 .token-action-edit:hover {
   background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
   border-color: rgba(var(--primary-rgb), 0.3);
-  box-shadow: 0 10px 22px rgba(var(--primary-rgb), 0.3);
+  box-shadow: none;
 }
 
 .token-action-copy {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 245, 247, 0.72));
   border-color: rgba(183, 194, 204, 0.9);
   color: var(--text-primary-light);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  box-shadow: none;
 }
 
 .token-action-copy:hover {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 247, 248, 0.78));
   border-color: rgba(168, 181, 192, 0.92);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+  box-shadow: none;
 }

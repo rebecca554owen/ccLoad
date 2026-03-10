@@ -271,6 +271,7 @@ function createChannelCard(channel) {
     costHtml: costHtml,
     healthHtml: healthHtml,
     enabled: channel.enabled,
+    toggleButtonClass: channel.enabled ? 'table-action-btn--warning' : 'table-action-btn--success',
     toggleText: channel.enabled ? window.t('common.disable') : window.t('common.enable'),
     toggleTitle: channel.enabled ? window.t('channels.toggleDisable') : window.t('channels.toggleEnable')
   };

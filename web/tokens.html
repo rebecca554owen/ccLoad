@@ -397,8 +397,9 @@
       <td style="color: var(--neutral-600);">{{lastUsed}}</td>
       <td style="white-space: nowrap;">
         <div class="token-actions">
-          <button class="btn-copy-token table-action-btn table-action-btn--neutral" data-token="{{token}}" data-i18n="common.copy">复制</button>
           <button class="btn-edit table-action-btn table-action-btn--primary" data-i18n="common.edit">编辑</button>
+          <button class="btn-toggle table-action-btn {{toggleButtonClass}}" data-token-id="{{id}}" data-active="{{isActive}}" title="{{toggleTitle}}">{{toggleText}}</button>
+          <button class="btn-copy-token table-action-btn table-action-btn--neutral" data-token="{{token}}" data-i18n="common.copy">复制</button>
           <button class="btn-delete table-action-btn table-action-btn--danger" data-i18n="common.delete">删除</button>
         </div>
       </td>
