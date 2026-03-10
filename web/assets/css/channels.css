@@ -254,7 +254,6 @@
 
     .modal-inline-table {
       border-radius: 12px;
-      overflow: hidden;
       border: 1px solid var(--surface-border);
       background: var(--card-bg-strong);
     }
