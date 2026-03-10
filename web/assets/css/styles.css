@@ -47,14 +47,30 @@
   --warning-400: #fbbf24;
   --warning-500: #f59e0b;
   --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-100: #fef3c7;
   --error-50: #fef2f2;
   --error-400: #f87171;
   --error-500: #ef4444;
   --error-600: #dc2626;
+  --error-100: #fee2e2;
+  --error-200: #fecaca;
+  --error-300: #fca5a5;
+  --error-700: #b91c1c;
+  --error-800: #991b1b;
   --error-rgb: 239, 68, 68;
   --info-50: #f0fbf5;
   --info-500: #18a058;
   --info-600: #128347;
+  --success-100: #d1fae5;
+  --success-200: #a7f3d0;
+  --success-300: #6ee7b7;
+  --success-700: #047857;
+  --success-800: #065f46;
+  --white: #ffffff;
+  --neutral-0: #ffffff;
+  --radius-md: 0.625rem;
+  --card-muted-text: var(--neutral-600);
 
   /* 玻璃态效果 */
   --glass-bg: rgba(255, 255, 255, 0.95);
@@ -3612,12 +3628,28 @@ body.trend-page .chart-info {
   --neutral-300: rgba(34, 51, 43, 0.14);
   --neutral-200: rgba(34, 51, 43, 0.08);
   --neutral-100: rgba(255, 255, 255, 0.72);
+  --neutral-0: #ffffff;
+  --white: #ffffff;
   --success-500: #18a058;
   --success-600: #137640;
+  --success-100: rgba(24, 160, 88, 0.14);
+  --success-200: rgba(24, 160, 88, 0.22);
+  --success-300: rgba(24, 160, 88, 0.32);
+  --success-700: #0f6a3a;
+  --success-800: #0c4528;
   --warning-600: #c88913;
+  --warning-100: rgba(240, 160, 32, 0.14);
+  --warning-700: #9a670d;
   --error-500: #d14343;
   --error-600: #a32626;
+  --error-100: rgba(209, 67, 67, 0.14);
+  --error-200: rgba(209, 67, 67, 0.24);
+  --error-300: rgba(209, 67, 67, 0.34);
+  --error-700: #8b1e1e;
+  --error-800: #6f1818;
   --info-50: rgba(24, 160, 88, 0.12);
+  --radius-md: 0.625rem;
+  --card-muted-text: var(--muted);
 }
 
 :root[data-theme="dark"],
@@ -3648,12 +3680,28 @@ body.trend-page .chart-info {
   --neutral-300: rgba(255, 255, 255, 0.14);
   --neutral-200: rgba(255, 255, 255, 0.08);
   --neutral-100: rgba(255, 255, 255, 0.08);
+  --neutral-0: #ffffff;
+  --white: #ffffff;
   --success-500: #34c978;
   --success-600: #9ff0be;
+  --success-100: rgba(52, 201, 120, 0.18);
+  --success-200: rgba(52, 201, 120, 0.28);
+  --success-300: rgba(52, 201, 120, 0.38);
+  --success-700: #9ff0be;
+  --success-800: #c8f7db;
   --warning-600: #ffcf70;
+  --warning-100: rgba(255, 191, 71, 0.18);
+  --warning-700: #ffd98f;
   --error-500: #ef5350;
   --error-600: #ff8a80;
+  --error-100: rgba(239, 83, 80, 0.18);
+  --error-200: rgba(239, 83, 80, 0.28);
+  --error-300: rgba(239, 83, 80, 0.38);
+  --error-700: #ff9f97;
+  --error-800: #ffc2bd;
   --info-50: rgba(95, 207, 139, 0.14);
+  --radius-md: 0.625rem;
+  --card-muted-text: var(--muted);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -3676,6 +3724,22 @@ body.trend-page .chart-info {
     --danger: #ef5350;
     --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
     --ring: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 1px 0 rgba(255, 255, 255, 0.09) inset;
+    --neutral-0: #ffffff;
+    --white: #ffffff;
+    --success-100: rgba(52, 201, 120, 0.18);
+    --success-200: rgba(52, 201, 120, 0.28);
+    --success-300: rgba(52, 201, 120, 0.38);
+    --success-700: #9ff0be;
+    --success-800: #c8f7db;
+    --warning-100: rgba(255, 191, 71, 0.18);
+    --warning-700: #ffd98f;
+    --error-100: rgba(239, 83, 80, 0.18);
+    --error-200: rgba(239, 83, 80, 0.28);
+    --error-300: rgba(239, 83, 80, 0.38);
+    --error-700: #ff9f97;
+    --error-800: #ffc2bd;
+    --radius-md: 0.625rem;
+    --card-muted-text: var(--muted);
   }
 }
 
@@ -4124,6 +4188,7 @@ button.primary {
   color: var(--muted);
   background: transparent;
   border-radius: 999px;
+  border: 1px solid transparent;
 }
 
 .toggle-btn:hover {
@@ -4132,8 +4197,10 @@ button.primary {
 }
 
 .toggle-btn.active {
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--text);
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.26);
+  color: color-mix(in srgb, var(--primary-700) 82%, white 18%);
+  font-weight: 650;
   box-shadow: none;
 }
 
@@ -4141,8 +4208,9 @@ button.primary {
 :root[data-resolved-theme="dark"] .toggle-btn.active,
 :root[data-theme="dark"] .time-range-btn.active,
 :root[data-resolved-theme="dark"] .time-range-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
+  background: rgba(var(--primary-rgb), 0.18);
+  border-color: rgba(var(--primary-rgb), 0.32);
+  color: color-mix(in srgb, var(--primary-200) 72%, white 28%);
 }
 
 input:not([type="checkbox"]):not([type="radio"]),
