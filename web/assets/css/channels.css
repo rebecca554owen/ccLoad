@@ -192,9 +192,9 @@
     }
 
     .ch-col-name {
-      width: 480px;
-      min-width: 480px;
-      max-width: 480px;
+      width: 420px;
+      min-width: 420px;
+      max-width: 420px;
     }
 
     .ch-col-priority {
@@ -284,9 +284,9 @@
     }
 
     .ch-col-actions {
-      width: 220px;
-      min-width: 220px;
-      max-width: 220px;
+      width: 228px;
+      min-width: 228px;
+      max-width: 228px;
       white-space: nowrap;
       text-align: right;
     }
@@ -419,8 +419,15 @@
     .ch-action-group {
       display: inline-flex;
       flex-wrap: nowrap;
-      gap: 2px;
+      gap: 3px;
       align-items: center;
+      justify-content: flex-end;
+    }
+
+    .ch-action-group .btn-icon {
+      min-height: 28px;
+      padding: 0 10px;
+      font-size: 11px;
     }
 
     .redirect-targets-header {
@@ -435,6 +442,75 @@
       font-weight: 500;
       color: var(--neutral-500);
       line-height: 1.4;
+    }
+
+    .model-target-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .model-target-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 84px 30px 30px;
+      gap: 6px;
+      align-items: start;
+    }
+
+    .model-target-weight-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+
+    .model-target-weight-label {
+      font-size: 11px;
+      color: var(--neutral-600);
+      white-space: nowrap;
+    }
+
+    .target-weight-input {
+      width: 46px;
+      min-width: 46px;
+      text-align: center;
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+    }
+
+    .add-target-btn,
+    .target-delete-btn {
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .target-delete-btn {
+      width: 30px;
+      padding: 0;
+    }
+
+    .add-target-btn {
+      width: 30px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .model-target-inline-spacer {
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
     }
 
     .redirect-targets-cell {
@@ -507,15 +583,17 @@
     }
 
     @media (max-width: 768px) {
+      .model-target-row {
+        grid-template-columns: 1fr;
+      }
+
+      .model-target-weight-wrap {
+        justify-content: flex-start;
+      }
+
       .redirect-targets-input {
         min-height: 78px;
       }
-    }
-
-    .ch-action-group .btn-icon {
-      font-size: 13px;
-      padding: 2px 6px;
-      white-space: nowrap;
     }
 
     .channel-table-selection-toggle {
@@ -791,23 +869,259 @@
       white-space: nowrap;
     }
 
-    .modal-inline-input {
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--neutral-900);
-      color-scheme: light;
-      backdrop-filter: blur(8px);
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    .channels-filter-card,
+    #channelModal,
+    #testModal,
+    #keyImportModal,
+    #keyExportModal,
+    #modelImportModal {
+      --channels-input-height: 34px;
+      --channels-input-radius: 8px;
+      --channels-input-border: 1px solid rgba(15, 23, 42, 0.08);
+      --channels-input-bg: rgba(255, 255, 255, 0.92);
+      --channels-input-color: var(--neutral-900);
+      --channels-input-placeholder: rgba(107, 114, 128, 0.7);
+      --channels-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      --channels-input-focus-border: rgba(59, 130, 246, 0.7);
+      --channels-input-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      --channels-input-focus-bg: rgba(255, 255, 255, 0.98);
+      --channels-field-label-color: var(--neutral-700);
     }
 
-    .modal-inline-input:focus {
+    :root[data-theme="dark"] .channels-filter-card,
+    :root[data-theme="dark"] #channelModal,
+    :root[data-theme="dark"] #testModal,
+    :root[data-theme="dark"] #keyImportModal,
+    :root[data-theme="dark"] #keyExportModal,
+    :root[data-theme="dark"] #modelImportModal,
+    :root[data-resolved-theme="dark"] .channels-filter-card,
+    :root[data-resolved-theme="dark"] #channelModal,
+    :root[data-resolved-theme="dark"] #testModal,
+    :root[data-resolved-theme="dark"] #keyImportModal,
+    :root[data-resolved-theme="dark"] #keyExportModal,
+    :root[data-resolved-theme="dark"] #modelImportModal {
+      --channels-input-border: 1px solid rgba(255, 255, 255, 0.08);
+      --channels-input-bg: rgba(255, 255, 255, 0.06);
+      --channels-input-color: rgba(255, 255, 255, 0.96);
+      --channels-input-placeholder: rgba(255, 255, 255, 0.34);
+      --channels-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      --channels-input-focus-border: rgba(96, 165, 250, 0.7);
+      --channels-input-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+      --channels-input-focus-bg: rgba(255, 255, 255, 0.1);
+      --channels-field-label-color: rgba(255, 255, 255, 0.78);
+    }
+
+    .channel-form-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .channel-form-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .channel-form-field--grow {
+      flex: 1 1 320px;
+    }
+
+    .channel-form-field--type {
+      flex: 0 0 550px;
+      max-width: 100%;
+    }
+
+    .channel-form-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .channel-form-toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .channel-form-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .channel-form-actions {
+      display: flex;
+      gap: 12px;
+      margin-left: auto;
+    }
+
+    .channel-form-label {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .channel-form-field-label {
+      margin: 0;
+      font-size: 13px;
+      color: var(--channels-field-label-color);
+      white-space: nowrap;
+    }
+
+    .channel-form-input-grow {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .channel-form-input-mono {
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    }
+
+    .channel-form-input-sm {
+      width: 100px;
+      min-width: 100px;
+    }
+
+    .channel-form-input-md {
+      width: 220px;
+      min-width: 220px;
+    }
+
+    .channel-form-radio-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .channels-filter-card .filter-input,
+    .channels-filter-card .form-select,
+    #channelForm .form-input,
+    #channelForm .table-filter-input,
+    #channelForm .modal-inline-input,
+    #channelForm select,
+    #testModal .form-input,
+    #testModal .form-select,
+    #keyImportModal .form-input,
+    #keyExportModal .form-input,
+    #modelImportModal .form-input {
+      height: var(--channels-input-height);
+      min-height: var(--channels-input-height);
+      padding: 6px 10px;
+      border: var(--channels-input-border);
+      border-radius: var(--channels-input-radius);
+      background: var(--channels-input-bg);
+      color: var(--channels-input-color);
+      box-shadow: var(--channels-input-shadow);
+      font-size: 13px;
+      line-height: 1.4;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    #channelForm .modal-inline-input,
+    #channelForm .redirect-from-input,
+    #channelForm .target-model-input,
+    #channelForm .target-weight-input {
+      border: var(--channels-input-border) !important;
+      background: var(--channels-input-bg) !important;
+      color: var(--channels-input-color) !important;
+      box-shadow: var(--channels-input-shadow) !important;
+    }
+
+    #channelForm textarea.form-input,
+    #keyImportModal textarea.form-input,
+    #keyExportModal textarea.form-input,
+    #modelImportModal textarea.form-input,
+    #testModal textarea.form-input {
+      min-height: 120px;
+      height: auto;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      resize: vertical;
+    }
+
+    .channels-filter-card .filter-input::placeholder,
+    #channelForm .form-input::placeholder,
+    #channelForm .table-filter-input::placeholder,
+    #channelForm .modal-inline-input::placeholder,
+    #testModal .form-input::placeholder,
+    #keyImportModal .form-input::placeholder,
+    #keyExportModal .form-input::placeholder,
+    #modelImportModal .form-input::placeholder {
+      color: var(--channels-input-placeholder);
+    }
+
+    .channels-filter-card .filter-input:focus,
+    .channels-filter-card .form-select:focus,
+    #channelForm .form-input:focus,
+    #channelForm .table-filter-input:focus,
+    #channelForm .modal-inline-input:focus,
+    #channelForm select:focus,
+    #testModal .form-input:focus,
+    #testModal .form-select:focus,
+    #keyImportModal .form-input:focus,
+    #keyExportModal .form-input:focus,
+    #modelImportModal .form-input:focus {
+      outline: none;
+      border-color: var(--channels-input-focus-border) !important;
+      box-shadow: var(--channels-input-focus-shadow);
+      background: var(--channels-input-focus-bg);
+    }
+
+    #channelForm .inline-url-input,
+    #channelForm .inline-key-input,
+    #channelForm .redirect-from-input,
+    #channelForm .target-model-input,
+    #channelForm #channelCustomEndpoint {
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    }
+
+    #channelForm .target-weight-input,
+    #channelForm #channelPriority,
+    #channelForm #channelDailyCostLimit {
+      font-variant-numeric: tabular-nums;
+    }
+
+    #redirectTableBody .redirect-row-main td {
+      vertical-align: top;
+    }
+
+    #redirectTableBody .redirect-row-main td:nth-child(2) > div {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) 24px;
+      gap: 6px;
+      align-items: start;
+      width: 100%;
+    }
+
+    #redirectTableBody .redirect-row-main td:nth-child(2),
+    #redirectTableBody .redirect-row-main td:nth-child(3) {
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+
+    #channelForm .redirect-from-input,
+    #channelForm .target-model-input {
+      width: 100%;
+      min-width: 0;
+    }
+
+    #channelForm .modal-inline-input:focus {
       outline: none;
       border-color: var(--primary-500) !important;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      background: rgba(255, 255, 255, 0.7);
+      background: var(--channels-input-focus-bg);
     }
 
-    .modal-inline-input::placeholder {
-      color: var(--neutral-400);
+    #channelForm .modal-inline-input::placeholder {
+      color: var(--channels-input-placeholder);
     }
 
     .inline-url-col-select {
@@ -856,6 +1170,37 @@
     .inline-url-header-hint {
       margin: 0;
       font-weight: 400;
+    }
+
+    @media (max-width: 960px) {
+      .channel-form-field--type {
+        flex-basis: 100%;
+      }
+
+      .channel-form-actions {
+        margin-left: 0;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .channel-form-row,
+      .channel-form-field,
+      .channel-form-toolbar,
+      .channel-form-toolbar-group {
+        align-items: stretch;
+      }
+
+      .channel-form-field,
+      .channel-form-field--grow,
+      .channel-form-field--type {
+        width: 100%;
+        flex: 1 1 100%;
+      }
+
+      .channel-form-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
     }
 
     .inline-url-cell-center {

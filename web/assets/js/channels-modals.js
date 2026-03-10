@@ -1,3 +1,10 @@
+const DEFAULT_ENDPOINTS = {
+  anthropic: '/v1/messages',
+  codex: '/v1/responses',
+  openai: '/v1/chat/completions',
+  gemini: '/v1beta/models/gemini-pro:generateContent'
+};
+
 function setChannelModalTitle(i18nKey) {
   const titleEl = document.getElementById('modalTitle');
   if (!titleEl) return;
@@ -47,6 +54,29 @@ function normalizeRedirectTargets(targets, redirectModel, modelName) {
   return normalized;
 }
 
+function normalizeEditorTargets(targets, redirectModel, modelName) {
+  const normalized = [];
+
+  if (Array.isArray(targets)) {
+    targets.forEach((target) => {
+      normalized.push({
+        target_model: (target?.target_model || target?.targetModel || '').trim(),
+        weight: Number.isFinite(Number(target?.weight)) && Number(target.weight) > 0 ? Number(target.weight) : 1
+      });
+    });
+  }
+
+  if (normalized.length === 0) {
+    const redirect = (redirectModel || '').trim();
+    const model = (modelName || '').trim();
+    if (redirect && redirect !== model) {
+      normalized.push({ target_model: redirect, weight: 1 });
+    }
+  }
+
+  return normalized;
+}
+
 function getPrimaryRedirectModel(targets, modelName) {
   if (!Array.isArray(targets) || targets.length !== 1) return '';
   const target = (targets[0]?.target_model || '').trim();
@@ -57,10 +87,10 @@ function getPrimaryRedirectModel(targets, modelName) {
 
 function normalizeRedirectEditorRow(entry) {
   const model = (entry?.model || '').trim();
-  const targets = normalizeRedirectTargets(entry?.targets, entry?.redirect_model, model);
+  const targets = normalizeEditorTargets(entry?.targets, entry?.redirect_model, model);
   return {
     model,
-    redirect_model: getPrimaryRedirectModel(targets, model),
+    redirect_model: getPrimaryRedirectModel(normalizeRedirectTargets(targets, entry?.redirect_model, model), model),
     targets
   };
 }
@@ -99,8 +129,14 @@ function parseTargetsInput(input) {
 
 function syncRedirectRow(row) {
   if (!row) return;
-  row.targets = normalizeRedirectTargets(row.targets, row.redirect_model, row.model);
-  row.redirect_model = getPrimaryRedirectModel(row.targets, row.model);
+  row.targets = Array.isArray(row.targets)
+    ? row.targets.map((target) => ({
+        target_model: (target?.target_model || '').trim(),
+        weight: Number.isFinite(Number(target?.weight)) && Number(target.weight) > 0 ? Number(target.weight) : 1
+      }))
+    : [];
+  const validTargets = normalizeRedirectTargets(row.targets, row.redirect_model, row.model);
+  row.redirect_model = getPrimaryRedirectModel(validTargets, row.model);
 }
 
 function renderRedirectTargetsPreview(container, targets) {
@@ -121,6 +157,29 @@ function renderRedirectTargetsPreview(container, targets) {
     pill.textContent = weight > 1 ? `${target.target_model} × ${weight}` : target.target_model;
     container.appendChild(pill);
   });
+}
+
+function updateDefaultEndpointHint() {
+  const channelType = document.querySelector('input[name="channelType"]:checked')?.value || 'anthropic';
+  const defaultEndpoint = DEFAULT_ENDPOINTS[channelType] || '';
+  const input = document.getElementById('channelCustomEndpoint');
+  if (input && defaultEndpoint) {
+    input.placeholder = `例如 ${defaultEndpoint}，留空使用默认`;
+  }
+}
+
+function handleChannelTypeChange(event) {
+  if (event.target.name === 'channelType') {
+    updateDefaultEndpointHint();
+  }
+}
+
+function initChannelTypeDelegation() {
+  const modal = document.getElementById('channelModal');
+  if (modal && !modal.dataset.channelTypeDelegated) {
+    modal.dataset.channelTypeDelegated = 'true';
+    modal.addEventListener('change', handleChannelTypeChange);
+  }
 }
 
 async function handleChannelSaveSuccess({ isNewChannel, newChannelType, savedChannelId, response }) {
@@ -163,6 +222,8 @@ function showAddModal() {
   document.getElementById('channelEnabled').checked = true;
   document.querySelector('input[name="channelType"][value="anthropic"]').checked = true;
   document.querySelector('input[name="keyStrategy"][value="sequential"]').checked = true;
+  initChannelTypeDelegation();
+  updateDefaultEndpointHint();
 
   redirectTableData = [];
   selectedModelIndices.clear();
@@ -231,6 +292,8 @@ async function editChannel(id) {
 
   const channelType = channel.channel_type || 'anthropic';
   await window.ChannelTypeManager.renderChannelTypeRadios('channelTypeRadios', channelType);
+  initChannelTypeDelegation();
+  updateDefaultEndpointHint();
   const keyStrategy = channel.key_strategy || 'sequential';
   const strategyRadio = document.querySelector(`input[name="keyStrategy"][value="${keyStrategy}"]`);
   if (strategyRadio) {
@@ -238,6 +301,8 @@ async function editChannel(id) {
   }
   document.getElementById('channelPriority').value = channel.priority;
   document.getElementById('channelDailyCostLimit').value = channel.daily_cost_limit || 0;
+  document.getElementById('channelCustomUserAgent').value = channel.custom_user_agent || '';
+  document.getElementById('channelCustomEndpoint').value = channel.custom_endpoint || '';
   document.getElementById('channelEnabled').checked = channel.enabled;
 
   // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
@@ -320,6 +385,8 @@ async function saveChannel(event) {
     key_strategy: keyStrategy,
     priority: parseInt(document.getElementById('channelPriority').value) || 0,
     daily_cost_limit: parseFloat(document.getElementById('channelDailyCostLimit').value) || 0,
+    custom_user_agent: document.getElementById('channelCustomUserAgent').value.trim(),
+    custom_endpoint: document.getElementById('channelCustomEndpoint').value.trim(),
     models: models,
     enabled: document.getElementById('channelEnabled').checked
   };
@@ -889,7 +956,22 @@ function parseModels(input) {
 }
 
 function addRedirectRow() {
-  openModelImportModal();
+  redirectTableData.push({
+    model: '',
+    redirect_model: '',
+    targets: [{
+      target_model: '',
+      weight: 1
+    }]
+  });
+  renderRedirectTable();
+  markChannelFormDirty();
+
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#redirectTableBody .redirect-from-input');
+    const input = rows[rows.length - 1];
+    if (input) input.focus();
+  }, 0);
 }
 
 function openModelImportModal() {
@@ -993,29 +1075,10 @@ function deleteRedirectRow(index) {
 function updateRedirectRow(index, field, value) {
   if (redirectTableData[index]) {
     const nextValue = value.trim();
-    if (field === 'targets_input') {
-      const nextTargets = parseTargetsInput(nextValue);
-      const currentSerialized = JSON.stringify(redirectTableData[index].targets || []);
-      const nextSerialized = JSON.stringify(nextTargets);
-      if (currentSerialized === nextSerialized) return;
-      redirectTableData[index].targets = nextTargets;
-      redirectTableData[index].redirect_model = getPrimaryRedirectModel(nextTargets, redirectTableData[index].model);
-    } else {
-      if (redirectTableData[index][field] === nextValue) return;
-      redirectTableData[index][field] = nextValue;
-      if (field === 'model') {
-        syncRedirectRow(redirectTableData[index]);
-      }
-    }
-
-    const tbody = document.getElementById('redirectTableBody');
-    const row = tbody?.querySelector(`tr[data-model-index="${index}"]`);
-    if (row) {
-      const targetsInput = row.querySelector('.redirect-targets-input');
-      if (targetsInput && field === 'model' && !targetsInput.value.trim()) {
-        targetsInput.placeholder = nextValue || window.t('channels.leaveEmptyNoRedirect');
-      }
-      renderRedirectTargetsPreview(row.querySelector('.redirect-targets-preview'), redirectTableData[index].targets);
+    if (redirectTableData[index][field] === nextValue) return;
+    redirectTableData[index][field] = nextValue;
+    if (field === 'model') {
+      syncRedirectRow(redirectTableData[index]);
     }
 
     markChannelFormDirty();
@@ -1030,14 +1093,28 @@ function updateRedirectRow(index, field, value) {
  */
 function createRedirectRow(redirect, index) {
   const normalizedRedirect = normalizeRedirectEditorRow(redirect);
-  const modelName = redirect.model || '';
+  const targets = normalizedRedirect.targets.length > 0
+    ? normalizedRedirect.targets
+    : [{ target_model: '', weight: 1 }];
+  const targetsHtml = targets.map((target, targetIndex) => {
+    const addTargetHtml = targetIndex === targets.length - 1
+      ? `<button type="button" class="add-target-btn" data-index="${index}" data-i18n-title="channels.addTarget" title="${window.t('channels.addTarget')}" aria-label="${window.t('channels.addTarget')}">+</button>`
+      : '<span class="model-target-inline-spacer" aria-hidden="true"></span>';
+    const targetRow = TemplateEngine.render('tpl-redirect-target-row', {
+      modelIndex: index,
+      targetIndex: targetIndex,
+      targetModel: target.target_model || '',
+      targetPlaceholder: window.t('channels.leaveEmptyNoRedirect'),
+      weight: Number(target.weight) > 0 ? Number(target.weight) : 1,
+      addTargetHtml
+    });
+    return targetRow ? targetRow.outerHTML : '';
+  }).join('');
   const rowData = {
     index: index,
     displayIndex: index + 1,
-    from: modelName,
-    targetsInput: formatTargetsForInput(normalizedRedirect.targets),
-    targetsPlaceholder: modelName || window.t('channels.leaveEmptyNoRedirect'),
-    targetsHint: window.t('channels.multiTargetInputHint')
+    from: normalizedRedirect.model,
+    targetsHtml
   };
 
   const row = TemplateEngine.render('tpl-redirect-row', rowData);
@@ -1051,9 +1128,6 @@ function createRedirectRow(redirect, index) {
   if (checkbox) {
     checkbox.checked = selectedModelIndices.has(index);
   }
-
-  row.dataset.modelIndex = String(index);
-  renderRedirectTargetsPreview(row.querySelector('.redirect-targets-preview'), normalizedRedirect.targets);
 
   return row;
 }
@@ -1076,10 +1150,19 @@ function initRedirectTableEventDelegation() {
       return;
     }
 
-    const targetsInput = e.target.closest('.redirect-targets-input');
-    if (targetsInput) {
-      const index = parseInt(targetsInput.dataset.index);
-      updateRedirectRow(index, 'targets_input', targetsInput.value);
+    const targetModelInput = e.target.closest('.target-model-input');
+    if (targetModelInput) {
+      const modelIndex = parseInt(targetModelInput.dataset.modelIndex);
+      const targetIndex = parseInt(targetModelInput.dataset.targetIndex);
+      updateTargetRow(modelIndex, targetIndex, 'target_model', targetModelInput.value);
+      return;
+    }
+
+    const targetWeightInput = e.target.closest('.target-weight-input');
+    if (targetWeightInput) {
+      const modelIndex = parseInt(targetWeightInput.dataset.modelIndex);
+      const targetIndex = parseInt(targetWeightInput.dataset.targetIndex);
+      updateTargetRow(modelIndex, targetIndex, 'weight', targetWeightInput.value);
     }
   });
 
@@ -1102,6 +1185,21 @@ function initRedirectTableEventDelegation() {
         fromInput.value = lowercased;
         updateRedirectRow(index, 'model', lowercased);
       }
+      return;
+    }
+
+    const addTargetBtn = e.target.closest('.add-target-btn');
+    if (addTargetBtn) {
+      const index = parseInt(addTargetBtn.dataset.index);
+      addTargetToModel(index);
+      return;
+    }
+
+    const deleteTargetBtn = e.target.closest('.target-delete-btn');
+    if (deleteTargetBtn) {
+      const modelIndex = parseInt(deleteTargetBtn.dataset.modelIndex);
+      const targetIndex = parseInt(deleteTargetBtn.dataset.targetIndex);
+      deleteTargetFromModel(modelIndex, targetIndex);
     }
   });
 
@@ -1187,7 +1285,7 @@ function renderRedirectTable() {
       tbody.appendChild(emptyRow);
     } else {
       // 降级：模板不存在时使用简单HTML
-      tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--neutral-500);">${window.t('channels.noModelConfig')}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" style="padding: 20px; text-align: center; color: var(--neutral-500);">${window.t('channels.noModelConfig')}</td></tr>`;
     }
     return;
   }
@@ -1196,7 +1294,7 @@ function renderRedirectTable() {
   const visibleIndices = getVisibleModelIndices();
 
   if (visibleIndices.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--neutral-500);">${window.t('channels.noMatchingModels')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" style="padding: 20px; text-align: center; color: var(--neutral-500);">${window.t('channels.noMatchingModels')}</td></tr>`;
     return;
   }
 
@@ -1218,6 +1316,55 @@ function renderRedirectTable() {
   if (window.i18n && window.i18n.translatePage) {
     window.i18n.translatePage();
   }
+}
+
+function addTargetToModel(index) {
+  if (!redirectTableData[index]) return;
+  if (!Array.isArray(redirectTableData[index].targets)) {
+    redirectTableData[index].targets = [];
+  }
+  redirectTableData[index].targets.push({
+    target_model: '',
+    weight: 1
+  });
+  const newTargetIndex = redirectTableData[index].targets.length - 1;
+  renderRedirectTable();
+  markChannelFormDirty();
+  setTimeout(() => {
+    const input = document.querySelector(`.target-model-input[data-model-index="${index}"][data-target-index="${newTargetIndex}"]`);
+    if (input) input.focus();
+  }, 0);
+}
+
+function deleteTargetFromModel(modelIndex, targetIndex) {
+  if (!redirectTableData[modelIndex] || !Array.isArray(redirectTableData[modelIndex].targets)) return;
+  if (redirectTableData[modelIndex].targets.length <= 1) {
+    deleteRedirectRow(modelIndex);
+    return;
+  }
+  redirectTableData[modelIndex].targets.splice(targetIndex, 1);
+  syncRedirectRow(redirectTableData[modelIndex]);
+  renderRedirectTable();
+  markChannelFormDirty();
+}
+
+function updateTargetRow(modelIndex, targetIndex, field, value) {
+  if (!redirectTableData[modelIndex] || !Array.isArray(redirectTableData[modelIndex].targets)) return;
+  const target = redirectTableData[modelIndex].targets[targetIndex];
+  if (!target) return;
+
+  if (field === 'target_model') {
+    const nextValue = value.trim();
+    if (target.target_model === nextValue) return;
+    target.target_model = nextValue;
+  } else if (field === 'weight') {
+    const nextValue = parseInt(value, 10) || 1;
+    if (target.weight === nextValue) return;
+    target.weight = nextValue;
+  }
+
+  syncRedirectRow(redirectTableData[modelIndex]);
+  markChannelFormDirty();
 }
 
 // ===== 模型多选删除相关函数 =====

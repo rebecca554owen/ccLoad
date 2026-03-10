@@ -216,6 +216,9 @@ window.I18N_LOCALES['en'] = {
   'channels.priority': 'Priority',
   'channels.dailyCostLimit': 'Daily Limit',
   'channels.dailyCostLimitPlaceholder': '0=No limit',
+  'channels.customUserAgent': 'User-Agent',
+  'channels.customUserAgentPlaceholder': 'Leave empty to use the client forwarded UA',
+  'channels.customEndpoint': 'Custom Endpoint',
 
   // Delete Confirmation (flattened keys)
   'channels.confirmDeleteTitle': 'Confirm Delete',
@@ -902,7 +905,10 @@ window.I18N_LOCALES['en'] = {
   'channels.testThisKey': 'Test this Key',
   'channels.deleteThisKey': 'Delete this Key',
   'channels.deleteThisModel': 'Delete this Model',
+  'channels.deleteThisTarget': 'Delete this Target',
   'channels.toLowercase': 'Convert to lowercase',
+  'channels.targetWeight': 'Weight:',
+  'channels.addTarget': 'Add',
   'channels.testApiKey': 'Test API Key',
   'channels.copyChannelTitle': 'Copy Channel',
   'channels.toggleEnable': 'Enable Channel',

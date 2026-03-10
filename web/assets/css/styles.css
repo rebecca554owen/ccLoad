@@ -4436,6 +4436,106 @@ table tbody tr:hover {
   padding: 14px 16px;
 }
 
+.table-action-group,
+.ch-action-group,
+body.tokens-page .token-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.table-action-btn,
+.ch-action-group .btn-icon,
+body.tokens-page .token-actions .btn {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.table-action-btn[data-action="edit"],
+.table-action-btn[data-action="test"],
+.ch-action-group .btn-icon[data-action="edit"],
+.ch-action-group .btn-icon[data-action="test"],
+body.tokens-page .token-actions .btn-edit {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600)) !important;
+  border-color: rgba(var(--primary-rgb), 0.24) !important;
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.24) !important;
+  color: #fff !important;
+}
+
+.table-action-btn[data-action="edit"]:hover,
+.table-action-btn[data-action="test"]:hover,
+.ch-action-group .btn-icon[data-action="edit"]:hover,
+.ch-action-group .btn-icon[data-action="test"]:hover,
+body.tokens-page .token-actions .btn-edit:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700)) !important;
+  border-color: rgba(var(--primary-rgb), 0.32) !important;
+  box-shadow: 0 10px 22px rgba(var(--primary-rgb), 0.28) !important;
+}
+
+.table-action-btn[data-action="toggle"],
+.table-action-btn[data-action="copy"],
+.ch-action-group .btn-icon[data-action="toggle"],
+.ch-action-group .btn-icon[data-action="copy"],
+body.tokens-page .token-actions .btn-copy-token {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 245, 247, 0.72)) !important;
+  border-color: rgba(183, 194, 204, 0.9) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+  color: var(--text-primary-light) !important;
+}
+
+.table-action-btn[data-action="toggle"]:hover,
+.table-action-btn[data-action="copy"]:hover,
+.ch-action-group .btn-icon[data-action="toggle"]:hover,
+.ch-action-group .btn-icon[data-action="copy"]:hover,
+body.tokens-page .token-actions .btn-copy-token:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 247, 248, 0.78)) !important;
+  border-color: rgba(168, 181, 192, 0.92) !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-theme="dark"] .table-action-btn[data-action="toggle"],
+[data-theme="dark"] .table-action-btn[data-action="copy"],
+[data-theme="dark"] .ch-action-group .btn-icon[data-action="toggle"],
+[data-theme="dark"] .ch-action-group .btn-icon[data-action="copy"],
+[data-theme="dark"] body.tokens-page .token-actions .btn-copy-token,
+[data-resolved-theme="dark"] .table-action-btn[data-action="toggle"],
+[data-resolved-theme="dark"] .table-action-btn[data-action="copy"],
+[data-resolved-theme="dark"] .ch-action-group .btn-icon[data-action="toggle"],
+[data-resolved-theme="dark"] .ch-action-group .btn-icon[data-action="copy"],
+[data-resolved-theme="dark"] body.tokens-page .token-actions .btn-copy-token {
+  background: linear-gradient(180deg, rgba(35, 42, 47, 0.92), rgba(24, 30, 34, 0.86)) !important;
+  border-color: rgba(86, 101, 112, 0.72) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18) !important;
+  color: var(--text-primary-dark) !important;
+}
+
+.table-action-btn[data-action="delete"],
+.ch-action-group .btn-icon[data-action="delete"],
+body.tokens-page .token-actions .btn-delete {
+  background: linear-gradient(135deg, var(--error-500), var(--error-600)) !important;
+  border-color: rgba(var(--error-rgb), 0.24) !important;
+  box-shadow: 0 8px 20px rgba(var(--error-rgb), 0.2) !important;
+  color: #fff !important;
+}
+
+.table-action-btn[data-action="delete"]:hover,
+.ch-action-group .btn-icon[data-action="delete"]:hover,
+body.tokens-page .token-actions .btn-delete:hover {
+  background: linear-gradient(135deg, var(--error-600), var(--error-700)) !important;
+  border-color: rgba(var(--error-rgb), 0.3) !important;
+  box-shadow: 0 10px 22px rgba(var(--error-rgb), 0.24) !important;
+}
+
 .btn-primary {
   --btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--primary-500) 84%, white 16%), var(--primary-600));
   --btn-border: rgba(var(--primary-rgb), 0.24);
