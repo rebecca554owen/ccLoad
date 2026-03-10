@@ -42,6 +42,7 @@
   --success-400: #34d399;
   --success-500: #10b981;
   --success-600: #059669;
+  --success-rgb: 16, 185, 129;
   --warning-50: #fffbeb;
   --warning-400: #fbbf24;
   --warning-500: #f59e0b;
@@ -50,6 +51,7 @@
   --error-400: #f87171;
   --error-500: #ef4444;
   --error-600: #dc2626;
+  --error-rgb: 239, 68, 68;
   --info-50: #f0fbf5;
   --info-500: #18a058;
   --info-600: #128347;
@@ -3732,11 +3734,11 @@ body::after {
 }
 
 .main-content {
-  padding: 18px 14px 48px;
+  padding: 18px 12px 48px;
 }
 
 .content-area {
-  width: min(1360px, 100%);
+  width: min(1520px, 100%);
   display: grid;
   gap: 14px;
 }
@@ -4387,6 +4389,7 @@ table tbody tr:hover {
   --primary-800: #0d542f;
   --primary-900: #0c4528;
   --success-rgb: 46, 125, 50;
+  --error-rgb: 220, 38, 38;
   --accent-color: var(--primary-500);
   --card-tint: radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.1), transparent 42%);
 }
@@ -4399,6 +4402,7 @@ table tbody tr:hover {
   --primary-700: #18a058;
   --primary-800: #128347;
   --success-rgb: 94, 214, 104;
+  --error-rgb: 248, 113, 113;
 }
 
 .page-header-card {
@@ -4511,6 +4515,12 @@ body.tokens-page .token-actions {
 .table-action-btn:hover {
   background: var(--table-action-hover-bg);
   border-color: var(--table-action-hover-border);
+}
+
+.table-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .table-action-btn--primary {

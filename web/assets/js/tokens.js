@@ -762,7 +762,7 @@
           </td>
           <td style="padding: 8px; font-family: monospace; font-size: 13px;">${escapeHtml(model)}</td>
           <td style="text-align: center; padding: 8px;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="removeAllowedModel(${index})"
+            <button type="button" class="table-action-btn table-action-btn--danger table-action-btn--compact" onclick="removeAllowedModel(${index})"
               style="padding: 2px 8px; font-size: 12px;">${t('common.delete')}</button>
           </td>
         </tr>
