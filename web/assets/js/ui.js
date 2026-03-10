@@ -187,6 +187,32 @@
     return el;
   }
 
+  function iconThemeSun() {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.setAttribute('viewBox', '0 0 24 24');
+    el.setAttribute('fill', 'none');
+    el.setAttribute('stroke', 'currentColor');
+    el.setAttribute('stroke-width', '1.8');
+    el.setAttribute('stroke-linecap', 'round');
+    el.setAttribute('stroke-linejoin', 'round');
+    el.classList.add('theme-switch-svg');
+    el.innerHTML = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2.5v2.2M12 19.3v2.2M4.93 4.93l1.56 1.56M17.51 17.51l1.56 1.56M2.5 12h2.2M19.3 12h2.2M4.93 19.07l1.56-1.56M17.51 6.49l1.56-1.56"></path>';
+    return el;
+  }
+
+  function iconThemeMoon() {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.setAttribute('viewBox', '0 0 24 24');
+    el.setAttribute('fill', 'none');
+    el.setAttribute('stroke', 'currentColor');
+    el.setAttribute('stroke-width', '1.8');
+    el.setAttribute('stroke-linecap', 'round');
+    el.setAttribute('stroke-linejoin', 'round');
+    el.classList.add('theme-switch-svg');
+    el.innerHTML = '<path d="M21 12.8A8.8 8.8 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>';
+    return el;
+  }
+
   function isLoggedIn() {
     const token = localStorage.getItem('ccload_token');
     const expiry = localStorage.getItem('ccload_token_expiry');
@@ -371,8 +397,8 @@
       }),
       h('span', { class: 'theme-switch-track', 'aria-hidden': 'true' }, [
         h('span', { class: 'theme-switch-icons' }, [
-          h('span', {}, 'L'),
-          h('span', {}, 'D')
+          h('span', { class: 'theme-switch-icon theme-switch-icon-sun' }, [iconThemeSun()]),
+          h('span', { class: 'theme-switch-icon theme-switch-icon-moon' }, [iconThemeMoon()])
         ])
       ])
     ]);

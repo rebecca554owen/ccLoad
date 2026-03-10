@@ -323,30 +323,30 @@
       }
 
       
-      let html = '<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">';
+      let html = '<div class="token-usage-stack">';
 
       // 输入/输出
-      html += '<div style="display: inline-flex; gap: 4px; font-size: 12px;">';
-      html += `<span class="stats-badge" style="background: var(--primary-50); color: var(--primary-700);" title="${t('tokens.inputTokens')}">`;
+      html += '<div class="token-usage-row">';
+      html += `<span class="stats-badge token-usage-badge token-usage-badge--input" title="${t('tokens.inputTokens')}">`;
       html += `${t('tokens.input')} ${formatTokenCount(token.prompt_tokens_total || 0)}`;
       html += `</span>`;
-      html += `<span class="stats-badge" style="background: var(--secondary-50); color: var(--secondary-700);" title="${t('tokens.outputTokens')}">`;
+      html += `<span class="stats-badge token-usage-badge token-usage-badge--output" title="${t('tokens.outputTokens')}">`;
       html += `${t('tokens.output')} ${formatTokenCount(token.completion_tokens_total || 0)}`;
       html += `</span>`;
       html += '</div>';
 
       // 缓存
       if (token.cache_read_tokens_total > 0 || token.cache_creation_tokens_total > 0) {
-        html += '<div style="display: inline-flex; gap: 4px; font-size: 12px;">';
+        html += '<div class="token-usage-row">';
 
         if (token.cache_read_tokens_total > 0) {
-          html += `<span class="stats-badge" style="background: var(--success-50); color: var(--success-700);" title="${t('tokens.cacheReadTokens')}">`;
+          html += `<span class="stats-badge token-usage-badge token-usage-badge--cache-read" title="${t('tokens.cacheReadTokens')}">`;
           html += `${t('tokens.cacheRead')} ${formatTokenCount(token.cache_read_tokens_total || 0)}`;
           html += `</span>`;
         }
 
         if (token.cache_creation_tokens_total > 0) {
-          html += `<span class="stats-badge" style="background: var(--warning-50); color: var(--warning-700);" title="${t('tokens.cacheCreateTokens')}">`;
+          html += `<span class="stats-badge token-usage-badge token-usage-badge--cache-create" title="${t('tokens.cacheCreateTokens')}">`;
           html += `${t('tokens.cacheCreate')} ${formatTokenCount(token.cache_creation_tokens_total || 0)}`;
           html += `</span>`;
         }
