@@ -175,10 +175,7 @@ func (s *Server) pickBestChannelWhenAllCooled(
 	})
 
 	readyAt := getReadyAt(best)
-	readyIn := readyAt.Sub(now)
-	if readyIn < 0 {
-		readyIn = 0
-	}
+	readyIn := max(readyAt.Sub(now), 0)
 
 	return best, readyIn
 }

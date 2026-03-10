@@ -158,7 +158,7 @@ func TestSelectAvailableKey_Sequential(t *testing.T) {
 
 	// 创建3个API Keys（顺序策略）
 	seqKeys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		seqKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -236,6 +236,74 @@ func TestSelectAvailableKey_Sequential(t *testing.T) {
 	})
 }
 
+func TestSelectAvailableKey_LocalFuse(t *testing.T) {
+	store, cleanup := testutil.SetupTestStore(t)
+	defer cleanup()
+
+	selector := NewKeySelector()
+	ctx := context.WithValue(context.Background(), testingContextKey, true)
+
+	cfg, err := store.CreateConfig(ctx, &model.Config{
+		Name:         "local-fuse-channel",
+		URL:          "https://api.com",
+		Priority:     100,
+		ModelEntries: []model.ModelEntry{{Model: "test-model", RedirectModel: ""}},
+		Enabled:      true,
+	})
+	if err != nil {
+		t.Fatalf("创建渠道失败: %v", err)
+	}
+
+	err = store.CreateAPIKeysBatch(ctx, []*model.APIKey{
+		{
+			ChannelID:   cfg.ID,
+			KeyIndex:    0,
+			APIKey:      "sk-fuse-key-0",
+			KeyStrategy: model.KeyStrategySequential,
+		},
+		{
+			ChannelID:   cfg.ID,
+			KeyIndex:    1,
+			APIKey:      "sk-fuse-key-1",
+			KeyStrategy: model.KeyStrategySequential,
+		},
+	})
+	if err != nil {
+		t.Fatalf("创建API Key失败: %v", err)
+	}
+
+	apiKeys, err := store.GetAPIKeys(ctx, cfg.ID)
+	if err != nil {
+		t.Fatalf("查询API Keys失败: %v", err)
+	}
+
+	selector.TripKey(cfg.ID, 0)
+
+	keyIndex, apiKey, err := selector.SelectAvailableKey(cfg.ID, apiKeys, nil)
+	if err != nil {
+		t.Fatalf("SelectAvailableKey失败: %v", err)
+	}
+	if keyIndex != 1 {
+		t.Fatalf("期望跳过熔断Key并返回1，实际%d", keyIndex)
+	}
+	if apiKey != "sk-fuse-key-1" {
+		t.Fatalf("期望返回 sk-fuse-key-1，实际%s", apiKey)
+	}
+
+	selector.ClearKeyFuse(cfg.ID, 0)
+
+	keyIndex, apiKey, err = selector.SelectAvailableKey(cfg.ID, apiKeys, nil)
+	if err != nil {
+		t.Fatalf("清理熔断后 SelectAvailableKey失败: %v", err)
+	}
+	if keyIndex != 0 {
+		t.Fatalf("期望清理熔断后返回0，实际%d", keyIndex)
+	}
+	if apiKey != "sk-fuse-key-0" {
+		t.Fatalf("期望返回 sk-fuse-key-0，实际%s", apiKey)
+	}
+}
+
 // TestSelectAvailableKey_RoundRobin 测试轮询策略
 func TestSelectAvailableKey_RoundRobin(t *testing.T) {
 	store, cleanup := testutil.SetupTestStore(t)
@@ -258,7 +326,7 @@ func TestSelectAvailableKey_RoundRobin(t *testing.T) {
 
 	// 创建3个API Keys（轮询策略）
 	rrKeys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		rrKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -283,7 +351,7 @@ func TestSelectAvailableKey_RoundRobin(t *testing.T) {
 		var selectedKeys []int
 		keysSeen := make(map[int]bool)
 
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			keyIndex, _, err := selector.SelectAvailableKey(cfg.ID, apiKeys, nil)
 			if err != nil {
 				t.Fatalf("第%d次SelectAvailableKey失败: %v", i+1, err)
@@ -368,7 +436,7 @@ func TestSelectAvailableKey_RoundRobin_NonContiguousKeyIndex(t *testing.T) {
 		keysSeen := make(map[int]bool)
 
 		// 轮询6次，每个Key应至少被选中2次
-		for i := 0; i < 6; i++ {
+		for i := range 6 {
 			keyIndex, _, err := selector.SelectAvailableKey(cfg.ID, apiKeys, nil)
 			if err != nil {
 				t.Fatalf("第%d次SelectAvailableKey失败: %v", i+1, err)
@@ -394,7 +462,7 @@ func TestSelectAvailableKey_RoundRobin_NonContiguousKeyIndex(t *testing.T) {
 		excludeKeys := map[int]bool{2: true}
 
 		keysSeen := make(map[int]bool)
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			keyIndex, _, err := selector.SelectAvailableKey(cfg.ID, apiKeys, excludeKeys)
 			if err != nil {
 				t.Fatalf("第%d次SelectAvailableKey失败: %v", i+1, err)
@@ -489,7 +557,7 @@ func TestSelectAvailableKey_KeyCooldown(t *testing.T) {
 
 	// 创建3个API Keys
 	cdKeys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		cdKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -603,7 +671,7 @@ func TestSelectAvailableKey_CooldownAndExclude(t *testing.T) {
 
 	// 创建4个API Keys
 	combKeys := make([]*model.APIKey, 4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		combKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,
@@ -700,7 +768,7 @@ func assertSelectAvailableKeyFirstIndex(t *testing.T, channelName string, keyPre
 	}
 
 	assertKeys := make([]*model.APIKey, 2)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		assertKeys[i] = &model.APIKey{
 			ChannelID:   cfg.ID,
 			KeyIndex:    i,

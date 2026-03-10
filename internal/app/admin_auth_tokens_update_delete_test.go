@@ -21,7 +21,7 @@ func TestHandleUpdateAuthToken(t *testing.T) {
 	ctx := context.Background()
 	expiresAt := time.Now().Add(24 * time.Hour).UnixMilli()
 	token := &model.AuthToken{
-		Token:         model.HashToken("plain-token"),
+		Token:         "plain-token", // 明文存储
 		Description:   "old",
 		ExpiresAt:     nil,
 		IsActive:      true,
@@ -105,8 +105,9 @@ func TestHandleUpdateAuthToken(t *testing.T) {
 		if resp.Data.IsActive {
 			t.Fatalf("is_active=%v, want false", resp.Data.IsActive)
 		}
-		if resp.Data.Token != model.HashToken("plain-token") {
-			t.Fatalf("token should be hash value for dual-path auth, got %q", resp.Data.Token)
+		// 更新请求没有修改token，返回的token为空（仅当修改token时才返回新值）
+		if resp.Data.Token != "" {
+			t.Fatalf("token should be empty when not modified, got %q", resp.Data.Token)
 		}
 		if resp.Data.ExpiresAt == nil || *resp.Data.ExpiresAt != expiresAt {
 			t.Fatalf("expiresAt=%v, want %d", resp.Data.ExpiresAt, expiresAt)
@@ -176,7 +177,7 @@ func TestHandleDeleteAuthToken(t *testing.T) {
 
 	ctx := context.Background()
 	token := &model.AuthToken{
-		Token:       model.HashToken("plain-token"),
+		Token:       "plain-token", // 明文存储
 		Description: "to-delete",
 		IsActive:    true,
 	}

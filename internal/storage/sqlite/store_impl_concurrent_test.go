@@ -27,7 +27,7 @@ func TestConcurrentConfigCreate(t *testing.T) {
 	var successCount atomic.Int32
 	var errorCount atomic.Int32
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -98,11 +98,11 @@ func TestConcurrentConfigReadWrite(t *testing.T) {
 	var writeCount atomic.Int32
 
 	// 启动读协程
-	for i := 0; i < numReaders; i++ {
+	for i := range numReaders {
 		wg.Add(1)
 		go func(_ int) {
 			defer wg.Done()
-			for j := 0; j < 10; j++ {
+			for range 10 {
 				_, err := store.GetConfig(ctx, created.ID)
 				if err == nil {
 					readCount.Add(1)
@@ -113,11 +113,11 @@ func TestConcurrentConfigReadWrite(t *testing.T) {
 	}
 
 	// 启动写协程
-	for i := 0; i < numWriters; i++ {
+	for i := range numWriters {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			for j := 0; j < 5; j++ {
+			for j := range 5 {
 				updates := &model.Config{
 					Priority: idx*10 + j,
 				}
@@ -159,12 +159,12 @@ func TestConcurrentLogAdd(t *testing.T) {
 
 	startTime := time.Now()
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
 
-			for j := 0; j < logsPerGoroutine; j++ {
+			for range logsPerGoroutine {
 				channelID := int64(idx + 1)
 				entry := &model.LogEntry{
 					ChannelID:  channelID,
@@ -218,14 +218,14 @@ func TestConcurrentBatchLogAdd(t *testing.T) {
 
 	startTime := time.Now()
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
 
 			batch := make([]*model.LogEntry, batchSize)
 			channelID := int64(idx + 1)
-			for j := 0; j < batchSize; j++ {
+			for j := range batchSize {
 				batch[j] = &model.LogEntry{
 					ChannelID:  channelID,
 					StatusCode: 200,
@@ -280,7 +280,7 @@ func TestConcurrentAPIKeyOperations(t *testing.T) {
 	var readSuccess atomic.Int32
 
 	// 并发创建API Keys（使用批量接口，每个goroutine创建单个key）
-	for i := 0; i < numKeys; i++ {
+	for i := range numKeys {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -304,7 +304,7 @@ func TestConcurrentAPIKeyOperations(t *testing.T) {
 	wg.Wait()
 
 	// 并发读取API Keys
-	for i := 0; i < numKeys; i++ {
+	for i := range numKeys {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -363,7 +363,7 @@ func TestConcurrentCooldownOperations(t *testing.T) {
 
 	// 创建3个API Keys
 	cdKeys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		cdKeys[i] = &model.APIKey{
 			ChannelID:   created.ID,
 			KeyIndex:    i,
@@ -382,7 +382,7 @@ func TestConcurrentCooldownOperations(t *testing.T) {
 	now := time.Now()
 
 	// 并发更新渠道冷却（5次）
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -398,7 +398,7 @@ func TestConcurrentCooldownOperations(t *testing.T) {
 	}
 
 	// 并发更新Key冷却（6次，每个Key 2次）
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
@@ -443,9 +443,7 @@ func TestConcurrentMixedOperations(t *testing.T) {
 	stopCh := make(chan struct{})
 
 	// 创建操作
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		idx := 0
 		for {
 			select {
@@ -463,12 +461,10 @@ func TestConcurrentMixedOperations(t *testing.T) {
 				time.Sleep(5 * time.Millisecond)
 			}
 		}
-	}()
+	})
 
 	// 读取操作
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-stopCh:
@@ -479,12 +475,10 @@ func TestConcurrentMixedOperations(t *testing.T) {
 				time.Sleep(3 * time.Millisecond)
 			}
 		}
-	}()
+	})
 
 	// 日志操作
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		channelID := int64(1)
 		for {
 			select {
@@ -502,7 +496,7 @@ func TestConcurrentMixedOperations(t *testing.T) {
 				time.Sleep(2 * time.Millisecond)
 			}
 		}
-	}()
+	})
 
 	// 运行指定时间
 	time.Sleep(duration)

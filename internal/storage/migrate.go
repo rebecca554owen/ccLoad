@@ -34,6 +34,7 @@ var sqliteMigratableTables = map[string]bool{
 	"logs":              true,
 	"auth_tokens":       true,
 	"channel_models":    true,
+	"channel_model_mappings": true,
 	"channels":          true,
 	"schema_migrations": true,
 }
@@ -56,6 +57,7 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 		schema.DefineChannelsTable,
 		schema.DefineAPIKeysTable,
 		schema.DefineChannelModelsTable,
+		schema.DefineChannelModelMappingsTable, // 多目标模型重定向表
 		schema.DefineAuthTokensTable,
 		schema.DefineSystemSettingsTable,
 		schema.DefineAdminSessionsTable,
@@ -93,6 +95,14 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 			if err := migrateChannelsURLToText(ctx, db, dialect); err != nil {
 				return fmt.Errorf("migrate channels url to text: %w", err)
 			}
+			// 增量迁移：确保channels表有custom_user_agent字段（2026-03新增）
+			if err := ensureChannelsCustomUserAgent(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channels custom_user_agent: %w", err)
+			}
+			// 增量迁移：确保channels表有custom_endpoint字段（2026-03新增）
+			if err := ensureChannelsCustomEndpoint(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channels custom_endpoint: %w", err)
+			}
 		}
 
 		// 增量迁移：修复 api_keys.api_key 历史长度漂移（旧版可能为 VARCHAR(64)）
@@ -128,6 +138,12 @@ func migrate(ctx context.Context, db *sql.DB, dialect Dialect) error {
 			}
 			if err := repairLegacyChannelModelOrder(ctx, db, dialect); err != nil {
 				return fmt.Errorf("repair legacy channel_models order: %w", err)
+			}
+		}
+
+		if tb.Name() == "channel_model_mappings" {
+			if err := ensureChannelModelMappingsSortOrder(ctx, db, dialect); err != nil {
+				return fmt.Errorf("migrate channel_model_mappings sort_order: %w", err)
 			}
 		}
 
@@ -270,6 +286,19 @@ func ensureMySQLColumns(ctx context.Context, db *sql.DB, table string, cols []my
 		log.Printf("[MIGRATE] Added columns to %s", table)
 	}
 	return nil
+}
+
+func ensureChannelModelMappingsSortOrder(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	if dialect == DialectMySQL {
+		return ensureMySQLColumns(ctx, db, "channel_model_mappings", []mysqlColumnDef{{
+			name:       "sort_order",
+			definition: "INT NOT NULL DEFAULT 0",
+		}})
+	}
+	return ensureSQLiteColumns(ctx, db, "channel_model_mappings", []sqliteColumnDef{{
+		name:       "sort_order",
+		definition: "INT NOT NULL DEFAULT 0",
+	}})
 }
 
 // ensureLogsColumnsSQLite SQLite增量迁移logs表新字段
@@ -1346,7 +1375,31 @@ func ensureChannelsDailyCostLimit(ctx context.Context, db *sql.DB, dialect Diale
 	})
 }
 
-// ensureChannelsScheduledCheckEnabled 确保channels表有scheduled_check_enabled字段
+func ensureChannelsColumn(ctx context.Context, db *sql.DB, dialect Dialect, columnName, columnDef string) error {
+	if dialect == DialectMySQL {
+		var count int
+		err := db.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='channels' AND COLUMN_NAME=?",
+			columnName,
+		).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("check %s field: %w", columnName, err)
+		}
+		if count == 0 {
+			if _, err := db.ExecContext(ctx,
+				fmt.Sprintf("ALTER TABLE channels ADD COLUMN %s %s", columnName, columnDef)); err != nil {
+				return fmt.Errorf("add %s column: %w", columnName, err)
+			}
+			log.Printf("[MIGRATE] Added channels.%s column", columnName)
+		}
+		return nil
+	}
+
+	return ensureSQLiteColumns(ctx, db, "channels", []sqliteColumnDef{
+		{name: columnName, definition: columnDef},
+	})
+}
+
 func ensureChannelsScheduledCheckEnabled(ctx context.Context, db *sql.DB, dialect Dialect) error {
 	if dialect == DialectMySQL {
 		var count int
@@ -1391,6 +1444,14 @@ func ensureChannelsScheduledCheckModel(ctx context.Context, db *sql.DB, dialect 
 	}
 
 	return ensureSQLiteColumns(ctx, db, "channels", []sqliteColumnDef{{name: "scheduled_check_model", definition: "TEXT NOT NULL DEFAULT ''"}})
+}
+
+func ensureChannelsCustomUserAgent(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	return ensureChannelsColumn(ctx, db, dialect, "custom_user_agent", "VARCHAR(255) NOT NULL DEFAULT ''")
+}
+
+func ensureChannelsCustomEndpoint(ctx context.Context, db *sql.DB, dialect Dialect) error {
+	return ensureChannelsColumn(ctx, db, dialect, "custom_endpoint", "VARCHAR(255) NOT NULL DEFAULT ''")
 }
 
 // ensureAPIKeysAPIKeyLength 修复 api_keys.api_key 列定义漂移（MySQL）

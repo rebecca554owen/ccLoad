@@ -101,7 +101,7 @@ func TestAuthService_LoginLogoutAndCleanup(t *testing.T) {
 
 	t.Run("rate limited", func(t *testing.T) {
 		// 连续失败超过 maxAttempts(5) 后，第6次应返回 429
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			c, w := mkCtx(http.MethodPost, []byte(`{"password":"nope"}`))
 			svc.HandleLogin(c)
 			if w.Code != http.StatusUnauthorized {

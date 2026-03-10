@@ -126,7 +126,11 @@ func (t *CodexTester) Build(cfg *model.Config, apiKey string, req *TestChannelRe
 	}
 
 	baseURL := strings.TrimRight(cfg.GetURLs()[0], "/")
-	fullURL := baseURL + "/v1/responses"
+	endpoint := "/v1/responses"
+	if cfg.CustomEndpoint != "" {
+		endpoint = cfg.CustomEndpoint
+	}
+	fullURL := baseURL + endpoint
 
 	h := make(http.Header)
 	h.Set("Content-Type", "application/json")
@@ -202,7 +206,11 @@ func (t *OpenAITester) Build(cfg *model.Config, apiKey string, req *TestChannelR
 	}
 
 	baseURL := strings.TrimRight(cfg.GetURLs()[0], "/")
-	fullURL := baseURL + "/v1/chat/completions"
+	endpoint := "/v1/chat/completions"
+	if cfg.CustomEndpoint != "" {
+		endpoint = cfg.CustomEndpoint
+	}
+	fullURL := baseURL + endpoint
 
 	h := make(http.Header)
 	h.Set("Content-Type", "application/json")
@@ -260,11 +268,18 @@ func (t *GeminiTester) Build(cfg *model.Config, apiKey string, req *TestChannelR
 
 	baseURL := strings.TrimRight(cfg.GetURLs()[0], "/")
 	// Gemini API: 流式用 :streamGenerateContent?alt=sse，非流式用 :generateContent
-	action := ":generateContent"
-	if req.Stream {
-		action = ":streamGenerateContent?alt=sse"
+	var fullURL string
+	if cfg.CustomEndpoint != "" {
+		// 使用自定义端点（保持模型名替换）
+		endpoint := strings.ReplaceAll(cfg.CustomEndpoint, "{model}", req.Model)
+		fullURL = baseURL + endpoint
+	} else {
+		action := ":generateContent"
+		if req.Stream {
+			action = ":streamGenerateContent?alt=sse"
+		}
+		fullURL = baseURL + "/v1beta/models/" + req.Model + action
 	}
-	fullURL := baseURL + "/v1beta/models/" + req.Model + action
 
 	h := make(http.Header)
 	h.Set("Content-Type", "application/json")
@@ -354,7 +369,11 @@ func (t *AnthropicTester) Build(cfg *model.Config, apiKey string, req *TestChann
 	}
 
 	baseURL := strings.TrimRight(cfg.GetURLs()[0], "/")
-	fullURL := baseURL + "/v1/messages?beta=true"
+	endpoint := "/v1/messages?beta=true"
+	if cfg.CustomEndpoint != "" {
+		endpoint = cfg.CustomEndpoint
+	}
+	fullURL := baseURL + endpoint
 
 	h := make(http.Header)
 	h.Set("Accept", "application/json")

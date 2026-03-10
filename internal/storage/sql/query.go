@@ -72,6 +72,12 @@ func (wb *WhereBuilder) ApplyLogFilter(filter *model.LogFilter) *WhereBuilder {
 	if filter.StatusCode != nil {
 		wb.AddCondition("status_code = ?", *filter.StatusCode)
 	}
+	if filter.ResultType == "success" {
+		wb.AddCondition("status_code >= ? AND status_code < ?", 200, 300)
+	}
+	if filter.ResultType == "error" {
+		wb.AddCondition("(status_code < ? OR status_code >= ?)", 200, 300)
+	}
 	if filter.AuthTokenID != nil {
 		wb.AddCondition("auth_token_id = ?", *filter.AuthTokenID)
 	}
@@ -126,7 +132,8 @@ func (cs *ConfigScanner) ScanConfig(scanner interface {
 	// 注意：不再包含 models 和 model_redirects 字段
 	if err := scanner.Scan(&c.ID, &c.Name, &c.URL, &c.Priority,
 		&c.ChannelType, &enabledInt, &scheduledCheckEnabledInt, &scheduledCheckModel,
-		&c.CooldownUntil, &c.CooldownDurationMs, &c.DailyCostLimit, &c.KeyCount,
+		&c.CooldownUntil, &c.CooldownDurationMs, &c.DailyCostLimit,
+		&c.CustomUserAgent, &c.CustomEndpoint, &c.KeyCount,
 		&createdAtRaw, &updatedAtRaw); err != nil {
 		return nil, err
 	}

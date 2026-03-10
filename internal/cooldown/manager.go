@@ -3,7 +3,9 @@ package cooldown
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"ccLoad/internal/model"
@@ -219,4 +221,79 @@ func (m *Manager) ClearChannelCooldown(ctx context.Context, channelID int64) err
 // 简化成功后的冷却清除逻辑
 func (m *Manager) ClearKeyCooldown(ctx context.Context, channelID int64, keyIndex int) error {
 	return m.store.ResetKeyCooldown(ctx, channelID, keyIndex)
+}
+
+// ==================== 模型目标级冷却 ====================
+
+// ModelTargetCooldownPrefix 模型目标冷却键前缀
+const ModelTargetCooldownPrefix = "mt"
+
+// GetModelTargetCooldownKey 获取模型目标冷却键
+// 格式: mt:{channel_id}:{model}:{target_model}
+func GetModelTargetCooldownKey(channelID int64, model, targetModel string) string {
+	return fmt.Sprintf("%s:%d:%s:%s", ModelTargetCooldownPrefix, channelID, model, targetModel)
+}
+
+// HandleModelTargetError 处理模型目标级错误
+// 根据错误类型决定冷却策略，复用现有指数退避逻辑
+func (m *Manager) HandleModelTargetError(ctx context.Context, channelID int64, model, targetModel string, statusCode int) error {
+	// 根据状态码决定冷却时长
+	// 复用现有冷却逻辑：401/403/429 等认证/限流错误需要冷却
+	switch statusCode {
+	case 401, 403, 429, 596, 597:
+		// 认证错误、限流、1308配额错误、软错误检测 -> 需要冷却
+		duration := util.CalculateBackoffDuration(0, time.Time{}, time.Now(), &statusCode)
+		until := time.Now().Add(duration)
+		return m.SetModelTargetCooldown(ctx, channelID, model, targetModel, until)
+	case 500, 502, 503, 504, 520, 524:
+		// 服务端错误 -> 渠道级问题，不针对特定目标模型
+		return nil
+	default:
+		// 其他错误不冷却
+		return nil
+	}
+}
+
+// SetModelTargetCooldown 设置模型目标冷却
+// 使用系统设置表存储冷却状态（轻量级实现）
+func (m *Manager) SetModelTargetCooldown(ctx context.Context, channelID int64, model, targetModel string, until time.Time) error {
+	key := GetModelTargetCooldownKey(channelID, model, targetModel)
+	value := fmt.Sprintf("%d", until.Unix())
+
+	// 使用系统设置表存储冷却状态（带过期时间）
+	if err := m.store.UpdateSetting(ctx, key, value); err != nil {
+		log.Printf("[WARN] Failed to set model target cooldown (key=%s, until=%v): %v", key, until, err)
+		return err
+	}
+
+	duration := time.Until(until)
+	log.Printf("[COOLDOWN] ModelTarget冷却: 渠道=%d 模型=%s 目标=%s 禁用至 %s (%.1f分钟)",
+		channelID, model, targetModel, until.Format("2006-01-02 15:04:05"), duration.Minutes())
+	return nil
+}
+
+// ClearModelTargetCooldown 清除模型目标冷却
+func (m *Manager) ClearModelTargetCooldown(ctx context.Context, channelID int64, model, targetModel string) error {
+	key := GetModelTargetCooldownKey(channelID, model, targetModel)
+	if err := m.store.UpdateSetting(ctx, key, "0"); err != nil {
+		log.Printf("[WARN] Failed to clear model target cooldown (key=%s): %v", key, err)
+		return err
+	}
+	return nil
+}
+
+// IsModelTargetCoolingDown 检查模型目标是否在冷却中
+func (m *Manager) IsModelTargetCoolingDown(ctx context.Context, channelID int64, model, targetModel string) bool {
+	key := GetModelTargetCooldownKey(channelID, model, targetModel)
+	setting, err := m.store.GetSetting(ctx, key)
+	if err != nil {
+		return false
+	}
+
+	untilUnix, err := strconv.ParseInt(setting.Value, 10, 64)
+	if err != nil {
+		return false
+	}
+
+	return time.Now().Unix() < untilUnix
 }

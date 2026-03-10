@@ -43,6 +43,7 @@ type Server struct {
 	statsCache                    *StatsCache           // 统计结果缓存层
 	channelBalancer               *SmoothWeightedRR     // 渠道负载均衡器（平滑加权轮询）
 	urlSelector                   *URLSelector          // URL选择器（多URL场景的延迟追踪与冷却）
+	modelTargetSelector           *ModelTargetSelector  // 模型目标选择器（多目标模型重定向）
 	client                        *http.Client          // HTTP客户端
 	activeRequests                *activeRequestManager // 进行中请求（内存状态，不持久化）
 	scheduledChannelChecksRunning atomic.Bool
@@ -196,6 +197,9 @@ func NewServer(store storage.Store) *Server {
 
 	// 初始化URL选择器（多URL场景：EWMA延迟追踪+URL级冷却）
 	s.urlSelector = NewURLSelector()
+
+	// 初始化模型目标选择器（多目标模型重定向）
+	s.modelTargetSelector = NewModelTargetSelector()
 
 	// 初始化健康度缓存（启动时读取配置，修改后重启生效）
 	defaultHealthCfg := model.DefaultHealthScoreConfig()
@@ -536,8 +540,13 @@ func (s *Server) SetupRoutes(r *gin.Engine) {
 		admin.POST("/channels/models/fetch", s.HandleFetchModelsPreview) // 临时渠道配置获取模型列表
 		admin.POST("/channels/models/refresh-batch", s.HandleBatchRefreshModels)
 		admin.GET("/channels/:id/models/fetch", s.HandleFetchModels) // 获取渠道可用模型列表(新增)
-		admin.POST("/channels/:id/models", s.HandleAddModels)        // 添加渠道模型
-		admin.DELETE("/channels/:id/models", s.HandleDeleteModels)   // 删除渠道模型
+		admin.POST("/channels/:id/models", s.HandleAddModels)                   // 添加渠道模型
+		admin.DELETE("/channels/:id/models", s.HandleDeleteModels)              // 删除渠道模型
+		admin.GET("/channels/:id/model-mappings", s.HandleChannelModelMappings) // 获取模型映射列表
+		admin.POST("/channels/:id/model-mappings", s.HandleUpdateModelMappings) // 更新模型映射
+		admin.DELETE("/channels/:id/model-mappings/:model", s.HandleDeleteModelMapping) // 删除模型映射
+		admin.POST("/channels/:id/model-mappings/:model/cooldown", s.HandleModelTargetCooldown)     // 设置模型目标冷却
+		admin.DELETE("/channels/:id/model-mappings/:model/cooldown", s.HandleClearModelTargetCooldown) // 清除模型目标冷却
 		admin.POST("/channels/:id/test", s.HandleChannelTest)
 		admin.POST("/channels/:id/test-url", s.HandleChannelURLTest)
 		admin.POST("/channels/:id/cooldown", s.HandleSetChannelCooldown)

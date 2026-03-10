@@ -173,3 +173,55 @@ func TestStartChecker_RunsCheckOnce(t *testing.T) {
 		t.Fatalf("expected lastCheck to be set")
 	}
 }
+
+func TestIsNewerVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		current  string
+		latest   string
+		wantNewer bool
+	}{
+		// dev 版本不参与比较
+		{"dev vs latest", "dev", "v2.0.0", false},
+		{"latest vs dev", "v2.0.0", "dev", false},
+		{"dev vs dev", "dev", "dev", false},
+
+		// 空版本不参与比较
+		{"empty vs latest", "", "v2.0.0", false},
+		{"latest vs empty", "v2.0.0", "", false},
+
+		// 相同版本
+		{"same version", "v1.2.3", "v1.2.3", false},
+
+		// 主版本升级
+		{"major upgrade", "v1.0.0", "v2.0.0", true},
+		{"major downgrade", "v2.0.0", "v1.0.0", false},
+
+		// 次版本升级
+		{"minor upgrade", "v1.0.0", "v1.1.0", true},
+		{"minor downgrade", "v1.1.0", "v1.0.0", false},
+
+		// 补丁版本升级
+		{"patch upgrade", "v1.1.0", "v1.1.1", true},
+		{"patch downgrade", "v1.1.1", "v1.1.0", false},
+
+		// v 前缀兼容性
+		{"without v prefix", "1.0.0", "v2.0.0", true},
+		{"both without v", "1.0.0", "2.0.0", true},
+
+		// 无法解析的版本
+		{"invalid current", "invalid", "v2.0.0", false},
+		{"invalid latest", "v1.0.0", "invalid", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isNewerVersion(tt.current, tt.latest)
+			if got != tt.wantNewer {
+				t.Fatalf("isNewerVersion(%q, %q) = %v, want %v", tt.current, tt.latest, got, tt.wantNewer)
+			}
+		})
+	}
+}

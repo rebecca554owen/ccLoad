@@ -100,6 +100,12 @@ type Store interface {
 	// === Batch Operations ===
 	ImportChannelBatch(ctx context.Context, channels []*model.ChannelWithKeys) (created, updated int, err error)
 
+	// === Model Mapping Management ===
+	GetModelMappings(ctx context.Context, channelID int64, model string) ([]*model.ChannelModelMapping, error)
+	GetAllModelMappings(ctx context.Context, channelID int64) (map[string][]*model.ChannelModelMapping, error)
+	UpdateModelMappings(ctx context.Context, channelID int64, model string, targets []model.ChannelModelMapping) error
+	DeleteModelMapping(ctx context.Context, channelID int64, model string) error
+
 	// === Infrastructure ===
 	Ping(ctx context.Context) error
 	Close() error

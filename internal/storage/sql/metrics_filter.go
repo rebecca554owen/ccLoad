@@ -13,10 +13,7 @@ import (
 // filter 为 nil 时返回所有数据
 // [FIX] 2025-12: 排除499（客户端取消）避免污染趋势图统计
 func (s *SQLStore) AggregateRangeWithFilter(ctx context.Context, since, until time.Time, bucket time.Duration, filter *model.LogFilter) ([]model.MetricPoint, error) {
-	bucketMinutes := int64(bucket / time.Minute)
-	if bucketMinutes < 1 {
-		bucketMinutes = 1
-	}
+	bucketMinutes := max(int64(bucket/time.Minute), 1)
 	sinceBucket := since.UnixMilli() / minuteMs
 	untilBucket := until.UnixMilli() / minuteMs
 

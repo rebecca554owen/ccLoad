@@ -257,6 +257,9 @@ func BuildLogFilter(c *gin.Context) model.LogFilter {
 			lf.StatusCode = &code
 		}
 	}
+	if rt := strings.TrimSpace(c.Query("result_type")); rt != "" {
+		lf.ResultType = rt
+	}
 
 	// 渠道类型过滤（anthropic/openai/gemini/codex）
 	if ct := strings.TrimSpace(c.Query("channel_type")); ct != "" {

@@ -293,6 +293,15 @@ func TestBuildLogFilter(t *testing.T) {
 			},
 		},
 		{
+			name:  "result_type",
+			query: "result_type=success",
+			check: func(t *testing.T, lf model.LogFilter) {
+				if lf.ResultType != "success" {
+					t.Errorf("ResultType=%q, want %q", lf.ResultType, "success")
+				}
+			},
+		},
+		{
 			name:  "auth_token_id",
 			query: "auth_token_id=456",
 			check: func(t *testing.T, lf model.LogFilter) {
@@ -339,7 +348,7 @@ func TestBuildLogFilter(t *testing.T) {
 		},
 		{
 			name:  "combined_filters",
-			query: "channel_id=1&model=gpt-4&status_code=500",
+			query: "channel_id=1&model=gpt-4&status_code=500&result_type=error",
 			check: func(t *testing.T, lf model.LogFilter) {
 				if lf.ChannelID == nil || *lf.ChannelID != 1 {
 					t.Error("expected ChannelID=1")
@@ -349,6 +358,9 @@ func TestBuildLogFilter(t *testing.T) {
 				}
 				if lf.StatusCode == nil || *lf.StatusCode != 500 {
 					t.Error("expected StatusCode=500")
+				}
+				if lf.ResultType != "error" {
+					t.Errorf("ResultType=%q, want %q", lf.ResultType, "error")
 				}
 			},
 		},

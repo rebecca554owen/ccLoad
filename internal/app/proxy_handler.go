@@ -225,14 +225,14 @@ func (s *Server) HandleProxyRequest(c *gin.Context) {
 		all = stripAnthropicBillingHeaders(all)
 	}
 
-	tokenHashStr := ""
+	tokenStr := ""
 	if v, ok := c.Get("token_hash"); ok {
-		tokenHashStr, _ = v.(string)
+		tokenStr, _ = v.(string)
 	}
 
 	// 检查令牌模型限制（2026-01新增）
-	if tokenHashStr != "" && originalModel != "" {
-		if !s.authService.IsModelAllowed(tokenHashStr, originalModel) {
+	if tokenStr != "" && originalModel != "" {
+		if !s.authService.IsModelAllowed(tokenStr, originalModel) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": fmt.Sprintf("model '%s' is not allowed for this token", originalModel),
 			})
@@ -245,8 +245,8 @@ func (s *Server) HandleProxyRequest(c *gin.Context) {
 	// 这是有意的设计——允许"最多超额一个请求"的窗口。
 	// 原因：费用只有在请求完成后才能精确计算（token数量由上游返回），
 	// 而此处只能做预检查。如果严格要求"先扣费后请求"，需要复杂的预估+退款机制。
-	if tokenHashStr != "" {
-		usedMicro, limitMicro, exceeded := s.authService.IsCostLimitExceeded(tokenHashStr)
+	if tokenStr != "" {
+		usedMicro, limitMicro, exceeded := s.authService.IsCostLimitExceeded(tokenStr)
 		if exceeded {
 			used := util.MicroUSDToUSD(usedMicro)
 			limit := util.MicroUSDToUSD(limitMicro)
@@ -309,7 +309,7 @@ func (s *Server) HandleProxyRequest(c *gin.Context) {
 		body:          all,
 		header:        c.Request.Header,
 		isStreaming:   isStreaming,
-		tokenHash:     tokenHashStr,
+		tokenHash:     tokenStr,
 		tokenID:       tokenIDInt64,
 		clientIP:      c.ClientIP(),
 		activeReqID:   activeID,

@@ -461,6 +461,88 @@ func TestHandleUpdateChannel(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateChannel_PreservesMultiTargetMappings(t *testing.T) {
+	server, store, cleanup := setupAdminTestServer(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	created, err := store.CreateConfig(ctx, &model.Config{
+		Name:         "multi-target",
+		URL:          "https://api.example.com",
+		Priority:     10,
+		ModelEntries: []model.ModelEntry{{Model: "gpt-4", RedirectModel: ""}},
+		Enabled:      true,
+	})
+	if err != nil {
+		t.Fatalf("创建测试渠道失败: %v", err)
+	}
+	if err := store.CreateAPIKeysBatch(ctx, []*model.APIKey{{
+		ChannelID:   created.ID,
+		KeyIndex:    0,
+		APIKey:      "sk-multi-target",
+		KeyStrategy: model.KeyStrategySequential,
+	}}); err != nil {
+		t.Fatalf("创建测试 key 失败: %v", err)
+	}
+
+	payload := ChannelRequest{
+		Name:     "multi-target",
+		APIKey:   "sk-multi-target",
+		URL:      "https://api.example.com",
+		Priority: 10,
+		Models: []model.ModelEntry{{
+			Model: "gpt-4",
+			Targets: []model.ModelTargetSpec{
+				{TargetModel: "gpt-4o", Weight: 1},
+				{TargetModel: "gpt-4.1", Weight: 1},
+			},
+		}},
+		Enabled: true,
+	}
+
+	c, w := newTestContext(t, newJSONRequest(t, http.MethodPut, "/admin/channels/"+strconv.FormatInt(created.ID, 10), payload))
+	c.Params = gin.Params{{Key: "id", Value: strconv.FormatInt(created.ID, 10)}}
+	server.handleUpdateChannel(c, created.ID)
+	if w.Code != http.StatusOK {
+		t.Fatalf("更新渠道失败: %d body=%s", w.Code, w.Body.String())
+	}
+
+	got, err := store.GetConfig(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("读取更新后渠道失败: %v", err)
+	}
+	if len(got.ModelEntries) != 1 {
+		t.Fatalf("期望1个模型，实际%d", len(got.ModelEntries))
+	}
+	if len(got.ModelEntries[0].Targets) != 2 {
+		t.Fatalf("期望2个目标，实际%d: %#v", len(got.ModelEntries[0].Targets), got.ModelEntries[0].Targets)
+	}
+	if got.ModelEntries[0].Targets[0].TargetModel != "gpt-4o" || got.ModelEntries[0].Targets[1].TargetModel != "gpt-4.1" {
+		t.Fatalf("目标模型不符合预期: %#v", got.ModelEntries[0].Targets)
+	}
+
+	c2, w2 := newTestContext(t, newRequest(http.MethodGet, "/admin/channels/"+strconv.FormatInt(created.ID, 10), nil))
+	c2.Params = gin.Params{{Key: "id", Value: strconv.FormatInt(created.ID, 10)}}
+	server.handleGetChannel(c2, created.ID)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("读取渠道详情失败: %d body=%s", w2.Code, w2.Body.String())
+	}
+	resp := mustParseAPIResponse[model.Config](t, w2.Body.Bytes())
+	if len(resp.Data.ModelEntries) != 1 || len(resp.Data.ModelEntries[0].Targets) != 2 {
+		t.Fatalf("详情接口未保留两个目标: %#v", resp.Data.ModelEntries)
+	}
+
+	c3, w3 := newTestContext(t, newRequest(http.MethodGet, "/admin/channels", nil))
+	server.handleListChannels(c3)
+	if w3.Code != http.StatusOK {
+		t.Fatalf("读取渠道列表失败: %d body=%s", w3.Code, w3.Body.String())
+	}
+	listResp := mustParseAPIResponse[[]ChannelWithCooldown](t, w3.Body.Bytes())
+	if len(listResp.Data) != 1 || len(listResp.Data[0].ModelEntries) != 1 || len(listResp.Data[0].ModelEntries[0].Targets) != 2 {
+		t.Fatalf("列表接口未保留两个目标: %#v", listResp.Data)
+	}
+}
+
 func TestHandleUpdateChannel_ClearCooldownShouldTakeEffectImmediately(t *testing.T) {
 	server, store, cleanup := setupAdminTestServer(t)
 	defer cleanup()
@@ -757,7 +839,7 @@ func TestHandleGetChannelKeys(t *testing.T) {
 
 	// 创建多个API Keys
 	keys := make([]*model.APIKey, 3)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		keys[i] = &model.APIKey{
 			ChannelID:   created.ID,
 			KeyIndex:    i,

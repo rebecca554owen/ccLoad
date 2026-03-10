@@ -359,7 +359,7 @@ func TestCSVExportImport_LargeData(t *testing.T) {
 
 	// 创建100个渠道
 	totalChannels := 100
-	for i := 0; i < totalChannels; i++ {
+	for i := range totalChannels {
 		cfg := &model.Config{
 			Name:     "Large-Test-" + string(rune('A'+i%26)) + string(rune('0'+i%10)),
 			URL:      "https://large" + string(rune('0'+i%10)) + ".example.com",
@@ -378,7 +378,7 @@ func TestCSVExportImport_LargeData(t *testing.T) {
 
 		// 每个渠道创建2个API Keys
 		keys := make([]*model.APIKey, 2)
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			keys[j] = &model.APIKey{
 				ChannelID:   created.ID,
 				KeyIndex:    j,

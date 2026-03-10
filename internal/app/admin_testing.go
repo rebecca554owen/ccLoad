@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"mime"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -146,7 +147,7 @@ func (s *Server) executeChannelTest(ctx context.Context, cfg *model.Config, keyI
 func (s *Server) testChannelAPI(reqCtx context.Context, cfg *model.Config, apiKey string, testReq *testutil.TestChannelRequest) map[string]any {
 	// 设置默认测试内容（从配置读取）
 	if strings.TrimSpace(testReq.Content) == "" {
-		testReq.Content = s.configService.GetString("channel_test_content", "sonnet 4.0的发布日期是什么")
+		testReq.Content = s.configService.GetString("channel_test_content", "sonnet 4.0的发布日期是什么？")
 	}
 
 	// [INFO] 修复：应用模型重定向逻辑（与正常代理流程保持一致）
@@ -238,11 +239,12 @@ func (s *Server) testChannelAPIWithURL(
 ) map[string]any {
 	// 仅构造测试请求必需字段，避免复制带锁 Config 结构体。
 	cfgForBuild := &model.Config{
-		ID:           cfg.ID,
-		Name:         cfg.Name,
-		ChannelType:  cfg.ChannelType,
-		URL:          selectedURL,
-		ModelEntries: append([]model.ModelEntry(nil), cfg.ModelEntries...),
+		ID:             cfg.ID,
+		Name:           cfg.Name,
+		ChannelType:    cfg.ChannelType,
+		URL:            selectedURL,
+		CustomEndpoint: cfg.CustomEndpoint,
+		ModelEntries:   append([]model.ModelEntry(nil), cfg.ModelEntries...),
 	}
 
 	// 构建请求（传递实际的API Key和重定向后的模型）
@@ -269,6 +271,11 @@ func (s *Server) testChannelAPIWithURL(
 	// 添加/覆盖自定义请求头
 	for key, value := range testReq.Headers {
 		req.Header.Set(key, value)
+	}
+
+	// 自定义 User-Agent 优先：如果配置了自定义 UA，覆盖测试器透传的 UA（与正常代理流程保持一致）
+	if cfg.CustomUserAgent != "" {
+		req.Header.Set("User-Agent", cfg.CustomUserAgent)
 	}
 
 	// 发送请求
@@ -300,9 +307,7 @@ func (s *Server) testChannelAPIWithURL(
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			// 成功：委托给 tester 解析
 			parsed := tester.Parse(resp.StatusCode, bodyBytes)
-			for k, v := range parsed {
-				result[k] = v
-			}
+			maps.Copy(result, parsed)
 
 			if success, ok := result["success"].(bool); !ok || success {
 				if _, ok := result["api_response"]; !ok {

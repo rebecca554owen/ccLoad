@@ -119,10 +119,7 @@ func (s *SQLStore) CreateAPIKeysBatch(ctx context.Context, keys []*model.APIKey)
 	// 构建批量插入语句（每批最多100条，避免SQL语句过长）
 	const batchSize = 100
 	for i := 0; i < len(keys); i += batchSize {
-		end := i + batchSize
-		if end > len(keys) {
-			end = len(keys)
-		}
+		end := min(i+batchSize, len(keys))
 		batch := keys[i:end]
 
 		// 构建 VALUES 部分

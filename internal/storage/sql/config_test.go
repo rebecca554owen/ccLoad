@@ -177,6 +177,61 @@ func TestConfig_UpdateConfig(t *testing.T) {
 	}
 }
 
+func TestConfig_UpdateConfig_PreservesSelfTargetInMultiTargetMappings(t *testing.T) {
+	t.Parallel()
+
+	tmp := t.TempDir()
+	store, err := storage.CreateSQLiteStore(filepath.Join(tmp, "update_multi_target.db"))
+	if err != nil {
+		t.Fatalf("create sqlite store: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	ctx := context.Background()
+
+	created, err := store.CreateConfig(ctx, &model.Config{
+		Name:     "multi-target",
+		URL:      "https://api.example.com",
+		Priority: 1,
+		Enabled:  true,
+		ModelEntries: []model.ModelEntry{
+			{Model: "kimi-for-coding"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("create config: %v", err)
+	}
+
+	created.ModelEntries = []model.ModelEntry{{
+		Model: "kimi-for-coding",
+		Targets: []model.ModelTargetSpec{
+			{TargetModel: "kimi-for-coding", Weight: 1},
+			{TargetModel: "kimi-for-coding1", Weight: 2},
+		},
+	}}
+
+	if _, err := store.UpdateConfig(ctx, created.ID, created); err != nil {
+		t.Fatalf("update config: %v", err)
+	}
+
+	got, err := store.GetConfig(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("get config after update: %v", err)
+	}
+	if len(got.ModelEntries) != 1 {
+		t.Fatalf("model entries count: got %d, want 1", len(got.ModelEntries))
+	}
+	if len(got.ModelEntries[0].Targets) != 2 {
+		t.Fatalf("target count: got %d, want 2", len(got.ModelEntries[0].Targets))
+	}
+	if got.ModelEntries[0].Targets[0].TargetModel != "kimi-for-coding" {
+		t.Fatalf("first target: got %q", got.ModelEntries[0].Targets[0].TargetModel)
+	}
+	if got.ModelEntries[0].Targets[1].TargetModel != "kimi-for-coding1" {
+		t.Fatalf("second target: got %q", got.ModelEntries[0].Targets[1].TargetModel)
+	}
+}
+
 func TestConfig_DeleteConfig(t *testing.T) {
 	t.Parallel()
 
