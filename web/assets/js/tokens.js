@@ -91,6 +91,13 @@
           return;
         }
 
+        if (target.classList.contains('btn-toggle')) {
+          const row = target.closest('tr');
+          const tokenId = row ? parseInt(row.dataset.tokenId) : null;
+          if (tokenId) toggleTokenActive(tokenId);
+          return;
+        }
+
         // 处理删除按钮
         if (target.classList.contains('btn-delete')) {
           const row = target.closest('tr');
@@ -221,6 +228,10 @@
         token: token.token,
         maskedToken: maskedToken,
         statusClass: status.class,
+        isActive: token.is_active,
+        toggleButtonClass: token.is_active ? 'table-action-btn--warning' : 'table-action-btn--success',
+        toggleText: token.is_active ? t('common.disable') : t('common.enable'),
+        toggleTitle: token.is_active ? t('common.disable') : t('common.enable'),
         createdAt: createdAt,
         createdLabel: t('tokens.createdSuffix'),
         expiresAt: expiresAt,
@@ -444,9 +455,12 @@
           <td style="text-align: center;">${nonStreamAvgHtml}</td>
           <td style="color: var(--neutral-600);">${lastUsed}</td>
           <td style="white-space: nowrap;">
-            <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-token="${escapeHtml(token.token)}">${t('common.copy')}</button>
-            <button class="btn btn-secondary btn-edit" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;">${t('common.edit')}</button>
-            <button class="btn btn-danger btn-delete" style="padding: 4px 12px; font-size: 13px;">${t('common.delete')}</button>
+            <div class="token-actions">
+              <button class="btn-edit table-action-btn table-action-btn--primary">${t('common.edit')}</button>
+              <button class="btn-toggle table-action-btn ${token.is_active ? 'table-action-btn--warning' : 'table-action-btn--success'}" data-token-id="${token.id}" data-active="${token.is_active}">${token.is_active ? t('common.disable') : t('common.enable')}</button>
+              <button class="btn-copy-token table-action-btn table-action-btn--neutral" data-token="${escapeHtml(token.token)}">${t('common.copy')}</button>
+              <button class="btn-delete table-action-btn table-action-btn--danger">${t('common.delete')}</button>
+            </div>
           </td>
         </tr>
       `;
@@ -620,6 +634,31 @@
         window.showNotification(t('tokens.msg.updateSuccess'), 'success');
       } catch (error) {
         console.error('Failed to update token:', error);
+        window.showNotification(t('tokens.msg.updateFailed') + ': ' + error.message, 'error');
+      }
+    }
+
+    async function toggleTokenActive(id) {
+      const token = allTokens.find(t => t.id === id);
+      if (!token) return;
+      try {
+        await fetchDataWithAuth(`${API_BASE}/auth-tokens/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            description: token.description,
+            is_active: !token.is_active,
+            expires_at: token.expires_at,
+            allowed_models: token.allowed_models || [],
+            cost_limit_usd: token.cost_limit_usd || 0
+          })
+        });
+        loadTokens();
+        window.showNotification(t('tokens.msg.updateSuccess'), 'success');
+      } catch (error) {
+        console.error('Failed to toggle token:', error);
         window.showNotification(t('tokens.msg.updateFailed') + ': ' + error.message, 'error');
       }
     }
