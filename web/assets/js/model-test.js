@@ -12,9 +12,6 @@ let testMode = TEST_MODE_CHANNEL;
 let isDeletingModels = false;
 let isTestingModels = false;
 
-let channelSelectCombobox = null;
-let modelSelectCombobox = null;
-
 const headRow = document.getElementById('model-test-head-row');
 const tbody = document.getElementById('model-test-tbody');
 const channelSelectorLabel = document.getElementById('channelSelectorLabel');
@@ -403,55 +400,9 @@ function getModelInputValue() {
 
 function setModelInputValue(value) {
   const nextValue = String(value || '').trim();
-  if (modelSelectCombobox) {
-    modelSelectCombobox.setValue(nextValue, nextValue);
-    return;
-  }
-
   if (modelSelect) {
     modelSelect.value = nextValue;
   }
-}
-
-function ensureModelSelectCombobox() {
-  if (modelSelectCombobox || !modelSelect) return;
-  if (typeof window.createSearchableCombobox !== 'function') return;
-
-  modelSelectCombobox = window.createSearchableCombobox({
-    attachMode: true,
-    inputId: 'testModelSelect',
-    dropdownId: 'testModelSelectDropdown',
-    initialValue: selectedModelName,
-    initialLabel: selectedModelName,
-    getOptions: () => {
-      const channelType = typeSelect.value;
-      const models = getAllModelsInType(channelType);
-      const options = models.map(name => ({ value: name, label: name }));
-
-      const typedModel = getModelInputValue();
-      const hasExactMatch = typedModel
-        ? options.some(option => String(option.value).toLowerCase() === typedModel.toLowerCase())
-        : false;
-      const hasFuzzyMatch = typedModel
-        ? options.some(option => String(option.label).toLowerCase().includes(typedModel.toLowerCase()) || String(option.value).toLowerCase().includes(typedModel.toLowerCase()))
-        : false;
-
-      if (typedModel && !hasExactMatch && !hasFuzzyMatch) {
-        options.unshift({ value: typedModel, label: typedModel });
-      }
-
-      return options;
-    },
-    onSelect: (value) => {
-      selectedModelName = String(value || '').trim();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    },
-    onCancel: () => {
-      selectedModelName = getModelInputValue() || selectedModelName;
-    }
-  });
 }
 
 function clearProgress() {
@@ -535,25 +486,34 @@ function renderChannelModeRows() {
 }
 
 function populateModelSelector() {
+  if (!modelSelect) return;
+
   const channelType = typeSelect.value;
   const models = getAllModelsInType(channelType);
-  const typedModel = getModelInputValue();
+  modelSelect.innerHTML = '';
 
   if (models.length === 0) {
-    selectedModelName = typedModel || '';
-    setModelInputValue(selectedModelName);
-    modelSelectCombobox?.refresh();
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = i18nText('modelTest.noModelInType', '该类型下没有可用模型');
+    modelSelect.appendChild(emptyOption);
+    selectedModelName = '';
+    modelSelect.value = '';
     return;
   }
 
-  if (typedModel) {
-    selectedModelName = typedModel;
-  } else if (!selectedModelName || !models.includes(selectedModelName)) {
+  models.forEach(name => {
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    modelSelect.appendChild(option);
+  });
+
+  if (!selectedModelName || !models.includes(selectedModelName)) {
     selectedModelName = models[0];
   }
 
-  setModelInputValue(selectedModelName);
-  modelSelectCombobox?.refresh();
+  modelSelect.value = selectedModelName;
 }
 
 function renderModelModeRows() {
@@ -570,13 +530,8 @@ function renderModelModeRows() {
   }
 
   if (!selectedModelName || !models.includes(selectedModelName)) {
-    const typedModel = getModelInputValue();
-    if (typedModel) {
-      selectedModelName = typedModel;
-    } else {
-      selectedModelName = models[0];
-      setModelInputValue(selectedModelName);
-    }
+    selectedModelName = models[0];
+    setModelInputValue(selectedModelName);
   }
 
   const channels = getChannelsSupportingModel(channelType, selectedModelName);
@@ -1316,22 +1271,35 @@ async function onChannelChange() {
 }
 
 function renderSearchableChannelSelect() {
-  channelSelectCombobox = createSearchableCombobox({
-    container: 'testChannelSelectContainer',
-    inputId: 'testChannelSelect',
-    dropdownId: 'testChannelSelectDropdown',
-    placeholder: i18nText('modelTest.searchChannel', '搜索渠道...'),
-    minWidth: 250,
-    getOptions: () => channelsList.map(ch => ({
-      value: String(ch.id),
-      label: `[${getChannelType(ch)}] ${ch.name}`
-    })),
-    onSelect: async (value) => {
-      const channelId = parseInt(value, 10);
-      selectedChannel = channelsList.find(c => c.id === channelId) || null;
-      await onChannelChange();
-    }
+  const container = document.getElementById('testChannelSelectContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const select = document.createElement('select');
+  select.id = 'testChannelSelect';
+  select.className = 'filter-select';
+  select.style.minWidth = '250px';
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = i18nText('modelTest.searchChannel', '搜索渠道...');
+  select.appendChild(placeholderOption);
+
+  channelsList.forEach(ch => {
+    const option = document.createElement('option');
+    option.value = String(ch.id);
+    option.textContent = `[${getChannelType(ch)}] ${ch.name}`;
+    select.appendChild(option);
   });
+
+  select.value = selectedChannel ? String(selectedChannel.id) : '';
+  select.addEventListener('change', async (event) => {
+    const channelId = parseInt(event.target.value, 10);
+    selectedChannel = channelsList.find(c => c.id === channelId) || null;
+    await onChannelChange();
+  });
+
+  container.appendChild(select);
 }
 
 async function loadChannels() {
@@ -1368,7 +1336,6 @@ async function loadDefaultTestContent() {
 }
 
 function bindEvents() {
-  ensureModelSelectCombobox();
   const streamEnabled = document.getElementById('streamEnabled');
   if (streamEnabled) {
     streamEnabled.addEventListener('change', () => {
@@ -1385,15 +1352,8 @@ function bindEvents() {
     renderModelModeRows();
   });
 
-  if (!modelSelectCombobox && modelSelect) {
+  if (modelSelect) {
     modelSelect.addEventListener('change', () => {
-      selectedModelName = getModelInputValue();
-      if (testMode === TEST_MODE_MODEL) {
-        renderModelModeRows();
-      }
-    });
-
-    modelSelect.addEventListener('input', () => {
       selectedModelName = getModelInputValue();
       if (testMode === TEST_MODE_MODEL) {
         renderModelModeRows();

@@ -10,6 +10,79 @@
   <title data-i18n="tokens.title">API访问令牌 - Claude Code & Codex Proxy</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/tokens.css?v=__VERSION__">
+  <style>
+    body.tokens-page .content-area {
+      display: grid;
+      gap: 18px;
+    }
+
+    body.tokens-page .token-page-hero {
+      padding: 28px 30px;
+    }
+
+    body.tokens-page .token-page-hero-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    body.tokens-page .token-page-create-btn {
+      min-width: 120px;
+      padding: 10px 18px;
+    }
+
+    body.tokens-page .time-range-container {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    body.tokens-page .token-table {
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+
+    body.tokens-page .token-table table {
+      width: 100%;
+    }
+
+    body.tokens-page .token-table th {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    body.tokens-page .token-table td {
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    body.tokens-page .token-actions {
+      display: inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    body.tokens-page .token-status-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    body.tokens-page .token-result-warning {
+      background: color-mix(in srgb, var(--warning-50) 72%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warning-600) 24%, transparent);
+      color: var(--text);
+    }
+
+    body.tokens-page .token-result-warning strong,
+    body.tokens-page .token-result-warning div {
+      color: inherit;
+    }
+  </style>
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
   <script defer src="/web/assets/locales/en.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/i18n.js?v=__VERSION__"></script>
@@ -17,20 +90,20 @@
   <script defer src="/web/assets/js/template-engine.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/tokens.js?v=__VERSION__"></script>
 </head>
-<body>
+<body class="tokens-page">
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
          <header class="mb-2">
         </header>
         <header class="mb-4">
-          <div class="glass-card" style="padding: var(--space-6);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <div class="glass-card token-page-hero">
+            <div class="token-page-hero-row">
               <div>
                 <h1 class="page-title mb-2" data-i18n="tokens.pageTitle">API访问令牌</h1>
                 <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
               </div>
-              <button onclick="showCreateModal()" class="btn btn-primary" style="padding: 8px 16px;" data-i18n="tokens.createToken">
+              <button onclick="showCreateModal()" class="btn btn-primary token-page-create-btn" data-i18n="tokens.createToken">
                 + 创建令牌
               </button>
             </div>
@@ -133,7 +206,7 @@
         <button onclick="closeTokenResultModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--neutral-500);">&times;</button>
       </div>
       <div class="modal-body">
-        <div style="background: var(--warning-50); border: 1px solid var(--warning-200); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <div class="token-result-warning" style="border-radius: 8px; padding: 16px; margin-bottom: 16px;">
           <div style="font-weight: 600; color: var(--warning-700); margin-bottom: 8px;" data-i18n="tokens.resultWarningTitle">⚠️ 重要提示:</div>
           <div style="font-size: 14px; color: var(--warning-800);" data-i18n="tokens.resultWarningDesc">
             请立即复制并保存此令牌。关闭此窗口后,您将无法再次查看完整令牌。
@@ -321,7 +394,7 @@
       <td style="font-weight: 500;">{{description}}</td>
       <td>
         <div><span class="token-display token-display-{{statusClass}}">{{maskedToken}}</span></div>
-        <div style="font-size: 12px; color: var(--neutral-500); margin-top: 4px;">{{createdAt}}{{createdLabel}} · {{expiresAt}}</div>
+        <div class="token-status-meta">{{createdAt}}{{createdLabel}} · {{expiresAt}}</div>
       </td>
       <td style="text-align: center;">{{{callsHtml}}}</td>
       <td style="text-align: center;">{{{successRateHtml}}}</td>
@@ -332,9 +405,11 @@
       <td style="text-align: center;">{{{nonStreamAvgHtml}}}</td>
       <td style="color: var(--neutral-600);">{{lastUsed}}</td>
       <td style="white-space: nowrap;">
-        <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-token="{{token}}" data-i18n="common.copy">复制</button>
-        <button class="btn btn-secondary btn-edit" style="padding: 4px 12px; font-size: 13px; margin-right: 4px;" data-i18n="common.edit">编辑</button>
-        <button class="btn btn-danger btn-delete" style="padding: 4px 12px; font-size: 13px;" data-i18n="common.delete">删除</button>
+        <div class="token-actions">
+          <button class="btn-copy-token btn btn-secondary" style="padding: 4px 12px; font-size: 13px;" data-token="{{token}}" data-i18n="common.copy">复制</button>
+          <button class="btn btn-secondary btn-edit" style="padding: 4px 12px; font-size: 13px;" data-i18n="common.edit">编辑</button>
+          <button class="btn btn-danger btn-delete" style="padding: 4px 12px; font-size: 13px;" data-i18n="common.delete">删除</button>
+        </div>
       </td>
     </tr>
   </template>

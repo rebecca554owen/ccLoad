@@ -134,6 +134,11 @@
     { key: 'model-test', labelKey: 'nav.modelTest', href: '/web/model-test.html', icon: iconTest },
     { key: 'settings', labelKey: 'nav.settings', href: '/web/settings.html', icon: iconSettings },
   ];
+  const THEME_STORAGE_KEY = 'ccload_theme';
+  const DARK_THEME_COLOR = '#0b1220';
+  const LIGHT_THEME_COLOR = '#f4efe6';
+  const themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  let themeMediaQueryBound = false;
 
   function h(tag, attrs = {}, children = []) {
     const el = document.createElement(tag);
@@ -186,6 +191,59 @@
     const token = localStorage.getItem('ccload_token');
     const expiry = localStorage.getItem('ccload_token_expiry');
     return token && (!expiry || Date.now() <= parseInt(expiry));
+  }
+
+  function getThemeMetaTag() {
+    return document.querySelector('meta[name="theme-color"]');
+  }
+
+  function resolveTheme(theme) {
+    if (theme === 'dark' || theme === 'light') return theme;
+    return themeMediaQuery.matches ? 'dark' : 'light';
+  }
+
+  function syncThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+    const theme = document.documentElement.dataset.theme || 'auto';
+    toggle.checked = resolveTheme(theme) === 'dark';
+    toggle.dataset.theme = theme;
+  }
+
+  function applyTheme(theme, save = false) {
+    const root = document.documentElement;
+    const normalizedTheme = theme === 'dark' || theme === 'light' ? theme : 'auto';
+    const resolvedTheme = resolveTheme(normalizedTheme);
+
+    if (normalizedTheme === 'auto') {
+      delete root.dataset.theme;
+    } else {
+      root.dataset.theme = normalizedTheme;
+    }
+    root.dataset.resolvedTheme = resolvedTheme;
+
+    const metaThemeColor = getThemeMetaTag();
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', resolvedTheme === 'dark' ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
+    }
+
+    if (save) {
+      localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
+    }
+
+    syncThemeToggle();
+  }
+
+  function initTheme() {
+    applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'auto');
+
+    if (!themeMediaQueryBound) {
+      themeMediaQuery.addEventListener('change', () => {
+        const currentTheme = document.documentElement.dataset.theme || 'auto';
+        applyTheme(currentTheme, false);
+      });
+      themeMediaQueryBound = true;
+    }
   }
 
   // GitHub仓库地址
@@ -302,9 +360,26 @@
 
     // 语言切换器
     const langSwitcher = window.i18n ? window.i18n.createLanguageSwitcher() : null;
+    const themeSwitch = h('label', {
+      class: 'theme-switch',
+      'aria-label': 'Theme'
+    }, [
+      h('input', {
+        id: 'theme-toggle',
+        type: 'checkbox',
+        onchange: (event) => applyTheme(event.target.checked ? 'dark' : 'light', true)
+      }),
+      h('span', { class: 'theme-switch-track', 'aria-hidden': 'true' }, [
+        h('span', { class: 'theme-switch-icons' }, [
+          h('span', {}, 'L'),
+          h('span', {}, 'D')
+        ])
+      ])
+    ]);
 
     const right = h('div', { class: 'topbar-right' }, [
       versionGroup,
+      themeSwitch,
       langSwitcher,
       h('button', {
         id: 'auth-btn',
@@ -363,6 +438,7 @@
   }
 
   window.initTopbar = function initTopbar(activeKey) {
+    initTheme();
     document.body.classList.add('top-layout');
     const app = document.querySelector('.app-container') || document.body;
     // 隐藏侧边栏与移动按钮
@@ -374,6 +450,7 @@
     // 插入顶部条
     const topbar = buildTopbar(activeKey);
     document.body.appendChild(topbar);
+    syncThemeToggle();
 
     // 背景动效
     injectBackground();
@@ -381,6 +458,7 @@
     // 初始化版本显示
     initVersionDisplay();
   }
+  initTheme();
 
   // 通知系统（全局复用，DRY）
   function ensureNotifyHost() {
@@ -448,7 +526,6 @@
 // ============================================================
 (function () {
   let channelTypesCache = null;
-  const searchableSelectOutsideClickHandlers = new Map();
 
   // 复用公共工具（DRY）：真实实现由下方公共工具模块导出到 window.escapeHtml
   const escapeHtml = (str) => window.escapeHtml(str);
@@ -516,120 +593,6 @@
   }
 
   /**
-   * 渲染可搜索的渠道类型选择框
-   * @param {string} containerId - 容器元素ID
-   * @param {string} selectedValue - 选中的值（默认'anthropic'）
-   */
-  async function renderSearchableChannelTypeSelect(containerId, selectedValue = 'anthropic') {
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error('Container element not found:', containerId);
-      return;
-    }
-
-    const prevOutsideClickHandler = searchableSelectOutsideClickHandlers.get(containerId);
-    if (prevOutsideClickHandler) {
-      document.removeEventListener('click', prevOutsideClickHandler);
-      searchableSelectOutsideClickHandlers.delete(containerId);
-    }
-
-    const types = await getChannelTypes();
-    const selectedType = types.find(t => t.value === selectedValue) || types[0];
-
-    // 创建可搜索下拉框结构
-    container.innerHTML = `
-      <div class="searchable-select" style="position: relative; width: 150px;">
-        <input type="text" class="searchable-select-input"
-               value="${escapeHtml(selectedType?.display_name || '')}"
-               data-value="${escapeHtml(selectedType?.value || '')}"
-               placeholder="${t('common.searchType')}"
-               autocomplete="off"
-               style="width: 100%; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-bg-secondary); color: var(--color-text); font-size: 13px;">
-        <div class="searchable-select-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: #fff; border: 1px solid var(--color-border); border-radius: 6px; margin-top: 2px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
-      </div>
-    `;
-
-    const input = container.querySelector('.searchable-select-input');
-    const dropdown = container.querySelector('.searchable-select-dropdown');
-
-    // 渲染下拉选项
-    function renderOptions(filter = '') {
-      const filterLower = filter.toLowerCase();
-      const filtered = types.filter(t =>
-        t.display_name.toLowerCase().includes(filterLower) ||
-        t.value.toLowerCase().includes(filterLower)
-      );
-
-      dropdown.innerHTML = filtered.map(type => `
-        <div class="searchable-select-option"
-             data-value="${escapeHtml(type.value)}"
-             data-display="${escapeHtml(type.display_name)}"
-             title="${escapeHtml(type.description)}"
-             style="padding: 8px 10px; cursor: pointer; font-size: 13px; ${type.value === input.dataset.value ? 'background: var(--color-bg-tertiary);' : ''}">
-          ${escapeHtml(type.display_name)}
-        </div>
-      `).join('');
-
-      // 绑定选项点击事件
-      dropdown.querySelectorAll('.searchable-select-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-          input.value = opt.dataset.display;
-          input.dataset.value = opt.dataset.value;
-          dropdown.style.display = 'none';
-        });
-        opt.addEventListener('mouseenter', () => {
-          opt.style.background = 'var(--color-bg-tertiary)';
-        });
-        opt.addEventListener('mouseleave', () => {
-          opt.style.background = opt.dataset.value === input.dataset.value ? 'var(--color-bg-tertiary)' : '';
-        });
-      });
-    }
-
-    // 输入框事件
-    input.addEventListener('focus', () => {
-      renderOptions(input.value);
-      dropdown.style.display = 'block';
-    });
-
-    input.addEventListener('input', () => {
-      renderOptions(input.value);
-      dropdown.style.display = 'block';
-    });
-
-    // 点击外部关闭
-    const outsideClickHandler = (e) => {
-      const currentContainer = document.getElementById(containerId);
-      if (!currentContainer) {
-        document.removeEventListener('click', outsideClickHandler);
-        searchableSelectOutsideClickHandlers.delete(containerId);
-        return;
-      }
-
-      if (!currentContainer.contains(e.target)) {
-        dropdown.style.display = 'none';
-        // 恢复显示已选择的值
-        const selected = types.find(t => t.value === input.dataset.value);
-        if (selected) input.value = selected.display_name;
-      }
-    };
-
-    searchableSelectOutsideClickHandlers.set(containerId, outsideClickHandler);
-    document.addEventListener('click', outsideClickHandler);
-  }
-
-  /**
-   * 获取可搜索选择框的当前值
-   * @param {string} containerId - 容器元素ID
-   * @returns {string} 当前选中的值
-   */
-  function getSearchableSelectValue(containerId) {
-    const container = document.getElementById(containerId);
-    const input = container?.querySelector('.searchable-select-input');
-    return input?.dataset.value || '';
-  }
-
-  /**
    * 渲染渠道类型Tab页（包含"全部"选项）
    * @param {string} containerId - 容器元素ID
    * @param {Function} onTabChange - tab切换回调函数
@@ -675,8 +638,6 @@
     getChannelTypes,
     renderChannelTypeRadios,
     renderChannelTypeSelect,
-    renderSearchableChannelTypeSelect,
-    getSearchableSelectValue,
     renderChannelTypeTabs
   };
 })();
@@ -760,351 +721,6 @@
   window.getRpmColor = getRpmColor;
   window.escapeHtml = escapeHtml;
   window.toggleResponse = toggleResponse;
-})();
-
-// ============================================================
-// 通用可搜索下拉选择框组件 (SearchableCombobox)
-// ============================================================
-(function () {
-  /**
-   * 创建可搜索下拉选择框
-   * @param {Object} config - 配置对象
-   * @param {HTMLElement|string} [config.container] - 容器元素或ID（生成模式必需）
-   * @param {string} config.inputId - input 元素 ID
-   * @param {string} config.dropdownId - 下拉框元素 ID
-   * @param {Function} config.getOptions - 获取选项列表的函数，返回 [{value, label}]
-   * @param {Function} config.onSelect - 选中回调 (value, label) => void
-   * @param {Function} [config.onCancel] - 取消选择回调
-   * @param {string} [config.placeholder] - placeholder 文本
-   * @param {string} [config.initialValue] - 初始值
-   * @param {string} [config.initialLabel] - 初始显示文本
-   * @param {number} [config.minWidth] - 最小宽度 (px)
-   * @param {boolean} [config.attachMode] - 附着模式，使用已存在的 HTML 元素
-   * @returns {Object} 组件实例
-   */
-  function createSearchableCombobox(config) {
-    const {
-      container: containerArg,
-      inputId,
-      dropdownId,
-      getOptions,
-      onSelect,
-      onCancel,
-      placeholder = '',
-      initialValue = '',
-      initialLabel = '',
-      minWidth = 150,
-      attachMode = false
-    } = config;
-
-    let input, dropdown, wrapper, dropdownHome, container = null;
-
-    if (attachMode) {
-      // 附着模式：使用已存在的 HTML 元素
-      input = document.getElementById(inputId);
-      dropdown = document.getElementById(dropdownId);
-      if (!input || !dropdown) {
-        console.error('SearchableCombobox: input or dropdown not found in attach mode');
-        return null;
-      }
-      wrapper = input.closest('.filter-combobox-wrapper');
-      dropdownHome = dropdown.parentElement;
-      if (initialLabel) input.value = initialLabel;
-    } else {
-      // 生成模式：创建新的 HTML 结构
-      container = typeof containerArg === 'string'
-        ? document.getElementById(containerArg)
-        : containerArg;
-
-      if (!container) {
-        console.error('SearchableCombobox: container not found');
-        return null;
-      }
-
-      container.innerHTML = `
-        <div class="filter-combobox-wrapper" style="min-width: ${minWidth}px;">
-          <input
-            id="${inputId}"
-            class="filter-select filter-combobox"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="${escapeHtml(placeholder)}"
-            value="${escapeHtml(initialLabel)}"
-          />
-          <div id="${dropdownId}" class="filter-dropdown" role="listbox"></div>
-        </div>
-      `;
-
-      input = document.getElementById(inputId);
-      dropdown = document.getElementById(dropdownId);
-      wrapper = input.closest('.filter-combobox-wrapper');
-      dropdownHome = dropdown.parentElement;
-    }
-
-    let activeIndex = -1;
-    let outsideHandler = null;
-    let repositionHandler = null;
-    let currentValue = initialValue;
-
-    function clearOutsideHandler() {
-      if (!outsideHandler) return;
-      document.removeEventListener('mousedown', outsideHandler, true);
-      outsideHandler = null;
-    }
-
-    function clearRepositionHandler() {
-      if (!repositionHandler) return;
-      window.removeEventListener('resize', repositionHandler, true);
-      window.removeEventListener('scroll', repositionHandler, true);
-      repositionHandler = null;
-    }
-
-    function closeDropdown() {
-      dropdown.style.display = 'none';
-      dropdown.dataset.open = '0';
-      activeIndex = -1;
-      clearOutsideHandler();
-      clearRepositionHandler();
-      if (dropdownHome && dropdown.parentElement !== dropdownHome) {
-        dropdownHome.appendChild(dropdown);
-      }
-    }
-
-    function beginPick() {
-      if (input.dataset.pickActive === '1') return;
-      input.dataset.pickActive = '1';
-      input.dataset.prevInputValue = input.value;
-      input.dataset.prevValue = currentValue;
-      input.value = '';
-      activeIndex = -1;
-    }
-
-    function cancelPick() {
-      if (input.dataset.pickActive !== '1') {
-        closeDropdown();
-        return;
-      }
-
-      const prevInputValue = input.dataset.prevInputValue ?? '';
-      const prevValue = input.dataset.prevValue ?? '';
-
-      input.value = prevInputValue;
-      currentValue = prevValue;
-
-      delete input.dataset.pickActive;
-      delete input.dataset.prevInputValue;
-      delete input.dataset.prevValue;
-
-      closeDropdown();
-      if (onCancel) onCancel();
-    }
-
-    function commitValue(value, label) {
-      currentValue = value;
-      input.value = label;
-
-      delete input.dataset.pickActive;
-      delete input.dataset.prevInputValue;
-      delete input.dataset.prevValue;
-
-      closeDropdown();
-      if (onSelect) onSelect(value, label);
-    }
-
-    function getDropdownItems() {
-      const keyword = input.value.trim().toLowerCase();
-      const allOptions = getOptions();
-      if (!keyword) return allOptions;
-      return allOptions.filter(opt =>
-        String(opt.label).toLowerCase().includes(keyword) ||
-        String(opt.value).toLowerCase().includes(keyword)
-      );
-    }
-
-    function renderDropdown() {
-      if (dropdown.dataset.open !== '1') return;
-
-      const items = getDropdownItems();
-      dropdown.innerHTML = '';
-
-      if (activeIndex >= items.length) activeIndex = items.length - 1;
-      if (activeIndex < -1) activeIndex = -1;
-
-      items.forEach((item, idx) => {
-        const row = document.createElement('div');
-        row.className = 'filter-dropdown-item';
-        row.setAttribute('role', 'option');
-        row.dataset.value = item.value;
-        row.dataset.index = String(idx);
-        row.textContent = item.label;
-
-        if (item.value === currentValue) row.classList.add('selected');
-        if (idx === activeIndex) row.classList.add('active');
-
-        row.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          commitValue(item.value, item.label);
-        });
-
-        dropdown.appendChild(row);
-      });
-    }
-
-    function positionDropdown() {
-      if (dropdown.dataset.open !== '1') return;
-      const rect = input.getBoundingClientRect();
-      const margin = 6;
-
-      dropdown.style.left = `${Math.round(rect.left)}px`;
-      dropdown.style.width = `${Math.round(rect.width)}px`;
-      dropdown.style.top = `${Math.round(rect.bottom + margin)}px`;
-
-      const dropdownHeight = dropdown.offsetHeight || 0;
-      const viewportBottom = window.innerHeight || 0;
-      if (dropdownHeight && rect.bottom + margin + dropdownHeight > viewportBottom && rect.top - margin - dropdownHeight >= 0) {
-        dropdown.style.top = `${Math.round(rect.top - margin - dropdownHeight)}px`;
-      }
-    }
-
-    function openDropdown() {
-      if (dropdownHome && dropdown.parentElement !== document.body) {
-        document.body.appendChild(dropdown);
-      }
-      dropdown.style.display = 'block';
-      dropdown.dataset.open = '1';
-      renderDropdown();
-      positionDropdown();
-
-      clearOutsideHandler();
-      outsideHandler = (e) => {
-        if (!wrapper.contains(e.target) && !dropdown.contains(e.target)) {
-          cancelPick();
-        }
-      };
-      document.addEventListener('mousedown', outsideHandler, true);
-
-      clearRepositionHandler();
-      repositionHandler = () => positionDropdown();
-      window.addEventListener('resize', repositionHandler, true);
-      window.addEventListener('scroll', repositionHandler, true);
-    }
-
-    function moveActive(delta) {
-      const items = getDropdownItems();
-      if (items.length <= 0) return;
-      if (activeIndex === -1) {
-        activeIndex = 0;
-      } else {
-        activeIndex = Math.max(0, Math.min(items.length - 1, activeIndex + delta));
-      }
-      renderDropdown();
-    }
-
-    // 事件绑定
-    input.addEventListener('mousedown', () => {
-      beginPick();
-      openDropdown();
-    });
-
-    input.addEventListener('input', () => {
-      if (dropdown.dataset.open !== '1') {
-        beginPick();
-        openDropdown();
-      }
-      activeIndex = -1;
-      renderDropdown();
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (dropdown.dataset.open === '1') {
-          e.preventDefault();
-          cancelPick();
-        }
-        return;
-      }
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (dropdown.dataset.open !== '1') {
-          beginPick();
-          openDropdown();
-          return;
-        }
-        moveActive(1);
-        return;
-      }
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (dropdown.dataset.open !== '1') {
-          beginPick();
-          openDropdown();
-          return;
-        }
-        moveActive(-1);
-        return;
-      }
-
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (dropdown.dataset.open === '1') {
-          const items = getDropdownItems();
-          if (activeIndex >= 0 && activeIndex < items.length) {
-            commitValue(items[activeIndex].value, items[activeIndex].label);
-            return;
-          }
-        }
-        // 没有选中项时，取消编辑
-        if (input.dataset.pickActive === '1' && !input.value.trim()) {
-          cancelPick();
-        }
-      }
-    });
-
-    input.addEventListener('blur', () => {
-      if (dropdown.dataset.open !== '1') return;
-
-      // 如果用户输入了内容，自动选择第一个匹配项
-      if (input.value.trim()) {
-        const items = getDropdownItems();
-        if (items.length > 0) {
-          commitValue(items[0].value, items[0].label);
-          return;
-        }
-      }
-      cancelPick();
-    });
-
-    // 返回组件实例，提供外部控制接口
-    return {
-      getValue: () => currentValue,
-      setValue: (value, label) => {
-        currentValue = value;
-        input.value = label;
-      },
-      refresh: () => {
-        if (dropdown.dataset.open === '1') {
-          renderDropdown();
-        }
-      },
-      getInput: () => input,
-      getDropdown: () => dropdown,
-      destroy: () => {
-        closeDropdown();
-        clearOutsideHandler();
-        clearRepositionHandler();
-        if (!attachMode && container) {
-          container.innerHTML = '';
-        }
-      }
-    };
-  }
-
-  // 导出到全局作用域
-  window.createSearchableCombobox = createSearchableCombobox;
 })();
 
 // ============================================================

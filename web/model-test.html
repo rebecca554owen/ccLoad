@@ -10,6 +10,22 @@
   <title data-i18n="modelTest.title">模型测试 - Claude Code & Codex Proxy</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <style>
+    :root {
+      --color-border: var(--line);
+      --color-bg-secondary: rgba(255, 255, 255, 0.08);
+      --color-text-secondary: var(--muted);
+      --color-text: var(--text);
+    }
+
+    body.model-test-page .content-area {
+      display: grid;
+      gap: 18px;
+    }
+
+    body.model-test-page .glass-card {
+      padding: 24px;
+    }
+
     .mode-tab-btn {
       padding: 8px 14px;
       font-size: 13px;
@@ -52,6 +68,22 @@
       cursor: not-allowed;
       pointer-events: none;
     }
+
+    body.model-test-page #testChannelSelect,
+    body.model-test-page #testChannelType,
+    body.model-test-page #testModelSelect,
+    body.model-test-page #modelTestContent,
+    body.model-test-page #concurrency {
+      color-scheme: inherit;
+    }
+
+    body.model-test-page .modern-table tbody td {
+      color: var(--text);
+    }
+
+    body.model-test-page .modern-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
   </style>
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
   <script defer src="/web/assets/locales/en.js?v=__VERSION__"></script>
@@ -60,7 +92,7 @@
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/model-test.js?v=__VERSION__"></script>
 </head>
-<body>
+<body class="model-test-page">
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
@@ -88,18 +120,7 @@
             </label>
             <label id="modelSelectorLabel" style="display: none; align-items: center; gap: 6px; font-size: 13px; min-width: 280px;">
               <span style="color: var(--color-text-secondary);" data-i18n="common.model">模型</span>
-              <div class="filter-combobox-wrapper" style="min-width: 220px; flex: 1;">
-                <input
-                  id="testModelSelect"
-                  class="filter-select filter-combobox"
-                  type="text"
-                  autocomplete="off"
-                  spellcheck="false"
-                  data-i18n-placeholder="modelTest.modelInputPlaceholder"
-                  placeholder="输入或选择模型"
-                >
-                <div id="testModelSelectDropdown" class="filter-dropdown" role="listbox" aria-label="模型"></div>
-              </div>
+              <select id="testModelSelect" class="filter-select" style="min-width: 220px; flex: 1;"></select>
             </label>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; flex: 1; min-width: 200px;">
               <span style="color: var(--color-text-secondary);" data-i18n="modelTest.content">内容</span>

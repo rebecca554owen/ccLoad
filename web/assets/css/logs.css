@@ -212,7 +212,7 @@
       outline: none;
       border-color: var(--primary-500);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      background: white;
+      background: rgba(255, 255, 255, 0.7);
     }
 
     .logs-jump-input::placeholder {
@@ -228,6 +228,26 @@
       min-width: 0;
     }
 
+    .logs-filter-group--sm {
+      flex: 0 1 180px;
+      max-width: 220px;
+    }
+
+    .logs-filter-group--id {
+      flex: 0 1 140px;
+      max-width: 170px;
+    }
+
+    .logs-filter-group--status {
+      flex: 0 1 160px;
+      max-width: 190px;
+    }
+
+    .logs-filter-group--md {
+      flex: 0 1 220px;
+      max-width: 280px;
+    }
+
     .logs-filter-group .filter-input,
     .logs-filter-group .filter-select {
       width: 100%;
@@ -235,6 +255,7 @@
     }
 
     .logs-filter-info {
+      flex: none;
       white-space: nowrap;
     }
 
@@ -253,6 +274,7 @@
         align-items: center;
         gap: 8px;
         width: 100%;
+        max-width: none;
       }
 
       .logs-filter-group .filter-label {
@@ -425,4 +447,55 @@
 
     .logs-table tr.pending-row:hover td {
       background: var(--warning-100);
+    }
+
+    :root[data-theme="dark"] .test-progress,
+    :root[data-theme="dark"] .logs-jump-input,
+    :root[data-theme="dark"] .logs-table tbody td:nth-child(odd),
+    :root[data-theme="dark"] .logs-table tbody td:nth-child(even),
+    :root[data-resolved-theme="dark"] .test-progress,
+    :root[data-resolved-theme="dark"] .logs-jump-input,
+    :root[data-resolved-theme="dark"] .logs-table tbody td:nth-child(odd),
+    :root[data-resolved-theme="dark"] .logs-table tbody td:nth-child(even) {
+      background: var(--glass-bg) !important;
+      color: var(--text);
+      border-color: var(--glass-border);
+    }
+
+    :root[data-theme="dark"] .logs-jump-input:focus,
+    :root[data-resolved-theme="dark"] .logs-jump-input:focus {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    :root[data-theme="dark"] .logs-pagination-info,
+    :root[data-theme="dark"] .logs-pagination-info #logs_current_page2,
+    :root[data-theme="dark"] .logs-pagination-info #logs_total_pages2,
+    :root[data-theme="dark"] .test-progress p,
+    :root[data-resolved-theme="dark"] .logs-pagination-info,
+    :root[data-resolved-theme="dark"] .logs-pagination-info #logs_current_page2,
+    :root[data-resolved-theme="dark"] .logs-pagination-info #logs_total_pages2,
+    :root[data-resolved-theme="dark"] .test-progress p {
+      color: var(--text);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) .test-progress,
+      :root:not([data-theme]) .logs-jump-input,
+      :root:not([data-theme]) .logs-table tbody td:nth-child(odd),
+      :root:not([data-theme]) .logs-table tbody td:nth-child(even) {
+        background: var(--glass-bg) !important;
+        color: var(--text);
+        border-color: var(--glass-border);
+      }
+
+      :root:not([data-theme]) .logs-jump-input:focus {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      :root:not([data-theme]) .logs-pagination-info,
+      :root:not([data-theme]) .logs-pagination-info #logs_current_page2,
+      :root:not([data-theme]) .logs-pagination-info #logs_total_pages2,
+      :root:not([data-theme]) .test-progress p {
+        color: var(--text);
+      }
     }

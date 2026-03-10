@@ -1247,12 +1247,15 @@ function shouldShowZoom(points, hours, trendType) {
           : channelName;
 
         const item = TemplateEngine.render('tpl-channel-filter-item', {
-          checkedClass: isVisible ? 'checked' : '',
+          checkedAttr: isVisible ? 'checked' : '',
           color: channelColors[channelName],
           displayName: displayName
         });
         if (item) {
-          item.onclick = () => toggleChannel(channelName);
+          const checkbox = item.querySelector('.channel-filter-checkbox');
+          if (checkbox) {
+            checkbox.addEventListener('change', () => toggleChannel(channelName));
+          }
           fragment.appendChild(item);
         }
       }

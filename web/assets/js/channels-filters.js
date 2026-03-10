@@ -1,15 +1,9 @@
 // Filter channels based on current filters
 let filteredChannels = []; // 存储筛选后的渠道列表
 let modelFilterOptions = [];
-let modelFilterCombobox = null; // 通用组件实例
 
 function getModelAllLabel() {
   return (window.t && window.t('channels.modelAll')) || '所有模型';
-}
-
-function modelFilterInputValueFromFilterValue(filterValue) {
-  if (!filterValue || filterValue === 'all') return getModelAllLabel();
-  return filterValue;
 }
 
 function normalizeModelFilterOption() {
@@ -111,15 +105,26 @@ function updateModelOptions() {
 
   normalizeModelFilterOption();
 
-  // 使用通用组件刷新下拉框
-  if (modelFilterCombobox) {
-    modelFilterCombobox.setValue(filters.model, modelFilterInputValueFromFilterValue(filters.model));
-    modelFilterCombobox.refresh();
-  } else {
-    const modelFilterInput = document.getElementById('modelFilter');
-    if (modelFilterInput) {
-      modelFilterInput.value = modelFilterInputValueFromFilterValue(filters.model);
-    }
+  const modelFilterSelect = document.getElementById('modelFilter');
+  if (modelFilterSelect) {
+    const previousValue = filters.model && (filters.model === 'all' || modelFilterOptions.includes(filters.model))
+      ? filters.model
+      : 'all';
+    modelFilterSelect.innerHTML = '';
+
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = getModelAllLabel();
+    modelFilterSelect.appendChild(allOption);
+
+    modelFilterOptions.forEach(modelName => {
+      const option = document.createElement('option');
+      option.value = modelName;
+      option.textContent = modelName;
+      modelFilterSelect.appendChild(option);
+    });
+
+    modelFilterSelect.value = previousValue;
   }
 }
 
@@ -164,26 +169,12 @@ function setupFilterListeners() {
     filterChannels();
   });
 
-  // 使用通用组件初始化模型筛选器（附着模式）
-  const modelFilterInput = document.getElementById('modelFilter');
-  if (modelFilterInput) {
-    modelFilterCombobox = createSearchableCombobox({
-      attachMode: true,
-      inputId: 'modelFilter',
-      dropdownId: 'modelFilterDropdown',
-      initialValue: filters.model,
-      initialLabel: modelFilterInputValueFromFilterValue(filters.model),
-      getOptions: () => {
-        const allLabel = getModelAllLabel();
-        return [{ value: 'all', label: allLabel }].concat(
-          modelFilterOptions.map(m => ({ value: m, label: m }))
-        );
-      },
-      onSelect: (value) => {
-        filters.model = value;
-        if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
-        filterChannels();
-      }
+  const modelFilterSelect = document.getElementById('modelFilter');
+  if (modelFilterSelect) {
+    modelFilterSelect.addEventListener('change', (e) => {
+      filters.model = e.target.value || 'all';
+      if (typeof saveChannelsFilters === 'function') saveChannelsFilters();
+      filterChannels();
     });
   }
 

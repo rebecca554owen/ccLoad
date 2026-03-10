@@ -91,11 +91,7 @@
 
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterModel">模型</label>
-              <div class="filter-combobox-wrapper" style="min-width: 100px;">
-                <input id="modelFilter" class="filter-select filter-combobox" type="text" autocomplete="off"
-                  spellcheck="false" />
-                <div id="modelFilterDropdown" class="filter-dropdown" role="listbox" aria-label="模型"></div>
-              </div>
+              <select id="modelFilter" class="filter-select" style="min-width: 160px;"></select>
             </div>
             <div class="filter-group">
               <label class="filter-label" data-i18n="channels.filterSearch">搜索渠道</label>
@@ -344,10 +340,10 @@
                   <span data-i18n="channels.exportKeys">导出</span>
                 </button>
                 <button type="button" id="toggleInlineKeyBtn" onclick="toggleInlineKeyVisibility()"
-                  style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--neutral-300); background: white; color: var(--neutral-500); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                  style="width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;"
                   data-i18n-title="channels.toggleKeyVisibility" title="显示/隐藏API Key"
-                  onmouseover="this.style.background='var(--neutral-50)'; this.style.borderColor='var(--neutral-400)';"
-                  onmouseout="this.style.background='white'; this.style.borderColor='var(--neutral-300)';">
+                  onmouseover="this.style.background='rgba(255,255,255,0.18)'; this.style.borderColor='var(--glass-border)';"
+                  onmouseout="this.style.background='var(--surface-soft)'; this.style.borderColor='var(--line)';">
                   <svg id="inlineEyeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -395,7 +391,7 @@
                   <th data-i18n="channels.tableApiKey">API Key</th>
                   <th style="width: 200px;">
                     <select id="keyStatusFilter" onchange="filterKeysByStatus(this.value)"
-                      style="width: 100%; padding: 4px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; background: white;">
+                      style="width: 100%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface-soft); color: var(--text);">
                       <option value="all" data-i18n="channels.keyStatusAll">全部</option>
                       <option value="normal" data-i18n="channels.keyStatusNormal">正常</option>
                       <option value="cooldown" data-i18n="channels.keyStatusCooldown">冷却中</option>
@@ -490,7 +486,12 @@
                       data-i18n-placeholder="channels.searchModelPlaceholder" placeholder="搜索模型名称..."
                       oninput="filterModelsByKeyword(this.value)">
                   </th>
-                  <th style="width: 42%;" data-i18n="channels.redirectTarget">重定向目标（可选）</th>
+                  <th style="width: 42%;">
+                    <div class="redirect-targets-header">
+                      <span data-i18n="channels.redirectTarget">重定向目标（可选）</span>
+                      <span class="redirect-targets-header-hint" data-i18n="channels.multiTargetInputHint">一行一个目标，支持 `目标 * 权重`</span>
+                    </div>
+                  </th>
                   <th style="width: 60px;"></th>
                 </tr>
               </thead>
@@ -897,7 +898,7 @@
     <div style="display: flex; gap: 6px; justify-content: center;">
       <button type="button" class="key-action-btn" data-action="copy" data-index="{{index}}"
         data-i18n-title="channels.copyThisKey" title="复制此Key"
-        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M4.5 2H10.5C11.0523 2 11.5 2.44772 11.5 3V4H12.5C13.0523 4 13.5 4.44772 13.5 5V13C13.5 13.5523 13.0523 14 12.5 14H6.5C5.94772 14 5.5 13.5523 5.5 13V12H4.5C3.94772 12 3.5 11.5523 3.5 11V3C3.5 2.44772 3.94772 2 4.5 2Z"
@@ -907,14 +908,14 @@
       </button>
       <button type="button" class="key-action-btn" data-action="test" data-index="{{index}}"
         data-i18n-title="channels.testThisKey" title="测试此Key"
-        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
         </svg>
       </button>
       <button type="button" class="key-action-btn" data-action="delete" data-index="{{index}}"
         data-i18n-title="channels.deleteThisKey" title="删除此Key"
-        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+        style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -942,14 +943,14 @@
         <div class="inline-url-actions">
           <button type="button" onclick="testInlineURL({{index}}, this)" data-i18n-title="channels.testThisUrl"
             title="测试此URL"
-            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M4 2L12 8L4 14V2Z" fill="currentColor" />
             </svg>
           </button>
           <button type="button" onclick="deleteInlineURL({{index}})" data-i18n-title="channels.deleteThisUrl"
             title="删除此URL"
-            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
+            style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M5.5 2.5V1.5C5.5 1.22386 5.72386 1 6 1H8C8.27614 1 8.5 1.22386 8.5 1.5V2.5M2 3.5H12M3 3.5V11.5C3 12.0523 3.44772 12.5 4 12.5H10C10.5523 12.5 11 12.0523 11 11.5V3.5M5.5 6.5V9.5M8.5 6.5V9.5"
@@ -985,7 +986,7 @@
         {{{healthHtml}}}
       </td>
       <td class="ch-col-models">
-        <span class="ch-models-text" title="{{modelsText}}">{{modelsText}}</span>
+        <div class="ch-models-text" title="{{modelsText}}">{{{modelsHtml}}}</div>
       </td>
       <td class="ch-col-priority">
         {{{effectivePriorityHtml}}}
@@ -1029,7 +1030,7 @@
             placeholder="claude-3-opus-20240229"
             style="flex: 1; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
           <button type="button" class="lowercase-btn" data-index="{{index}}"
-            style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--neutral-300); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;"
+            style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;"
             data-i18n-title="channels.toLowercase" title="转为小写">
             <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -1040,13 +1041,18 @@
         </div>
       </td>
       <td style="padding: 4px 10px;">
-        <input type="text" class="redirect-to-input modal-inline-input" data-index="{{index}}" value="{{to}}"
-          placeholder="{{toPlaceholder}}"
-          style="width: 100%; padding: 5px 8px; border: 1px solid var(--neutral-300); border-radius: 6px; font-size: 13px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace;">
+        <div class="redirect-targets-cell">
+          <textarea class="redirect-targets-input modal-inline-input" data-index="{{index}}" rows="2"
+            placeholder="{{targetsPlaceholder}}">{{targetsInput}}</textarea>
+          <div class="redirect-targets-meta">
+            <span class="redirect-targets-help">{{targetsHint}}</span>
+            <div class="redirect-targets-preview"></div>
+          </div>
+        </div>
       </td>
       <td style="padding: 4px 10px; text-align: center;">
         <button type="button" class="redirect-delete-btn" data-index="{{index}}"
-          style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--neutral-200); background: white; color: var(--neutral-500); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
+          style="width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; padding: 0;"
           data-i18n-title="channels.deleteThisModel" title="删除此模型">
           <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -1070,7 +1076,7 @@
   <!-- 排序卡片模板 -->
   <template id="tpl-sort-item">
     <div class="sort-item" data-channel-id="{{id}}" draggable="true"
-      style="background: white; border: 1px solid var(--neutral-300); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; cursor: move; transition: all 0.2s;">
+      style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; cursor: move; transition: all 0.2s;">
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"

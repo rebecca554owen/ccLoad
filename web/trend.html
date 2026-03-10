@@ -30,9 +30,9 @@
 
         <!-- Filter Bar -->
         <div class="filter-bar">
-          <div class="filter-controls">
+          <div class="filter-controls trend-filter-controls">
             <!-- 渠道类型筛选 -->
-            <div class="filter-group">
+            <div class="filter-group trend-filter-group trend-filter-group--sm">
               <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
               <select id="f_channel_type" class="filter-select" style="min-width: 120px;">
                 <!-- 动态加载渠道类型选项 -->
@@ -40,7 +40,7 @@
             </div>
 
             <!-- 时间范围筛选 -->
-            <div class="filter-group">
+            <div class="filter-group trend-filter-group trend-filter-group--sm">
               <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
               <select id="f_hours" class="filter-select" style="min-width: 100px;">
                 <!-- 动态生成选项 by date-range-selector.js -->
@@ -48,19 +48,19 @@
             </div>
 
             <!-- 渠道ID筛选 -->
-            <div class="filter-group">
+            <div class="filter-group trend-filter-group trend-filter-group--id">
               <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
               <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID..." style="max-width: 100px;">
             </div>
 
             <!-- 渠道名筛选 -->
-            <div class="filter-group">
+            <div class="filter-group trend-filter-group trend-filter-group--md">
               <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
               <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
             <!-- 模型筛选 -->
-            <div class="filter-group">
+            <div class="filter-group trend-filter-group trend-filter-group--md">
               <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
               <select id="f_model" class="filter-select" style="min-width: 150px;">
                 <option value="" data-i18n="trend.allModels">全部模型</option>
@@ -69,7 +69,7 @@
             </div>
 
             <!-- 令牌筛选 -->
-            <div class="filter-group">
+            <div class="filter-group trend-filter-group trend-filter-group--md">
               <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
               <select id="f_auth_token" class="filter-select" style="min-width: 150px;">
                 <option value="" data-i18n="stats.allTokens">全部令牌</option>
@@ -78,7 +78,7 @@
             </div>
 
             <!-- 操作按钮组 -->
-            <div style="flex: none;">
+            <div class="trend-filter-actions">
               <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;" data-i18n="common.filter">筛选</button>
             </div>
           </div>
@@ -174,11 +174,11 @@
 
   <!-- 渠道筛选项模板 -->
   <template id="tpl-channel-filter-item">
-    <div class="channel-filter-item">
-      <div class="channel-checkbox {{checkedClass}}"></div>
+    <label class="channel-filter-item">
+      <input type="checkbox" class="channel-filter-checkbox" {{checkedAttr}}>
       <div class="channel-color-indicator" style="background-color: {{color}}"></div>
       <div class="channel-name">{{displayName}}</div>
-    </div>
+    </label>
   </template>
 
 </body>

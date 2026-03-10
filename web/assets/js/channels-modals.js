@@ -20,6 +20,109 @@ async function resolveEditableChannel(id) {
   }
 }
 
+function normalizeRedirectTargets(targets, redirectModel, modelName) {
+  const seen = new Set();
+  const normalized = [];
+
+  if (Array.isArray(targets)) {
+    targets.forEach((target) => {
+      const targetModel = (target?.target_model || target?.targetModel || '').trim();
+      if (!targetModel) return;
+      const key = targetModel.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      normalized.push({
+        target_model: targetModel,
+        weight: Number.isFinite(Number(target?.weight)) && Number(target.weight) > 0 ? Number(target.weight) : 1
+      });
+    });
+  }
+
+  const redirect = (redirectModel || '').trim();
+  const model = (modelName || '').trim();
+  if (normalized.length === 0 && redirect && redirect !== model) {
+    normalized.push({ target_model: redirect, weight: 1 });
+  }
+
+  return normalized;
+}
+
+function getPrimaryRedirectModel(targets, modelName) {
+  if (!Array.isArray(targets) || targets.length !== 1) return '';
+  const target = (targets[0]?.target_model || '').trim();
+  const model = (modelName || '').trim();
+  if (!target || target === model) return '';
+  return target;
+}
+
+function normalizeRedirectEditorRow(entry) {
+  const model = (entry?.model || '').trim();
+  const targets = normalizeRedirectTargets(entry?.targets, entry?.redirect_model, model);
+  return {
+    model,
+    redirect_model: getPrimaryRedirectModel(targets, model),
+    targets
+  };
+}
+
+function formatTargetsForInput(targets) {
+  if (!Array.isArray(targets) || targets.length === 0) return '';
+  return targets.map((target) => {
+    const targetModel = (target?.target_model || '').trim();
+    const weight = Number(target?.weight) > 0 ? Number(target.weight) : 1;
+    return weight > 1 ? `${targetModel} * ${weight}` : targetModel;
+  }).join('\n');
+}
+
+function parseTargetsInput(input) {
+  const seen = new Set();
+  return String(input || '')
+    .split(/[\n,]+/)
+    .map(item => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const match = item.match(/^(.*?)\s*(?:[*xX@]\s*(\d+))?$/);
+      const targetModel = (match?.[1] || item).trim();
+      const weight = match?.[2] ? parseInt(match[2], 10) : 1;
+      return {
+        target_model: targetModel,
+        weight: Number.isFinite(weight) && weight > 0 ? weight : 1
+      };
+    })
+    .filter((item) => {
+      const key = item.target_model.toLowerCase();
+      if (!item.target_model || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function syncRedirectRow(row) {
+  if (!row) return;
+  row.targets = normalizeRedirectTargets(row.targets, row.redirect_model, row.model);
+  row.redirect_model = getPrimaryRedirectModel(row.targets, row.model);
+}
+
+function renderRedirectTargetsPreview(container, targets) {
+  if (!container) return;
+  container.innerHTML = '';
+  if (!Array.isArray(targets) || targets.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'redirect-targets-empty';
+    empty.textContent = window.t('channels.leaveEmptyNoRedirect');
+    container.appendChild(empty);
+    return;
+  }
+
+  targets.forEach((target) => {
+    const pill = document.createElement('span');
+    pill.className = 'redirect-target-chip';
+    const weight = Number(target.weight) > 0 ? Number(target.weight) : 1;
+    pill.textContent = weight > 1 ? `${target.target_model} × ${weight}` : target.target_model;
+    container.appendChild(pill);
+  });
+}
+
 async function handleChannelSaveSuccess({ isNewChannel, newChannelType, savedChannelId, response }) {
   if (window.ChannelModalHooks && typeof window.ChannelModalHooks.afterSave === 'function') {
     await window.ChannelModalHooks.afterSave({
@@ -138,10 +241,7 @@ async function editChannel(id) {
   document.getElementById('channelEnabled').checked = channel.enabled;
 
   // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
-  redirectTableData = (channel.models || []).map(m => ({
-    model: m.model || '',
-    redirect_model: m.redirect_model || ''
-  }));
+  redirectTableData = (channel.models || []).map(normalizeRedirectEditorRow);
   selectedModelIndices.clear();
   currentModelFilter = '';
   const modelFilterInput = document.getElementById('modelFilterInput');
@@ -181,10 +281,12 @@ async function saveChannel(event) {
 
   // 构建模型配置（新格式：models 数组）
   const models = redirectTableData
+    .map(normalizeRedirectEditorRow)
     .filter(r => r.model && r.model.trim())
     .map(r => ({
       model: r.model.trim(),
-      redirect_model: (r.redirect_model || '').trim()
+      redirect_model: r.redirect_model,
+      targets: r.targets
     }));
   const seenModels = new Set();
   const duplicateModels = [];
@@ -707,10 +809,7 @@ async function copyChannel(id, name) {
   document.getElementById('channelEnabled').checked = true;
 
   // 加载模型配置（新格式：models是 {model, redirect_model} 数组）
-  redirectTableData = (channel.models || []).map(m => ({
-    model: m.model || '',
-    redirect_model: m.redirect_model || ''
-  }));
+  redirectTableData = (channel.models || []).map(normalizeRedirectEditorRow);
   selectedModelIndices.clear();
   currentModelFilter = '';
   const modelFilterInput = document.getElementById('modelFilterInput');
@@ -781,7 +880,8 @@ function parseModels(input) {
 
     if (!seen.has(modelKey)) {
       seen.add(modelKey);
-      result.push({ model, redirect_model: redirect });
+      const targets = redirect && redirect !== model ? [{ target_model: redirect, weight: 1 }] : [];
+      result.push({ model, redirect_model: redirect !== model ? redirect : '', targets });
     }
   }
 
@@ -852,7 +952,7 @@ function confirmModelImport() {
   newModels.forEach(entry => {
     const modelKey = entry.model.toLowerCase();
     if (!existingModels.has(modelKey)) {
-      redirectTableData.push({ model: entry.model, redirect_model: entry.redirect_model });
+      redirectTableData.push(normalizeRedirectEditorRow(entry));
       existingModels.add(modelKey);
       addedCount++;
     }
@@ -893,20 +993,29 @@ function deleteRedirectRow(index) {
 function updateRedirectRow(index, field, value) {
   if (redirectTableData[index]) {
     const nextValue = value.trim();
-    if (redirectTableData[index][field] === nextValue) return;
-
-    redirectTableData[index][field] = nextValue;
-
-    // 当模型名称变化时，更新重定向目标的 placeholder
-    if (field === 'model') {
-      const tbody = document.getElementById('redirectTableBody');
-      const row = tbody?.children[index];
-      if (row) {
-        const toInput = row.querySelector('.redirect-to-input');
-        if (toInput) {
-          toInput.placeholder = nextValue || window.t('channels.leaveEmptyNoRedirect');
-        }
+    if (field === 'targets_input') {
+      const nextTargets = parseTargetsInput(nextValue);
+      const currentSerialized = JSON.stringify(redirectTableData[index].targets || []);
+      const nextSerialized = JSON.stringify(nextTargets);
+      if (currentSerialized === nextSerialized) return;
+      redirectTableData[index].targets = nextTargets;
+      redirectTableData[index].redirect_model = getPrimaryRedirectModel(nextTargets, redirectTableData[index].model);
+    } else {
+      if (redirectTableData[index][field] === nextValue) return;
+      redirectTableData[index][field] = nextValue;
+      if (field === 'model') {
+        syncRedirectRow(redirectTableData[index]);
       }
+    }
+
+    const tbody = document.getElementById('redirectTableBody');
+    const row = tbody?.querySelector(`tr[data-model-index="${index}"]`);
+    if (row) {
+      const targetsInput = row.querySelector('.redirect-targets-input');
+      if (targetsInput && field === 'model' && !targetsInput.value.trim()) {
+        targetsInput.placeholder = nextValue || window.t('channels.leaveEmptyNoRedirect');
+      }
+      renderRedirectTargetsPreview(row.querySelector('.redirect-targets-preview'), redirectTableData[index].targets);
     }
 
     markChannelFormDirty();
@@ -920,13 +1029,15 @@ function updateRedirectRow(index, field, value) {
  * @returns {HTMLElement|null} 表格行元素
  */
 function createRedirectRow(redirect, index) {
+  const normalizedRedirect = normalizeRedirectEditorRow(redirect);
   const modelName = redirect.model || '';
   const rowData = {
     index: index,
     displayIndex: index + 1,
     from: modelName,
-    to: redirect.redirect_model || '',
-    toPlaceholder: modelName || window.t('channels.leaveEmptyNoRedirect')
+    targetsInput: formatTargetsForInput(normalizedRedirect.targets),
+    targetsPlaceholder: modelName || window.t('channels.leaveEmptyNoRedirect'),
+    targetsHint: window.t('channels.multiTargetInputHint')
   };
 
   const row = TemplateEngine.render('tpl-redirect-row', rowData);
@@ -941,6 +1052,9 @@ function createRedirectRow(redirect, index) {
     checkbox.checked = selectedModelIndices.has(index);
   }
 
+  row.dataset.modelIndex = String(index);
+  renderRedirectTargetsPreview(row.querySelector('.redirect-targets-preview'), normalizedRedirect.targets);
+
   return row;
 }
 
@@ -954,7 +1068,7 @@ function initRedirectTableEventDelegation() {
   tbody.dataset.delegated = 'true';
 
   // 处理输入框变更
-  tbody.addEventListener('change', (e) => {
+  tbody.addEventListener('input', (e) => {
     const fromInput = e.target.closest('.redirect-from-input');
     if (fromInput) {
       const index = parseInt(fromInput.dataset.index);
@@ -962,10 +1076,10 @@ function initRedirectTableEventDelegation() {
       return;
     }
 
-    const toInput = e.target.closest('.redirect-to-input');
-    if (toInput) {
-      const index = parseInt(toInput.dataset.index);
-      updateRedirectRow(index, 'redirect_model', toInput.value);
+    const targetsInput = e.target.closest('.redirect-targets-input');
+    if (targetsInput) {
+      const index = parseInt(targetsInput.dataset.index);
+      updateRedirectRow(index, 'targets_input', targetsInput.value);
     }
   });
 
@@ -1036,8 +1150,8 @@ function getVisibleModelIndices() {
   return redirectTableData
     .map((item, index) => {
       const model = (item.model || '').toLowerCase();
-      const redirect = (item.redirect_model || '').toLowerCase();
-      if (model.includes(keyword) || redirect.includes(keyword)) {
+      const targets = formatTargetsForInput(item.targets || []).toLowerCase();
+      if (model.includes(keyword) || targets.includes(keyword)) {
         return index;
       }
       return null;
@@ -1336,9 +1450,10 @@ async function fetchModelsFromAPI() {
       const modelName = typeof entry === 'string' ? entry : entry.model;
       const modelKey = (modelName || '').trim().toLowerCase();
       if (modelName && !existingModels.has(modelKey)) {
-        // 使用返回的 redirect_model，如果没有则使用 model
-        const redirectModel = (typeof entry === 'object' && entry.redirect_model) ? entry.redirect_model : modelName;
-        redirectTableData.push({ model: modelName, redirect_model: redirectModel });
+        const normalizedEntry = typeof entry === 'object'
+          ? normalizeRedirectEditorRow(entry)
+          : normalizeRedirectEditorRow({ model: modelName });
+        redirectTableData.push(normalizedEntry);
         existingModels.add(modelKey);
         addedCount++;
       }
@@ -1414,7 +1529,7 @@ function addCommonModels() {
   for (const modelName of commonModels) {
     const modelKey = modelName.toLowerCase();
     if (!existingModels.has(modelKey)) {
-      redirectTableData.push({ model: modelName, redirect_model: '' });
+      redirectTableData.push(normalizeRedirectEditorRow({ model: modelName }));
       existingModels.add(modelKey);
       addedCount++;
     }

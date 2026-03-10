@@ -179,9 +179,27 @@ function createChannelCard(channel) {
   } : null;
 
   // 模型文本
-  const modelsText = Array.isArray(channel.models)
-    ? channel.models.map(m => m.model || m).join(', ')
-    : '';
+  const modelLines = Array.isArray(channel.models)
+    ? channel.models.map((entry) => {
+        if (!entry || typeof entry === 'string') return entry || '';
+        const modelName = entry.model || '';
+        const targets = Array.isArray(entry.targets) ? entry.targets : [];
+        if (targets.length > 0) {
+          const targetText = targets.map((target) => {
+            const targetModel = target?.target_model || target?.targetModel || '';
+            const weight = Number(target?.weight) > 0 ? Number(target.weight) : 1;
+            return weight > 1 ? `${targetModel}×${weight}` : targetModel;
+          }).filter(Boolean).join(' | ');
+          return targetText ? `${modelName} -> ${targetText}` : modelName;
+        }
+        if (entry.redirect_model) {
+          return `${modelName} -> ${entry.redirect_model}`;
+        }
+        return modelName;
+      }).filter(Boolean)
+    : [];
+  const modelsText = modelLines.join('\n');
+  const modelsHtml = modelLines.map((line) => `<div class="ch-model-line">${line}</div>`).join('');
 
   // 耗时文本：无统计数据时留空，有数据时仅显示实际存在的指标
   const avgFirstByte = stats ? (stats.avgFirstByteTimeSeconds || 0) : 0;
@@ -243,6 +261,7 @@ function createChannelCard(channel) {
     typeBadge: buildChannelTypeBadge(channelTypeRaw),
     url: channel.url,
     modelsText: modelsText,
+    modelsHtml: modelsHtml,
     priority: channel.priority,
     effectivePriorityHtml: buildEffectivePriorityHtml(channel),
     disabledBadge: inlineDisabledBadge(channel.enabled),

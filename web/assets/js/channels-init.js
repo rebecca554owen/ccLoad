@@ -88,12 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('statusFilter').value = 'all';
     const modelFilterEl = document.getElementById('modelFilter');
     if (modelFilterEl) {
-      modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-        ? modelFilterInputValueFromFilterValue('all')
-        : window.t('channels.modelAll');
-    }
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
+      modelFilterEl.value = 'all';
     }
     document.getElementById('searchInput').value = '';
     document.getElementById('idFilter').value = urlChannelId;
@@ -108,9 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('statusFilter').value = filters.status;
     const modelFilterEl = document.getElementById('modelFilter');
     if (modelFilterEl) {
-      modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-        ? modelFilterInputValueFromFilterValue(filters.model)
-        : (filters.model === 'all' ? window.t('channels.modelAll') : filters.model);
+      modelFilterEl.value = filters.model;
     }
     document.getElementById('searchInput').value = filters.search;
     document.getElementById('idFilter').value = filters.id;
@@ -132,16 +125,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 清空ID筛选框
     const idFilterEl = document.getElementById('idFilter');
     if (idFilterEl) idFilterEl.value = '';
-    // 使用通用组件更新模型筛选器
-    if (typeof modelFilterCombobox !== 'undefined' && modelFilterCombobox) {
-      modelFilterCombobox.setValue('all', modelFilterInputValueFromFilterValue('all'));
-    } else {
-      const modelFilterEl = document.getElementById('modelFilter');
-      if (modelFilterEl) {
-        modelFilterEl.value = (typeof modelFilterInputValueFromFilterValue === 'function')
-          ? modelFilterInputValueFromFilterValue('all')
-          : window.t('channels.modelAll');
-      }
+    const modelFilterEl = document.getElementById('modelFilter');
+    if (modelFilterEl) {
+      modelFilterEl.value = 'all';
     }
     saveChannelsFilters();
     loadChannels(type);

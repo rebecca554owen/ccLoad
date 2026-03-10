@@ -10,6 +10,114 @@
   <title data-i18n="stats.title">调用统计 - Claude Code & Codex Proxy</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/channels.css?v=__VERSION__">
+  <style>
+    body.stats-page .content-area {
+      display: grid;
+      gap: 18px;
+    }
+
+    body.stats-page .filter-bar {
+      padding: 20px 22px;
+    }
+
+    body.stats-page .stats-detail-card {
+      padding: 22px;
+    }
+
+    body.stats-page .view-toggle-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px;
+      border-radius: 18px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      box-shadow: var(--glass-shadow);
+    }
+
+    body.stats-page .view-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: 180ms ease;
+    }
+
+    body.stats-page .view-toggle-btn.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+
+    body.stats-page .health-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    body.stats-page .health-track {
+      display: inline-grid;
+      grid-template-columns: repeat(48, minmax(0, 1fr));
+      gap: 2px;
+      min-width: 180px;
+    }
+
+    body.stats-page .health-block {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    body.stats-page .health-block.healthy {
+      background: color-mix(in srgb, var(--success-500) 82%, white 18%);
+    }
+
+    body.stats-page .health-block.warning {
+      background: color-mix(in srgb, var(--warning-600) 78%, white 22%);
+    }
+
+    body.stats-page .health-block.critical {
+      background: color-mix(in srgb, var(--error-500) 76%, white 24%);
+    }
+
+    body.stats-page .health-block.unknown {
+      background: rgba(255, 255, 255, 0.08);
+      opacity: 0.45;
+    }
+
+    body.stats-page .health-rate {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    body.stats-page .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    body.stats-page .pie-chart-container {
+      min-height: 320px;
+    }
+
+    body.stats-page .stats-total-row {
+      background: rgba(255, 255, 255, 0.12);
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 900px) {
+      body.stats-page .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
   <script defer src="/web/assets/locales/en.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/i18n.js?v=__VERSION__"></script>
@@ -19,7 +127,7 @@
   <script defer src="/web/assets/js/ui.js?v=__VERSION__"></script>
   <script defer src="/web/assets/js/stats.js?v=__VERSION__"></script>
 </head>
-<body>
+<body class="stats-page">
   <div class="app-container">
     
 
@@ -134,7 +242,7 @@
                 try {
                   var savedView = localStorage.getItem('stats.view');
                   if (savedView === 'chart') {
-                    document.write('<style id="stats-view-init-style">#stats-table-view{display:none}#stats-chart-view{display:block}.view-toggle-btn[data-view="table"]{background:transparent;color:var(--neutral-600);box-shadow:none}.view-toggle-btn[data-view="chart"]{background:var(--white);color:var(--primary-600);box-shadow:0 1px 3px rgba(0,0,0,0.1)}</style>');
+                    document.write('<style id="stats-view-init-style">#stats-table-view{display:none}#stats-chart-view{display:block}.view-toggle-btn[data-view=\"table\"]{background:transparent;color:var(--muted);box-shadow:none}.view-toggle-btn[data-view=\"chart\"]{background:rgba(255,255,255,0.14);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,0.14)}</style>');
                   }
                 } catch(_) {}
               })();
@@ -303,7 +411,7 @@
 
   <!-- 合计行模板 -->
   <template id="tpl-stats-total">
-    <tr style="background-color: var(--primary-50); font-weight: bold; border-top: 2px solid var(--primary-200);">
+    <tr class="stats-total-row" style="font-weight: bold;">
       <td colspan="2" style="text-align: center; font-size: 15px; color: var(--primary-700);" data-i18n="stats.total">合计</td>
       <td><span class="success-count">{{successCount}}</span></td>
       <td><span class="error-count">{{errorCount}}</span></td>

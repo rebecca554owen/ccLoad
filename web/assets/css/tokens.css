@@ -1,6 +1,6 @@
     .token-table {
       width: 100%;
-      background: white;
+      background: var(--glass-bg);
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -129,7 +129,7 @@
       animation: fadeIn 0.2s;
     }
     .modal-content {
-      background-color: white;
+      background-color: var(--glass-bg);
       margin: 5% auto;
       padding: 0;
       border-radius: 12px;
@@ -164,4 +164,54 @@
     @keyframes slideUp {
       from { transform: translateY(50px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
+    }
+
+    :root[data-theme="dark"] .token-table,
+    :root[data-theme="dark"] .modal-content,
+    :root[data-theme="dark"] .token-display,
+    :root[data-resolved-theme="dark"] .token-table,
+    :root[data-resolved-theme="dark"] .modal-content,
+    :root[data-resolved-theme="dark"] .token-display {
+      background: var(--glass-bg) !important;
+      color: var(--text);
+      border-color: var(--glass-border);
+    }
+
+    :root[data-theme="dark"] .token-table thead,
+    :root[data-theme="dark"] .token-table tbody tr:hover,
+    :root[data-resolved-theme="dark"] .token-table thead,
+    :root[data-resolved-theme="dark"] .token-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    :root[data-theme="dark"] .token-table th,
+    :root[data-theme="dark"] .token-table td,
+    :root[data-theme="dark"] .metric-value,
+    :root[data-resolved-theme="dark"] .token-table th,
+    :root[data-resolved-theme="dark"] .token-table td,
+    :root[data-resolved-theme="dark"] .metric-value {
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) .token-table,
+      :root:not([data-theme]) .modal-content,
+      :root:not([data-theme]) .token-display {
+        background: var(--glass-bg) !important;
+        color: var(--text);
+        border-color: var(--glass-border);
+      }
+
+      :root:not([data-theme]) .token-table thead,
+      :root:not([data-theme]) .token-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      :root:not([data-theme]) .token-table th,
+      :root:not([data-theme]) .token-table td,
+      :root:not([data-theme]) .metric-value {
+        color: var(--text);
+        border-color: var(--line);
+      }
     }
