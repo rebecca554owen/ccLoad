@@ -6,8 +6,8 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <title data-i18n="trend.title">请求趋势 - Claude Code & Codex Proxy</title>
+  <meta name="theme-color" content="#18A058">
+  <title data-i18n="trend.title">请求趋势</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/channels.css?v=__VERSION__">
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
@@ -24,11 +24,18 @@
     <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <!-- 页面标题 -->
-        <header class="mb-2">
+        <header class="page-section">
+          <div class="glass-card page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="trend.title">请求趋势</h1>
+                <p class="page-subtitle">按时间查看请求量、时延与成本趋势</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <!-- Filter Bar -->
+        <section class="page-section">
         <div class="filter-bar">
           <div class="filter-controls trend-filter-controls">
             <!-- 渠道类型筛选 -->
@@ -83,9 +90,10 @@
             </div>
           </div>
         </div>
+        </section>
 
         <!-- 趋势图表 -->
-        <section class="mb-8 trend-chart-section">
+        <section class="page-section trend-chart-section">
           <div class="glass-card  trend-chart-card" style="animation-delay: 0.2s;">
             <div class="flex justify-between items-center mb-6">
               <h3 class="text-xl font-semibold">

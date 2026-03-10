@@ -1263,3 +1263,45 @@
         color: var(--muted);
       }
     }
+
+.key-action-btn,
+.url-action-btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.key-action-btn[data-action="copy"],
+.url-action-btn[data-action="test"] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 245, 247, 0.72));
+  border-color: rgba(183, 194, 204, 0.9);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  color: var(--text-primary-light);
+}
+
+.key-action-btn[data-action="test"] {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  border-color: rgba(var(--primary-rgb), 0.22);
+  box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.22);
+}
+
+.key-action-btn[data-action="delete"],
+.url-action-btn[data-action="delete"] {
+  background: linear-gradient(135deg, var(--error-500), var(--error-600));
+  border-color: rgba(var(--error-rgb), 0.22);
+  box-shadow: 0 8px 18px rgba(var(--error-rgb), 0.18);
+}
+
+[data-theme="dark"] .key-action-btn[data-action="copy"],
+[data-theme="dark"] .url-action-btn[data-action="test"],
+[data-resolved-theme="dark"] .key-action-btn[data-action="copy"],
+[data-resolved-theme="dark"] .url-action-btn[data-action="test"] {
+  background: linear-gradient(180deg, rgba(35, 42, 47, 0.92), rgba(24, 30, 34, 0.86));
+  border-color: rgba(86, 101, 112, 0.72);
+  color: var(--text-primary-dark);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}

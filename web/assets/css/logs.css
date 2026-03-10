@@ -224,28 +224,29 @@
     }
 
     .logs-filter-group {
-      flex: 1 1 180px;
+      flex: 0 1 auto;
       min-width: 0;
+      gap: 4px;
     }
 
     .logs-filter-group--sm {
-      flex: 0 1 180px;
-      max-width: 220px;
+      flex-basis: 150px;
+      max-width: 180px;
     }
 
     .logs-filter-group--id {
-      flex: 0 1 140px;
-      max-width: 170px;
+      flex-basis: 112px;
+      max-width: 132px;
     }
 
     .logs-filter-group--status {
-      flex: 0 1 160px;
-      max-width: 190px;
+      flex-basis: 132px;
+      max-width: 156px;
     }
 
     .logs-filter-group--md {
-      flex: 0 1 220px;
-      max-width: 280px;
+      flex-basis: 180px;
+      max-width: 228px;
     }
 
     .logs-filter-group .filter-input,
@@ -254,13 +255,26 @@
       min-width: 0;
     }
 
+    .logs-filter-group .filter-input,
+    .logs-filter-group .filter-select,
+    .logs-filter-btn {
+      min-height: 34px;
+    }
+
     .logs-filter-info {
-      flex: none;
+      flex: 1 1 auto;
+      margin-left: auto;
       white-space: nowrap;
+      text-align: right;
     }
 
     .logs-filter-actions {
       flex: none;
+    }
+
+    .logs-filter-btn {
+      padding: 6px 14px;
+      font-size: 13px;
     }
 
     @media (max-width: 768px) {
@@ -284,6 +298,7 @@
 
       .logs-filter-info {
         width: 100%;
+        margin-left: 0;
         text-align: center;
         justify-self: stretch;
       }

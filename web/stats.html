@@ -6,8 +6,8 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <title data-i18n="stats.title">调用统计 - Claude Code & Codex Proxy</title>
+  <meta name="theme-color" content="#18A058">
+  <title data-i18n="stats.title">调用统计</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/channels.css?v=__VERSION__">
   <style>
@@ -134,58 +134,65 @@
     <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <!-- 页面标题 -->
-        <header class="mb-2">
+        <header class="page-section">
+          <div class="glass-card page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="stats.title">调用统计</h1>
+                <p class="page-subtitle">按渠道、模型与令牌查看调用聚合</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <!-- Filter Bar -->
+        <section class="page-section">
         <div class="filter-bar">
-          <div class="filter-controls">
+          <div class="filter-controls stats-filter-controls">
             <!-- 渠道类型筛选 -->
-            <div class="filter-group">
+            <div class="filter-group stats-filter-group stats-filter-group--sm">
               <label for="f_channel_type" class="filter-label" data-i18n="stats.channelType">渠道类型</label>
-              <select id="f_channel_type" class="filter-select" style="min-width: 120px;">
+              <select id="f_channel_type" class="filter-select">
                 <!-- 动态加载渠道类型选项 -->
               </select>
             </div>
 
             <!-- 时间范围筛选 -->
-            <div class="filter-group">
+            <div class="filter-group stats-filter-group stats-filter-group--sm">
               <label for="f_hours" class="filter-label" data-i18n="stats.timeRange">时间范围</label>
-              <select id="f_hours" class="filter-select" style="min-width: 100px;">
+              <select id="f_hours" class="filter-select">
                 <!-- 动态生成选项 by date-range-selector.js -->
               </select>
             </div>
 
             <!-- 渠道ID筛选 -->
-            <div class="filter-group">
+            <div class="filter-group stats-filter-group stats-filter-group--id">
               <label for="f_id" class="filter-label" data-i18n="stats.channelId">渠道ID</label>
-              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID..." style="max-width: 100px;">
+              <input type="number" id="f_id" class="filter-input" data-i18n-placeholder="stats.inputIdPlaceholder" placeholder="输入ID...">
             </div>
 
             <!-- 渠道名筛选 -->
-            <div class="filter-group">
+            <div class="filter-group stats-filter-group stats-filter-group--md">
               <label for="f_name" class="filter-label" data-i18n="stats.channelName">渠道名</label>
               <input type="text" id="f_name" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
             <!-- 模型筛选（合并重复字段） -->
-            <div class="filter-group">
+            <div class="filter-group stats-filter-group stats-filter-group--md">
               <label for="f_model" class="filter-label" data-i18n="common.model">模型</label>
               <input type="text" id="f_model" class="filter-input" data-i18n-placeholder="stats.containsTextPlaceholder" placeholder="包含文本...">
             </div>
 
             <!-- 令牌筛选 -->
-            <div class="filter-group">
+            <div class="filter-group stats-filter-group stats-filter-group--token">
               <label for="f_auth_token" class="filter-label" data-i18n="stats.token">令牌</label>
-              <select id="f_auth_token" class="filter-select" style="min-width: 150px;">
+              <select id="f_auth_token" class="filter-select">
                 <option value="" data-i18n="stats.allTokens">全部令牌</option>
                 <!-- 动态加载令牌列表 -->
               </select>
             </div>
 
             <!-- 隐藏0成功的模型 -->
-            <div class="filter-group" style="align-items: center;">
+            <div class="filter-group stats-filter-group stats-filter-group--toggle">
               <label class="filter-checkbox-label">
                 <input type="checkbox" id="f_hide_zero_success" checked>
                 <span data-i18n="stats.hideZeroSuccess">隐藏0成功</span>
@@ -193,19 +200,20 @@
             </div>
 
             <!-- 统计信息 -->
-            <div class="filter-info">
+            <div class="filter-info stats-filter-info">
               <span data-i18n="stats.totalRecordsPrefix">共</span> <span id="statsCount">0</span> <span data-i18n="stats.totalRecordsSuffix">条记录</span>
             </div>
 
             <!-- 操作按钮组 -->
-            <div style="flex: none;">
-              <button id="btn_filter" type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;" data-i18n="common.filter">筛选</button>
+            <div class="stats-filter-actions">
+              <button id="btn_filter" type="button" class="btn btn-primary stats-filter-btn" data-i18n="common.filter">筛选</button>
             </div>
           </div>
         </div>
+        </section>
 
         <!-- 统计详情表格 -->
-        <section class="mb-8">
+        <section class="page-section">
 	          <div class="glass-card stats-detail-card" style="animation-delay: 0.3s;">
             <h3 class="section-title mb-6" style="display: flex; align-items: center; justify-content: space-between;">
               <span style="display: flex; align-items: center;">

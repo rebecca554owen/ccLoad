@@ -6,31 +6,22 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <title data-i18n="tokens.title">API访问令牌 - Claude Code & Codex Proxy</title>
+  <meta name="theme-color" content="#18A058">
+  <title data-i18n="tokens.title">API访问令牌</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <link rel="stylesheet" href="/web/assets/css/tokens.css?v=__VERSION__">
   <style>
-    body.tokens-page .content-area {
-      display: grid;
-      gap: 18px;
-    }
-
-    body.tokens-page .token-page-hero {
-      padding: 28px 30px;
-    }
-
-    body.tokens-page .token-page-hero-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
     body.tokens-page .token-page-create-btn {
       min-width: 120px;
       padding: 10px 18px;
+    }
+
+    body.tokens-page .token-page-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex: 0 0 auto;
     }
 
     body.tokens-page .time-range-container {
@@ -94,24 +85,24 @@
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-         <header class="mb-2">
-        </header>
-        <header class="mb-4">
-          <div class="glass-card token-page-hero">
-            <div class="token-page-hero-row">
-              <div>
-                <h1 class="page-title mb-2" data-i18n="tokens.pageTitle">API访问令牌</h1>
-                <p class="page-subtitle" style="margin: 0;" data-i18n="tokens.pageSubtitle">管理用于 API (/v1/*) 访问的令牌</p>
+        <header class="page-section">
+          <div class="glass-card page-header-card token-page-hero">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="tokens.pageTitle">API访问令牌</h1>
+                <p class="page-subtitle">API 访问令牌与用量概览</p>
               </div>
-              <button onclick="showCreateModal()" class="btn btn-primary token-page-create-btn" data-i18n="tokens.createToken">
-                + 创建令牌
-              </button>
+              <div class="page-header-actions token-page-actions">
+                <button onclick="showCreateModal()" class="btn btn-primary token-page-create-btn" data-i18n="tokens.createToken">
+                  + 创建令牌
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
         <!-- 时间范围选择器 -->
-        <section class="mb-2">
+        <section class="page-section">
           <div class="time-range-container">
             <div class="time-range-selector">
               <button class="time-range-btn active" data-range="today" data-i18n="index.timeRange.today">本日</button>
@@ -125,7 +116,7 @@
           </div>
         </section>
 
-        <section>
+        <section class="page-section">
           <!-- 令牌表格 -->
           <div id="tokens-container" class="token-table"></div>
 
