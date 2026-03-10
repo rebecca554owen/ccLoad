@@ -6,8 +6,8 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <title data-i18n="modelTest.title">模型测试 - Claude Code & Codex Proxy</title>
+  <meta name="theme-color" content="#18A058">
+  <title data-i18n="modelTest.title">模型测试</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <style>
     :root {
@@ -96,11 +96,18 @@
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-        <header class="mb-2">
-
+        <header class="page-section">
+          <div class="glass-card page-header-card model-test-page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="modelTest.title">模型测试</h1>
+                <p class="page-subtitle">按渠道或模型执行批量验证</p>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <section class="glass-card mb-2" style="overflow: visible;">
+        <section class="page-section glass-card" style="overflow: visible;">
           <!-- 模式切换 -->
           <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <button id="modeTabChannel" class="mode-tab-btn active" onclick="setTestMode('channel')" data-i18n="modelTest.mode.channel">按渠道测试</button>

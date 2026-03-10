@@ -6,8 +6,8 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <title data-i18n="settings.title">系统设置 - Claude Code & Codex Proxy</title>
+  <meta name="theme-color" content="#18A058">
+  <title data-i18n="settings.title">系统设置</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <script defer src="/web/assets/locales/zh-CN.js?v=__VERSION__"></script>
   <script defer src="/web/assets/locales/en.js?v=__VERSION__"></script>
@@ -20,33 +20,44 @@
   <div class="app-container">
     <main class="main-content">
       <div class="content-area">
-        <section id="settings-group-nav-section" class="mt-2 mb-2 settings-group-nav-section" hidden>
-          <div class="time-range-container settings-group-nav-container">
-            <div id="settings-group-nav" class="time-range-selector settings-group-nav">
+        <header class="page-section">
+          <div class="glass-card page-header-card settings-page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title" data-i18n="settings.title">系统设置</h1>
+                <p class="page-subtitle">系统参数、策略与偏好设置</p>
+              </div>
+              <div class="page-header-actions">
+                <button id="save-all-btn" onclick="saveAllSettings()" class="btn btn-primary" style="min-width: 120px;" data-i18n="settings.saveAll">
+                  保存所有更改
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section class="page-section">
+          <div class="time-range-container">
+            <div id="settings-group-nav" class="time-range-selector">
               <!-- 动态填充：分组快捷跳转 -->
             </div>
           </div>
         </section>
 
-        <section class="glass-card mb-6">
-          <div class="table-container settings-table-container mobile-card-table-container">
-            <table class="modern-table settings-table mobile-card-table">
+        <section class="page-section glass-card settings-content-card">
+          <div class="table-container">
+            <table class="modern-table">
               <thead>
                 <tr>
-                  <th class="settings-head-item" data-i18n="settings.configItem">配置项</th>
-                  <th class="settings-head-value" data-i18n="settings.currentValue">当前值</th>
-                  <th class="settings-head-actions" data-i18n="common.actions">操作</th>
+                  <th style="width: 60%;" data-i18n="settings.configItem">配置项</th>
+                  <th style="width: 30%; text-align: right;" data-i18n="settings.currentValue">当前值</th>
+                  <th style="width: 10%;" data-i18n="common.actions">操作</th>
                 </tr>
               </thead>
               <tbody id="settings-tbody">
                 <!-- 动态填充 -->
               </tbody>
             </table>
-          </div>
-          <div class="settings-save-actions">
-            <button id="save-all-btn" class="btn btn-primary settings-save-btn" data-i18n="settings.saveAll">
-              保存所有更改
-            </button>
           </div>
         </section>
       </div>
@@ -55,10 +66,10 @@
 
   <!-- 设置行模板 -->
   <template id="tpl-setting-row">
-    <tr class="mobile-card-row setting-data-row" data-key="{{key}}">
-      <td class="setting-col-description" data-mobile-label="{{mobileLabelDescription}}">{{description}}</td>
-      <td class="setting-col-value" data-mobile-label="{{mobileLabelValue}}">{{{inputHtml}}}</td>
-      <td class="setting-col-actions" data-mobile-label="{{mobileLabelActions}}">
+    <tr data-key="{{key}}">
+      <td>{{description}}</td>
+      <td style="text-align: right;">{{{inputHtml}}}</td>
+      <td>
         <button class="btn-icon setting-reset-btn" data-key="{{key}}" data-i18n-title="settings.resetToDefault" title="重置为默认值">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -71,8 +82,8 @@
 
   <!-- 分组标题行模板 -->
   <template id="tpl-setting-group-row">
-    <tr class="setting-group-row" id="settings-group-{{groupId}}" data-group="{{groupId}}">
-      <td colspan="3" class="setting-group-cell">
+    <tr id="settings-group-{{groupId}}" data-group="{{groupId}}">
+      <td colspan="3" style="background: var(--neutral-100); color: var(--neutral-700); font-weight: 700; letter-spacing: 0.2px;">
         {{groupName}}
       </td>
     </tr>

@@ -98,7 +98,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Index Overview
   // ============================================================
-  'index.title': 'Claude Code & Codex Proxy Service',
+  'index.title': 'Overview',
   'index.heroTitle': 'Claude Code & Codex API Proxy Service',
   'index.heroSubtitle': 'Smart Routing · Failover · Analytics',
   'index.timeRange.today': 'Today',
@@ -124,7 +124,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Channels Management
   // ============================================================
-  'channels.title': 'Channels - Claude Code & Codex Proxy',
+  'channels.title': 'Channels',
   'channels.description': 'Configure API channels, priorities and model support (High priority channels preferred, same priority uses weighted random by key count)',
   'channels.priorityHint': 'High priority channels are preferred, same priority uses weighted random by key count',
   'channels.exportCsv': 'Export CSV',
@@ -379,7 +379,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // API Tokens
   // ============================================================
-  'tokens.title': 'API Tokens - Claude Code & Codex Proxy',
+  'tokens.title': 'API Tokens',
   'tokens.pageTitle': 'API Access Tokens',
   'tokens.pageSubtitle': 'Manage tokens for API (/v1/*) access',
   'tokens.createToken': '+ Create Token',
@@ -521,7 +521,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Statistics
   // ============================================================
-  'stats.title': 'Statistics - Claude Code & Codex Proxy',
+  'stats.title': 'Statistics',
   'stats.channelType': 'Channel',
   'stats.timeRange': 'Time Range',
   'stats.channelId': 'Channel#',
@@ -596,7 +596,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Trends
   // ============================================================
-  'trend.title': 'Trends - Claude Code & Codex Proxy',
+  'trend.title': 'Trends',
   'trend.chartTitle': 'Request Trend Chart',
   'trend.allModels': 'All Models',
   'trend.typeCount': 'Call Count',
@@ -647,7 +647,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Logs
   // ============================================================
-  'logs.title': 'Request Logs - Claude Code & Codex Proxy',
+  'logs.title': 'Request Logs',
   'logs.resultType': 'Result',
   'logs.resultAll': 'All',
   'logs.resultSuccess': 'Success (2xx)',
@@ -720,7 +720,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Model Test
   // ============================================================
-  'modelTest.title': 'Model Test - Claude Code & Codex Proxy',
+  'modelTest.title': 'Model Test',
   'modelTest.channel': 'Channel',
   'modelTest.channelName': 'Channel',
   'modelTest.priority': 'Priority',
@@ -799,7 +799,7 @@ window.I18N_LOCALES['en'] = {
   // ============================================================
   // Settings
   // ============================================================
-  'settings.title': 'System Settings - Claude Code & Codex Proxy',
+  'settings.title': 'System Settings',
   'settings.configItem': 'Configuration',
   'settings.currentValue': 'Current Value',
   'settings.saveAll': 'Save All Changes',

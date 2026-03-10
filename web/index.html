@@ -6,8 +6,8 @@
   <link rel="icon" type="image/x-icon" href="/web/favicon.ico">
   <link rel="apple-touch-icon" href="/web/apple-touch-icon.png">
   <link rel="manifest" href="/web/manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <title data-i18n="index.title">Claude Code & Codex Proxy 代理服务</title>
+  <meta name="theme-color" content="#18A058">
+  <title data-i18n="index.title">总览</title>
   <link rel="stylesheet" href="/web/assets/css/styles.css?v=__VERSION__">
   <script>
     window.__prefetch_summary = fetch('/public/summary?range=today')
@@ -26,27 +26,19 @@
     <!-- 主内容区域 -->
     <main class="main-content">
       <div class="content-area">
-        <!-- 页面标题 -->
-        <header class="mb-6">
-          <div class="hero-header animate-slide-up">
-            <div class="hero-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
-            <div>
-              <h1 class="hero-title" data-i18n="index.heroTitle">
-                Claude Code & Codex API 代理服务
-              </h1>
-              <p class="hero-subtitle" data-i18n="index.heroSubtitle">
-                智能路由 · 故障切换 · 统计分析
-              </p>
+        <header class="page-section">
+          <div class="glass-card page-header-card">
+            <div class="page-header-main">
+              <div class="page-header-copy">
+                <h1 class="page-title index-hero-title" data-i18n="index.title">总览</h1>
+                <p class="page-subtitle index-hero-subtitle">系统状态、渠道健康与调用统计</p>
+              </div>
             </div>
           </div>
         </header>
 
         <!-- 时间范围选择器 -->
-        <section class="mb-4">
+        <section class="page-section">
           <div class="time-range-container">
             <div class="time-range-selector">
               <button class="time-range-btn active" data-range="today" data-i18n="index.timeRange.today">本日</button>
@@ -61,7 +53,7 @@
         </section>
 
         <!-- 按渠道类型统计 -->
-        <section class="mb-6">
+        <section class="page-section">
           <div class="grid grid-cols-2 animate-slide-up" style="animation-delay: 0.1s; gap: var(--space-3);">
             <!-- Claude Code -->
             <div class="channel-card" id="type-anthropic-card">
@@ -281,7 +273,7 @@
           </div>
         </section>
         <!-- 实时状态栏 - 总览 -->
-        <section class="mb-6">
+        <section class="page-section">
           <div class="animate-slide-up" style="animation-delay: 0.2s; display: flex; gap: var(--space-3); flex-wrap: nowrap;">
             <div class="summary-card summary-card-success" style="flex: 1; min-width: 0;">
               <div class="summary-icon">
