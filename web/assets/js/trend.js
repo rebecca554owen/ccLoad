@@ -14,6 +14,8 @@
     window.visibleChannels = new Set(); // 可见渠道集合
     window.availableModels = []; // 可用模型列表
     window.authTokens = []; // 令牌列表
+    let trendChannelIdCombobox = null;
+    let trendChannelNameCombobox = null;
 
     // 加载可用模型列表
     // channelType 参数：渠道类型筛选，空字符串或 'all' 表示全部
@@ -29,7 +31,8 @@
           url += `&channel_type=${encodeURIComponent(channelType)}`;
         }
 
-        const rawModels = (await fetchDataWithAuth(url)) || [];
+        const resp = (await fetchDataWithAuth(url)) || {};
+        const rawModels = Array.isArray(resp) ? resp : (resp.models || []);
 
         // 去重：使用 Set 确保模型名称唯一
         window.availableModels = [...new Set(rawModels)];
@@ -125,48 +128,28 @@
 
         window.trendData = metrics.payload.data || [];
         window.channels = channels || [];
+        initTrendFilterComboboxes();
+        if (trendChannelIdCombobox) trendChannelIdCombobox.refresh();
+        if (trendChannelNameCombobox) trendChannelNameCombobox.refresh();
 
         // 构建渠道数据缓存（一次遍历，供后续 hasChannelData 使用）
         buildChannelDataCache(window.trendData);
 
-        // 修复：智能初始化渠道显示状态（处理localStorage过时数据）
-        // 默认不显示任何渠道，只显示总数
         if (window.visibleChannels.size === 0) {
-          // 首次访问：不默认显示任何渠道
-          console.log('初始化渠道显示状态（首次访问）- 默认仅显示总数');
-          // 不添加任何渠道到 visibleChannels，保持为空集合
+          // 首次访问：不默认显示任何渠道，只显示总数
         } else {
-          // 修复：验证并清理localStorage中过时的渠道选择
-          console.log('验证现有渠道选择状态...', Array.from(window.visibleChannels));
+          // 验证并清理localStorage中过时的渠道选择
           const validChannels = new Set();
-
-          // 检查每个已保存渠道是否在当前数据中存在
           window.visibleChannels.forEach(channelName => {
             if (hasChannelData(channelName, window.trendData)) {
               validChannels.add(channelName);
-            } else {
-              console.log(`清理过时渠道: ${channelName}（数据中不存在）`);
             }
           });
-
-          // 更新visibleChannels为验证后的集合
           window.visibleChannels = validChannels;
           persistChannelState();
-          console.log('更新后的可见渠道:', Array.from(window.visibleChannels));
         }
-        
-        // 添加调试信息显示
-        const debugSince = metrics.res.headers.get('X-Debug-Since');
-        const debugPoints = metrics.res.headers.get('X-Debug-Points');
-        const debugTotal = metrics.res.headers.get('X-Debug-Total');
 
-        console.log('趋势数据调试信息:', {
-          since: debugSince,
-          points: debugPoints,
-          total: debugTotal,
-          dataLength: trendData.length,
-          channelsCount: window.channels.length
-        });
+        const debugTotal = metrics.res.headers.get('X-Debug-Total');
 
         updateChannelFilter();
         renderChart();
@@ -1352,10 +1335,9 @@ function shouldShowZoom(points, hours, trendType) {
     }
 
     // 页面初始化
-    document.addEventListener('DOMContentLoaded', async function() {
-      if (window.i18n) window.i18n.translatePage();
-      if (window.initTopbar) initTopbar('trend');
-
+    window.initPageBootstrap({
+      topbarKey: 'trend',
+      run: async () => {
       // ✅ 优先从 URL 参数恢复渠道类型，否则从 localStorage，默认 all
       const urlParams = new URLSearchParams(location.search);
       const hasUrlParams = urlParams.toString().length > 0;
@@ -1375,16 +1357,44 @@ function shouldShowZoom(points, hours, trendType) {
 
       restoreState();
       restoreChannelState();
+      initTrendFilterComboboxes();
       applyRangeUI();
       bindToggles();
 
       // 加载模型列表（传入当前渠道类型）
       await loadModels(window.currentChannelType);
 
-      // 加载令牌列表
-      window.authTokens = await window.loadAuthTokensIntoSelect('f_auth_token', {
-        tokenPrefix: t('trend.tokenPrefix'),
-        restoreValue: window.currentAuthToken
+      window.initSavedDateRangeFilter({
+        selectId: 'f_hours',
+        defaultValue: 'today',
+        restoredValue: window.currentRange,
+        onChange: async () => {
+          const rangeSelect = document.getElementById('f_hours');
+          const range = rangeSelect ? rangeSelect.value : 'today';
+          window.currentRange = range;
+          const label = document.getElementById('data-timerange');
+          if (label) {
+            const rangeLabel = window.getRangeLabel ? getRangeLabel(range) : range;
+            label.textContent = t('trend.dataDisplay', { range: rangeLabel });
+          }
+          persistState();
+          await loadModels(window.currentChannelType, range);
+          loadData();
+        }
+      });
+
+      window.authTokens = await window.initAuthTokenFilter({
+        selectId: 'f_auth_token',
+        value: window.currentAuthToken,
+        loadOptions: {
+          tokenPrefix: t('trend.tokenPrefix')
+        },
+        onChange: () => {
+          const tokenSelect = document.getElementById('f_auth_token');
+          window.currentAuthToken = tokenSelect ? tokenSelect.value || '' : '';
+          persistState();
+          loadData();
+        }
       });
 
       loadData();
@@ -1398,6 +1408,7 @@ function shouldShowZoom(points, hours, trendType) {
 
       // 定期刷新数据（每5分钟）
       setInterval(loadData, 5 * 60 * 1000);
+      }
     });
 
     function bindToggles() {
@@ -1414,39 +1425,11 @@ function shouldShowZoom(points, hours, trendType) {
         renderChart();
       });
 
-      // 时间范围选择 - 使用 f_hours 元素
-      const rangeSelect = document.getElementById('f_hours');
-      if (rangeSelect) {
-        rangeSelect.addEventListener('change', async (e) => {
-          const range = e.target.value;
-          window.currentRange = range;
-          const label = document.getElementById('data-timerange');
-          if (label) {
-            const rangeLabel = window.getRangeLabel ? getRangeLabel(range) : range;
-            label.textContent = t('trend.dataDisplay', { range: rangeLabel });
-          }
-          persistState();
-          // 时间范围变更时重新加载模型列表，等待完成后再加载数据
-          await loadModels(window.currentChannelType, range);
-          loadData();
-        });
-      }
-
       // 模型选择器
       const modelSelect = document.getElementById('f_model');
       if (modelSelect) {
         modelSelect.addEventListener('change', (e) => {
           window.currentModel = e.target.value || '';
-          persistState();
-          loadData();
-        });
-      }
-
-      // 令牌选择器
-      const tokenSelect = document.getElementById('f_auth_token');
-      if (tokenSelect) {
-        tokenSelect.addEventListener('change', (e) => {
-          window.currentAuthToken = e.target.value || '';
           persistState();
           loadData();
         });
@@ -1460,42 +1443,58 @@ function shouldShowZoom(points, hours, trendType) {
         });
       }
 
-      // 输入框自动筛选（防抖）
-      const debouncedFilter = debounce(() => {
-        // 读取输入框值到全局变量
-        const idInput = document.getElementById('f_id');
-        if (idInput) window.currentChannelId = idInput.value.trim() || '';
-        const nameInput = document.getElementById('f_name');
-        if (nameInput) window.currentChannelName = nameInput.value.trim() || '';
-
-        persistState();
-        loadData();
-      }, 500);
-      ['f_id', 'f_name'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.addEventListener('input', debouncedFilter);
-        }
+      window.bindFilterApplyInputs({
+        apply: () => {
+          const idInput = document.getElementById('f_id');
+          if (idInput) window.currentChannelId = idInput.value.trim() || '';
+          const nameInput = document.getElementById('f_name');
+          if (nameInput) window.currentChannelName = nameInput.value.trim() || '';
+          persistState();
+          loadData();
+        },
+        debounceInputIds: ['f_id', 'f_name'],
+        enterInputIds: ['f_id', 'f_name']
       });
+    }
 
-      // 回车键筛选
-      ['f_id', 'f_name'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-              // 读取输入框值到全局变量
-              const idInput = document.getElementById('f_id');
-              if (idInput) window.currentChannelId = idInput.value.trim() || '';
-              const nameInput = document.getElementById('f_name');
-              if (nameInput) window.currentChannelName = nameInput.value.trim() || '';
+    function initTrendFilterComboboxes() {
+      if (!trendChannelIdCombobox) {
+        trendChannelIdCombobox = window.createSearchableCombobox({
+          inputId: 'f_id',
+          dropdownId: 'f_id_dropdown',
+          attachMode: true,
+          initialValue: window.currentChannelId || '',
+          initialLabel: window.currentChannelId || '',
+          getOptions: () => {
+            const values = Array.from(new Set((window.channels || []).map((channel) => String(channel.id || '')).filter(Boolean)));
+            return [{ value: '', label: '' }, ...values.map((value) => ({ value, label: value }))];
+          },
+          onSelect: (option) => {
+            window.currentChannelId = option && option.value ? String(option.value).trim() : '';
+            persistState();
+            loadData();
+          }
+        });
+      }
 
-              persistState();
-              loadData();
-            }
-          });
-        }
-      });
+      if (!trendChannelNameCombobox) {
+        trendChannelNameCombobox = window.createSearchableCombobox({
+          inputId: 'f_name',
+          dropdownId: 'f_name_dropdown',
+          attachMode: true,
+          initialValue: window.currentChannelName || '',
+          initialLabel: window.currentChannelName || '',
+          getOptions: () => {
+            const values = Array.from(new Set((window.channels || []).map((channel) => channel.name || '').filter(Boolean))).sort();
+            return [{ value: '', label: '' }, ...values.map((value) => ({ value, label: value }))];
+          },
+          onSelect: (option) => {
+            window.currentChannelName = option && option.value ? String(option.value).trim() : '';
+            persistState();
+            loadData();
+          }
+        });
+      }
     }
 
     function persistState() {
@@ -1583,13 +1582,6 @@ function shouldShowZoom(points, hours, trendType) {
     }
 
     function applyRangeUI() {
-      // 初始化时间范围选择器 (默认"本日")
-      if (window.initDateRangeSelector) {
-        initDateRangeSelector('f_hours', 'today', null);
-        // 设置已保存的值
-        document.getElementById('f_hours').value = window.currentRange;
-      }
-
       // 应用趋势类型UI
       const trendTypeGroup = document.getElementById('trend-type-group');
       if (trendTypeGroup) {

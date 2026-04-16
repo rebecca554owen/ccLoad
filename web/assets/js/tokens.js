@@ -35,7 +35,9 @@
       modalStack.pop();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    window.initPageBootstrap({
+      topbarKey: 'tokens',
+      run: () => {
       // 初始化时间范围选择器
       window.initTimeRangeSelector((range) => {
         currentTimeRange = range;
@@ -64,6 +66,7 @@
       window.i18n.onLocaleChange(() => {
         renderTokens();
       });
+      }
     });
 
     /**
@@ -484,6 +487,7 @@
 
     function closeCreateModal() {
       document.getElementById('createModal').style.display = 'none';
+      document.getElementById('tokenCustomValue').value = '';
     }
 
     async function createToken() {
@@ -514,13 +518,14 @@
         window.showNotification(t('tokens.msg.costLimitNegative'), 'error');
         return;
       }
+      const customToken = document.getElementById('tokenCustomValue').value.trim();
       try {
         const data = await fetchDataWithAuth(`${API_BASE}/auth-tokens`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ description, expires_at: expiresAt, is_active: isActive, cost_limit_usd: costLimitUSD })
+          body: JSON.stringify({ description, expires_at: expiresAt, is_active: isActive, cost_limit_usd: costLimitUSD, ...(customToken && { token: customToken }) })
         });
 
         closeCreateModal();
@@ -677,12 +682,6 @@
         window.showNotification(t('tokens.msg.deleteFailed') + ': ' + error.message, 'error');
       }
     }
-
-    // 初始化顶部导航栏
-    document.addEventListener('DOMContentLoaded', () => {
-      initTopbar('tokens');
-      if (window.i18n) window.i18n.translatePage();
-    });
 
     // ============================================================================
     // 模型限制功能（2026-01新增）
