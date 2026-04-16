@@ -1,6 +1,7 @@
 // 模型测试页面
-initTopbar('model-test');
-if (window.i18n) window.i18n.translatePage();
+window.initPageBootstrap({
+  topbarKey: 'model-test'
+});
 
 const TEST_MODE_CHANNEL = 'channel';
 const TEST_MODE_MODEL = 'model';

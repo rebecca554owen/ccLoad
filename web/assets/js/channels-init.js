@@ -52,13 +52,9 @@ function loadChannelsFilters() {
   return null;
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Translate static elements first
-  if (window.i18n && window.i18n.translatePage) {
-    window.i18n.translatePage();
-  }
-
-  if (window.initTopbar) initTopbar('channels');
+window.initPageBootstrap({
+  topbarKey: 'channels',
+  run: async () => {
   setupFilterListeners();
   setupImportExport();
   setupKeyImportPreview();
@@ -146,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderChannels();
     updateModelOptions();
   });
+  }
 });
 
 document.addEventListener('keydown', (e) => {

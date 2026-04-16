@@ -682,14 +682,25 @@ function applyFilter() {
   currentLogsPage = 1;
   totalLogsPages = 1;
 
-  const range = document.getElementById('f_hours').value.trim();
-  const id = document.getElementById('f_id').value.trim();
-  const name = document.getElementById('f_name').value.trim();
-  const model = document.getElementById('f_model').value.trim();
-  const resultType = document.getElementById('f_result_type') ? document.getElementById('f_result_type').value.trim() : 'all';
-  const status = document.getElementById('f_status') ? document.getElementById('f_status').value.trim() : '';
-  const authToken = document.getElementById('f_auth_token').value.trim();
-  const channelType = document.getElementById('f_channel_type').value.trim();
+  const values = window.readFilterControlValues({
+    range: { id: 'f_hours', trim: true, defaultValue: 'today' },
+    channelId: { id: 'f_id', trim: true, defaultValue: '' },
+    channelName: { id: 'f_name', trim: true, defaultValue: '' },
+    model: { id: 'f_model', trim: true, defaultValue: '' },
+    resultType: { id: 'f_result_type', trim: true, defaultValue: 'all' },
+    status: { id: 'f_status', trim: true, defaultValue: '' },
+    authToken: { id: 'f_auth_token', trim: true, defaultValue: '' },
+    channelType: { id: 'f_channel_type', trim: true, defaultValue: 'all' }
+  });
+
+  const range = values.range;
+  const id = values.channelId;
+  const name = values.channelName;
+  const model = values.model;
+  const resultType = values.resultType;
+  const status = values.status;
+  const authToken = values.authToken;
+  const channelType = values.channelType;
 
   // 保存筛选条件到 localStorage
   saveLogsFilters();
@@ -729,67 +740,65 @@ async function initFilters() {
   const authToken = u.get('auth_token_id') || (!hasUrlParams && saved?.authToken) || '';
   const channelType = u.get('channel_type') || (!hasUrlParams && saved?.channelType) || 'all';
 
-  // 初始化时间范围选择器 (默认"本日")，切换后立即筛选
-  if (window.initDateRangeSelector) {
-    initDateRangeSelector('f_hours', 'today', () => {
+  window.initSavedDateRangeFilter({
+    selectId: 'f_hours',
+    defaultValue: 'today',
+    restoredValue: range,
+    onChange: () => {
       saveLogsFilters();
       currentLogsPage = 1;
       load();
-    });
-    // 设置URL中的值
-    document.getElementById('f_hours').value = range;
-  }
+    }
+  });
 
-  document.getElementById('f_id').value = id;
-  document.getElementById('f_name').value = name;
-  document.getElementById('f_model').value = model;
-  const resultTypeEl = document.getElementById('f_result_type');
-  if (resultTypeEl) resultTypeEl.value = resultType;
-  const statusEl = document.getElementById('f_status');
-  if (statusEl) statusEl.value = status;
+  window.applyFilterControlValues(
+    {
+      channelId: id,
+      channelName: name,
+      model,
+      resultType,
+      status
+    },
+    {
+      channelId: 'f_id',
+      channelName: 'f_name',
+      model: 'f_model',
+      resultType: 'f_result_type',
+      status: 'f_status'
+    }
+  );
 
   // 设置渠道类型
   currentChannelType = channelType;
   const channelTypeEl = document.getElementById('f_channel_type');
   if (channelTypeEl) channelTypeEl.value = channelType;
 
-  // 加载令牌列表（返回 Promise 以便等待完成）
-  authTokens = await window.loadAuthTokensIntoSelect('f_auth_token');
-  document.getElementById('f_auth_token').value = authToken;
-
-  // 令牌选择器切换后立即筛选
-  document.getElementById('f_auth_token').addEventListener('change', () => {
-    saveLogsFilters();
-    currentLogsPage = 1;
-    load();
+  authTokens = await window.initAuthTokenFilter({
+    selectId: 'f_auth_token',
+    value: authToken,
+    onChange: () => {
+      saveLogsFilters();
+      currentLogsPage = 1;
+      load();
+    }
   });
 
-  // 事件监听
   document.getElementById('btn_filter').addEventListener('click', applyFilter);
 
-  // 输入框自动筛选（防抖）
-  const debouncedFilter = debounce(applyFilter, 500);
-  ['f_id', 'f_name', 'f_model', 'f_status'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', debouncedFilter);
-    }
+  window.bindFilterApplyInputs({
+    apply: () => {
+      saveLogsFilters();
+      currentLogsPage = 1;
+      applyFilter();
+    },
+    debounceInputIds: ['f_id', 'f_name', 'f_model', 'f_status'],
+    enterInputIds: ['f_hours', 'f_id', 'f_name', 'f_model', 'f_result_type', 'f_status', 'f_auth_token', 'f_channel_type']
   });
 
   const resultTypeInput = document.getElementById('f_result_type');
   if (resultTypeInput) {
     resultTypeInput.addEventListener('change', applyFilter);
   }
-
-  // 回车键筛选
-  ['f_hours', 'f_id', 'f_name', 'f_model', 'f_result_type', 'f_status', 'f_auth_token', 'f_channel_type'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter') applyFilter();
-      });
-    }
-  });
 }
 
 // 性能优化：避免 toLocaleString 的开销，使用手动格式化
@@ -917,18 +926,29 @@ function updateTestKeyIndexInfo(text) {
 // localStorage key for logs page filters
 const LOGS_FILTER_KEY = 'logs.filters';
 
+function getLogsFilters() {
+  return window.readFilterControlValues({
+    channelType: { id: 'f_channel_type', trim: true, defaultValue: 'all' },
+    range: { id: 'f_hours', trim: true, defaultValue: 'today' },
+    channelId: { id: 'f_id', trim: true, defaultValue: '' },
+    channelName: { id: 'f_name', trim: true, defaultValue: '' },
+    model: { id: 'f_model', trim: true, defaultValue: '' },
+    resultType: { id: 'f_result_type', trim: true, defaultValue: 'all' },
+    status: { id: 'f_status', trim: true, defaultValue: '' },
+    authToken: { id: 'f_auth_token', trim: true, defaultValue: '' }
+  });
+}
+
 function saveLogsFilters() {
   try {
-    const filters = {
-      channelType: document.getElementById('f_channel_type')?.value || 'all',
-      range: document.getElementById('f_hours')?.value || 'today',
-      channelId: document.getElementById('f_id')?.value || '',
-      channelName: document.getElementById('f_name')?.value || '',
-      model: document.getElementById('f_model')?.value || '',
-      resultType: document.getElementById('f_result_type')?.value || 'all',
-      status: document.getElementById('f_status')?.value || '',
-      authToken: document.getElementById('f_auth_token')?.value || ''
-    };
+    const filters = getLogsFilters();
+    if (typeof window.persistFilterState === 'function') {
+      window.persistFilterState({
+        key: LOGS_FILTER_KEY,
+        values: getLogsFilters()
+      });
+      return;
+    }
     localStorage.setItem(LOGS_FILTER_KEY, JSON.stringify(filters));
   } catch (_) { }
 }
@@ -942,10 +962,9 @@ function loadLogsFilters() {
 }
 
 // 页面初始化
-document.addEventListener('DOMContentLoaded', async function () {
-  if (window.i18n) window.i18n.translatePage();
-  if (window.initTopbar) initTopbar('logs');
-
+window.initPageBootstrap({
+  topbarKey: 'logs',
+  run: async () => {
   // 优先从 URL 读取，其次从 localStorage 恢复，默认 all
   const u = new URLSearchParams(location.search);
   const hasUrlParams = u.toString().length > 0;
@@ -1035,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         deleteKeyFromLog(channelId, channelName, apiKey, apiKeyHash);
       }
     });
+  }
   }
 });
 

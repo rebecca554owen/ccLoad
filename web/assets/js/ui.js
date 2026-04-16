@@ -690,6 +690,31 @@
     };
   }
 
+  function initPageBootstrap(options = {}) {
+    const run = typeof options.run === 'function' ? options.run : () => {};
+
+    const execute = async () => {
+      if (options.translate !== false && window.i18n && typeof window.i18n.translatePage === 'function') {
+        window.i18n.translatePage();
+      }
+
+      if (options.topbarKey && typeof window.initTopbar === 'function') {
+        window.initTopbar(options.topbarKey);
+      }
+
+      await run();
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        void execute();
+      }, { once: true });
+      return;
+    }
+
+    void execute();
+  }
+
   /**
    * 格式化成本（美元）
    * @param {number} cost - 成本值
@@ -740,8 +765,120 @@
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
   }
 
+  function bindFilterApplyInputs(options = {}) {
+    const apply = typeof options.apply === 'function' ? options.apply : () => {};
+    const debouncedApply = debounce(apply, 500);
+    const debounceInputIds = Array.isArray(options.debounceInputIds) ? options.debounceInputIds : [];
+    const enterInputIds = Array.isArray(options.enterInputIds) ? options.enterInputIds : [];
+
+    debounceInputIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        debouncedApply();
+      });
+    });
+
+    enterInputIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          apply();
+        }
+      });
+    });
+  }
+
+  function initSavedDateRangeFilter(options = {}) {
+    const selectId = options.selectId;
+    if (!selectId || typeof window.initDateRangeSelector !== 'function') return;
+
+    window.initDateRangeSelector(selectId, options.defaultValue, options.onChange || null);
+
+    const select = document.getElementById(selectId);
+    if (select && options.restoredValue !== undefined && options.restoredValue !== null) {
+      select.value = options.restoredValue;
+    }
+  }
+
+  async function initAuthTokenFilter(options = {}) {
+    const selectId = options.selectId;
+    if (!selectId) return [];
+
+    const tokens = await window.loadAuthTokensIntoSelect(selectId, options.loadOptions);
+    const select = document.getElementById(selectId);
+    if (select) {
+      if (options.value !== undefined && options.value !== null) {
+        select.value = options.value;
+      }
+      if (typeof options.onChange === 'function') {
+        select.addEventListener('change', options.onChange);
+      }
+    }
+    return tokens;
+  }
+
+  function readFilterControlValues(fieldMap = {}) {
+    const values = {};
+    Object.entries(fieldMap).forEach(([key, config]) => {
+      const normalized = typeof config === 'string' ? { id: config } : (config || {});
+      const el = normalized.id ? document.getElementById(normalized.id) : null;
+      let value = el ? el.value : normalized.defaultValue;
+      if (value === undefined || value === null) {
+        value = normalized.defaultValue !== undefined ? normalized.defaultValue : '';
+      }
+      if (normalized.trim && typeof value === 'string') {
+        value = value.trim();
+      }
+      values[key] = value;
+    });
+    return values;
+  }
+
+  function applyFilterControlValues(values = {}, fieldMap = {}) {
+    Object.entries(fieldMap).forEach(([key, config]) => {
+      const normalized = typeof config === 'string' ? { id: config } : (config || {});
+      if (!normalized.id) return;
+      const el = document.getElementById(normalized.id);
+      if (!el) return;
+      const value = Object.prototype.hasOwnProperty.call(values, key) ? values[key] : normalized.defaultValue;
+      el.value = value === undefined || value === null ? '' : value;
+    });
+  }
+
+  function persistFilterState(options = {}) {
+    if (!window.FilterState) return '';
+
+    const key = options.key || '';
+    const values = options.values || (typeof options.getValues === 'function' ? options.getValues() : null);
+    if (key && values) {
+      window.FilterState.save(key, values);
+    }
+
+    if (!options.pathname && !options.search && !options.fields) {
+      return '';
+    }
+
+    return window.FilterState.writeHistory({
+      historyMethod: options.historyMethod,
+      pathname: options.pathname || (window.location && window.location.pathname) || '',
+      search: options.search || (window.location && window.location.search) || '',
+      values,
+      fields: options.fields,
+      preserveExistingParams: options.preserveExistingParams
+    });
+  }
+
   // 导出到全局作用域
+  window.bindFilterApplyInputs = bindFilterApplyInputs;
   window.debounce = debounce;
+  window.initAuthTokenFilter = initAuthTokenFilter;
+  window.initPageBootstrap = initPageBootstrap;
+  window.initSavedDateRangeFilter = initSavedDateRangeFilter;
+  window.persistFilterState = persistFilterState;
+  window.readFilterControlValues = readFilterControlValues;
+  window.applyFilterControlValues = applyFilterControlValues;
   window.formatCost = formatCost;
   window.formatNumber = formatNumber;
   window.getRpmColor = getRpmColor;
@@ -750,9 +887,115 @@
 })();
 
 // ============================================================
+// 通用可搜索下拉选择框组件 (SearchableCombobox)
+// ============================================================
+
+// ============================================================
 // 跨页面共享工具函数
 // ============================================================
 (function () {
+  function createSearchableCombobox(config = {}) {
+    const input = document.getElementById(config.inputId);
+    const dropdown = document.getElementById(config.dropdownId);
+    if (!input || !dropdown) return null;
+
+    let currentValue = config.initialValue || '';
+    let currentLabel = config.initialLabel || currentValue || '';
+
+    function getOptions() {
+      const options = typeof config.getOptions === 'function' ? config.getOptions() : [];
+      return Array.isArray(options) ? options : [];
+    }
+
+    function syncInput() {
+      input.value = currentLabel || '';
+    }
+
+    function hideDropdown() {
+      dropdown.style.display = 'none';
+    }
+
+    function selectOption(option) {
+      currentValue = option ? option.value || '' : '';
+      currentLabel = option ? option.label || option.value || '' : '';
+      syncInput();
+      hideDropdown();
+      if (typeof config.onSelect === 'function') {
+        config.onSelect(option || { value: '', label: '' });
+      }
+    }
+
+    function renderOptions(keyword = '') {
+      const normalized = String(keyword || '').trim().toLowerCase();
+      const options = getOptions().filter((option) => {
+        if (!normalized) return true;
+        const label = String(option && option.label ? option.label : '').toLowerCase();
+        const value = String(option && option.value ? option.value : '').toLowerCase();
+        return label.includes(normalized) || value.includes(normalized);
+      });
+
+      dropdown.innerHTML = '';
+      options.forEach((option) => {
+        const item = document.createElement('div');
+        item.className = 'filter-dropdown-item';
+        item.textContent = option.label || option.value || '';
+        item.addEventListener('mousedown', (event) => {
+          event.preventDefault();
+          selectOption(option);
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display = options.length > 0 ? 'block' : 'none';
+    }
+
+    input.addEventListener('focus', () => {
+      renderOptions(input.value);
+    });
+
+    input.addEventListener('input', () => {
+      currentValue = input.value.trim();
+      currentLabel = input.value;
+      renderOptions(input.value);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        hideDropdown();
+      }
+      if (event.key === 'Enter') {
+        hideDropdown();
+        if (typeof config.onSelect === 'function') {
+          config.onSelect({ value: input.value.trim(), label: input.value });
+        }
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(hideDropdown, 120);
+    });
+
+    syncInput();
+
+    return {
+      getValue() {
+        return currentValue || input.value.trim() || '';
+      },
+      refresh() {
+        const options = getOptions();
+        const matched = options.find((option) => String(option.value || '') === String(currentValue || ''));
+        if (matched) {
+          currentLabel = matched.label || matched.value || '';
+        }
+        syncInput();
+      },
+      setValue(value, label) {
+        currentValue = value || '';
+        currentLabel = label || value || '';
+        syncInput();
+      }
+    };
+  }
+
   /**
    * 复制文本到剪贴板（带降级处理）
    * @param {string} text - 要复制的文本
@@ -847,6 +1090,7 @@
   }
 
   window.copyToClipboard = copyToClipboard;
+  window.createSearchableCombobox = createSearchableCombobox;
   window.initChannelTypeFilter = initChannelTypeFilter;
   window.loadAuthTokensIntoSelect = loadAuthTokensIntoSelect;
   window.initTimeRangeSelector = initTimeRangeSelector;

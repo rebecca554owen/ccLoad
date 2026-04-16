@@ -23,8 +23,17 @@
         renderStatsLoading();
 
         const params = buildStatsRequestParams();
-        // 后端返回格式: {"success":true,"data":{"stats":[...],"duration_seconds":...,"rpm_stats":{...},"is_today":...}}
-        statsData = (await fetchDataWithAuth('/admin/stats?' + params.toString())) || { stats: [] };
+        const rawStatsData = await fetchDataWithAuth('/admin/stats?' + params.toString());
+        if (Array.isArray(rawStatsData)) {
+          statsData = { stats: rawStatsData };
+        } else if (rawStatsData && typeof rawStatsData === 'object') {
+          statsData = {
+            ...rawStatsData,
+            stats: Array.isArray(rawStatsData.stats) ? rawStatsData.stats : []
+          };
+        } else {
+          statsData = { stats: [] };
+        }
         durationSeconds = statsData.duration_seconds || 1; // 防止除零
         rpmStats = statsData.rpm_stats || null;
         isToday = statsData.is_today !== false;
@@ -60,6 +69,14 @@
       const tbody = document.getElementById('stats_tbody');
       tbody.innerHTML = '';
       const row = TemplateEngine.render('tpl-stats-error', { colspan: STATS_TABLE_COLUMNS });
+      if (row) tbody.appendChild(row);
+    }
+
+    function renderStatsEmpty() {
+      const tbody = document.getElementById('stats_tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      const row = TemplateEngine.render('tpl-stats-empty', { colspan: STATS_TABLE_COLUMNS });
       if (row) tbody.appendChild(row);
     }
 
@@ -214,14 +231,12 @@
     }
 
     function renderStatsTable() {
-      const tbody = document.getElementById('stats_tbody');
-
       if (!statsData || !statsData.stats || statsData.stats.length === 0) {
-        tbody.innerHTML = '';
-        const emptyRow = TemplateEngine.render('tpl-stats-empty', { colspan: STATS_TABLE_COLUMNS });
-        if (emptyRow) tbody.appendChild(emptyRow);
+        renderStatsEmpty();
         return;
       }
+
+      const tbody = document.getElementById('stats_tbody');
 
       // 根据 hideZeroSuccess 过滤数据
       const filteredStats = hideZeroSuccess
@@ -229,9 +244,7 @@
         : statsData.stats;
 
       if (filteredStats.length === 0) {
-        tbody.innerHTML = '';
-        const emptyRow = TemplateEngine.render('tpl-stats-empty', { colspan: STATS_TABLE_COLUMNS });
-        if (emptyRow) tbody.appendChild(emptyRow);
+        renderStatsEmpty();
         return;
       }
 
@@ -997,6 +1010,8 @@ ${t('stats.tooltipCost')}: $${point.cost.toFixed(4)}`;
     // 渲染所有饼图
     function renderCharts() {
       if (!statsData || !statsData.stats || statsData.stats.length === 0) {
+        ['chart-channel-calls', 'chart-channel-tokens', 'chart-model-calls', 'chart-model-tokens', 'chart-channel-cost', 'chart-model-cost']
+          .forEach((containerId) => renderPieChart(containerId, {}, ''));
         return;
       }
 
