@@ -91,7 +91,6 @@ func (s *SQLStore) GetConfig(ctx context.Context, id int64) (*model.Config, erro
 func (s *SQLStore) GetEnabledChannelsByModel(ctx context.Context, modelName string) ([]*model.Config, error) {
 	var query string
 	var args []any
-	nowUnix := timeToUnix(time.Now())
 
 	if modelName == "*" {
 		// 通配符：返回所有启用的渠道
@@ -106,11 +105,9 @@ func (s *SQLStore) GetEnabledChannelsByModel(ctx context.Context, modelName stri
 	            FROM channels c
 	            LEFT JOIN api_keys k ON c.id = k.channel_id
 	            WHERE c.enabled = 1
-	              AND (c.cooldown_until = 0 OR c.cooldown_until <= ?)
             GROUP BY c.id
             ORDER BY c.priority DESC, c.id ASC
         `
-		args = []any{nowUnix}
 	} else {
 		// 精确匹配：使用 channel_models 索引表
 		query = `
@@ -125,11 +122,10 @@ func (s *SQLStore) GetEnabledChannelsByModel(ctx context.Context, modelName stri
 	            LEFT JOIN api_keys k ON c.id = k.channel_id
 	            WHERE c.enabled = 1
               AND cm.model = ?
-              AND (c.cooldown_until = 0 OR c.cooldown_until <= ?)
             GROUP BY c.id
             ORDER BY c.priority DESC, c.id ASC
         `
-		args = []any{modelName, nowUnix}
+		args = []any{modelName}
 	}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -154,7 +150,6 @@ func (s *SQLStore) GetEnabledChannelsByModel(ctx context.Context, modelName stri
 
 // GetEnabledChannelsByType 查询指定类型的启用渠道（按优先级排序）
 func (s *SQLStore) GetEnabledChannelsByType(ctx context.Context, channelType string) ([]*model.Config, error) {
-	nowUnix := timeToUnix(time.Now())
 	// 注意：不再从 channels 表读取 models 和 model_redirects
 	query := `
 			SELECT c.id, c.name, c.url, c.priority,
@@ -167,12 +162,11 @@ func (s *SQLStore) GetEnabledChannelsByType(ctx context.Context, channelType str
 			LEFT JOIN api_keys k ON c.id = k.channel_id
 			WHERE c.enabled = 1
 			  AND c.channel_type = ?
-		  AND (c.cooldown_until = 0 OR c.cooldown_until <= ?)
 		GROUP BY c.id
 		ORDER BY c.priority DESC, c.id ASC
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, channelType, nowUnix)
+	rows, err := s.db.QueryContext(ctx, query, channelType)
 	if err != nil {
 		return nil, err
 	}

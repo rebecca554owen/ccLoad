@@ -178,6 +178,57 @@ func TestSelectRouteCandidates_AllCooled_FallbackChoosesEarliestChannelCooldown(
 	}
 }
 
+func TestSelectRouteCandidates_SingleCooledChannel_FallbackStillReturnsChannel(t *testing.T) {
+	store, cleanup := setupTestStore(t)
+	defer cleanup()
+
+	server := &Server{store: store, channelBalancer: NewSmoothWeightedRR()}
+	ctx := context.Background()
+	now := time.Now()
+
+	created, err := store.CreateConfig(ctx, &model.Config{
+		Name:     "single-cooled",
+		URL:      "https://api1.com",
+		Priority: 100,
+		Enabled:  true,
+		ModelEntries: []model.ModelEntry{
+			{Model: "test-model"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("创建测试渠道失败: %v", err)
+	}
+
+	if err := store.CreateAPIKeysBatch(ctx, []*model.APIKey{
+		{
+			ChannelID:   created.ID,
+			KeyIndex:    0,
+			APIKey:      "sk-test",
+			KeyStrategy: model.KeyStrategySequential,
+			CreatedAt:   model.JSONTime{Time: now},
+			UpdatedAt:   model.JSONTime{Time: now},
+		},
+	}); err != nil {
+		t.Fatalf("创建API Keys失败: %v", err)
+	}
+
+	if err := store.SetChannelCooldown(ctx, created.ID, now.Add(2*time.Minute)); err != nil {
+		t.Fatalf("设置渠道冷却失败: %v", err)
+	}
+
+	candidates, err := server.selectCandidatesByModelAndType(ctx, "test-model", "")
+	if err != nil {
+		t.Fatalf("selectCandidates失败: %v", err)
+	}
+
+	if len(candidates) != 1 {
+		t.Fatalf("期望单渠道冷却时仍返回1个fallback候选，实际%d个", len(candidates))
+	}
+	if candidates[0].ID != created.ID {
+		t.Fatalf("期望返回渠道%d，实际返回%d", created.ID, candidates[0].ID)
+	}
+}
+
 func TestSelectRouteCandidates_AllCooled_FallbackDisabledWhenThresholdZero(t *testing.T) {
 	store, cleanup := setupTestStore(t)
 	defer cleanup()

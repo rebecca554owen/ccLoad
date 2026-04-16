@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"ccLoad/internal/model"
 	"ccLoad/internal/storage"
@@ -409,6 +410,48 @@ func TestConfig_GetEnabledChannelsByModel(t *testing.T) {
 	}
 }
 
+func TestConfig_GetEnabledChannelsByModel_IncludesCooledChannels(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, "model_query_cooldown.db")
+	ctx := context.Background()
+
+	cfg := &model.Config{
+		Name:     "cooled-gpt4-channel",
+		URL:      "https://api.openai.com",
+		Priority: 10,
+		Enabled:  true,
+		ModelEntries: []model.ModelEntry{
+			{Model: "gpt-4"},
+		},
+	}
+	created, err := store.CreateConfig(ctx, cfg)
+	if err != nil {
+		t.Fatalf("create config: %v", err)
+	}
+
+	if err := store.CreateAPIKeysBatch(ctx, []*model.APIKey{
+		{ChannelID: created.ID, KeyIndex: 0, APIKey: "sk-key1"},
+	}); err != nil {
+		t.Fatalf("create api keys batch: %v", err)
+	}
+
+	if err := store.SetChannelCooldown(ctx, created.ID, time.Now().Add(2*time.Minute)); err != nil {
+		t.Fatalf("set channel cooldown: %v", err)
+	}
+
+	configs, err := store.GetEnabledChannelsByModel(ctx, "gpt-4")
+	if err != nil {
+		t.Fatalf("get enabled channels by model: %v", err)
+	}
+	if len(configs) != 1 {
+		t.Fatalf("expected cooled channel to remain queryable, got %d", len(configs))
+	}
+	if configs[0].ID != created.ID {
+		t.Fatalf("expected channel id %d, got %d", created.ID, configs[0].ID)
+	}
+}
+
 func TestConfig_GetEnabledChannelsByType(t *testing.T) {
 	t.Parallel()
 
@@ -471,6 +514,49 @@ func TestConfig_GetEnabledChannelsByType(t *testing.T) {
 	}
 	if len(anthropicChannels) != 1 {
 		t.Errorf("expected 1 anthropic channel, got %d", len(anthropicChannels))
+	}
+}
+
+func TestConfig_GetEnabledChannelsByType_IncludesCooledChannels(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t, "type_query_cooldown.db")
+	ctx := context.Background()
+
+	cfg := &model.Config{
+		Name:        "cooled-openai-channel",
+		URL:         "https://api.openai.com",
+		Priority:    10,
+		Enabled:     true,
+		ChannelType: "openai",
+		ModelEntries: []model.ModelEntry{
+			{Model: "gpt-4"},
+		},
+	}
+	created, err := store.CreateConfig(ctx, cfg)
+	if err != nil {
+		t.Fatalf("create config: %v", err)
+	}
+
+	if err := store.CreateAPIKeysBatch(ctx, []*model.APIKey{
+		{ChannelID: created.ID, KeyIndex: 0, APIKey: "sk-openai"},
+	}); err != nil {
+		t.Fatalf("create api keys batch: %v", err)
+	}
+
+	if err := store.SetChannelCooldown(ctx, created.ID, time.Now().Add(2*time.Minute)); err != nil {
+		t.Fatalf("set channel cooldown: %v", err)
+	}
+
+	configs, err := store.GetEnabledChannelsByType(ctx, "openai")
+	if err != nil {
+		t.Fatalf("get enabled channels by type: %v", err)
+	}
+	if len(configs) != 1 {
+		t.Fatalf("expected cooled channel to remain queryable, got %d", len(configs))
+	}
+	if configs[0].ID != created.ID {
+		t.Fatalf("expected channel id %d, got %d", created.ID, configs[0].ID)
 	}
 }
 
