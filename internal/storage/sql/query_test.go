@@ -70,14 +70,14 @@ func TestWhereBuilder_ApplyLogFilter(t *testing.T) {
 			filter: &model.LogFilter{
 				ResultType: "success",
 			},
-			expectArgsLen: 2,
+			expectArgsLen: 3,
 		},
 		{
 			name: "result_type error filter",
 			filter: &model.LogFilter{
 				ResultType: "error",
 			},
-			expectArgsLen: 2,
+			expectArgsLen: 3,
 		},
 		{
 			name: "all filters combined",
@@ -88,7 +88,7 @@ func TestWhereBuilder_ApplyLogFilter(t *testing.T) {
 				ResultType:  "error",
 				AuthTokenID: &authTokenID,
 			},
-			expectArgsLen: 6,
+			expectArgsLen: 7,
 		},
 		{
 			name: "scheduled_check source",
